@@ -21,6 +21,8 @@ jobs:
         run: |
           npm install
           npx cap add android
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          grep -n "uses-permission" android/app/src/main/AndroidManifest.xml
           npx capacitor-assets generate --android --iconBackgroundColor '#1C4F3C' --splashBackgroundColor '#F3E6EC' || true
           npx cap sync android
       - name: Build APK
