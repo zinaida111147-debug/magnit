@@ -22,14 +22,14 @@ jobs:
           npm install
           npx cap add android
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
-          grep -n "uses-permission" android/app/src/main/AndroidManifest.xml
+          grep -n "uses-permission" android/app/src/main/AndroidManifest.xml || true
           npx capacitor-assets generate --android --iconBackgroundColor '#1C4F3C' --splashBackgroundColor '#F3E6EC' || true
           npx cap sync android
       - name: Build APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon || (echo 'повтор через 60 с — сбой загрузки зависимостей'; sleep 60; ./gradlew assembleDebug --no-daemon --refresh-dependencies)
           cp app/build/outputs/apk/debug/app-debug.apk ../Magnit.apk
       - uses: actions/upload-artifact@v4
         with:
