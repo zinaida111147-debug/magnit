@@ -1,1 +1,14 @@
-{"appId":"app.magnit.planner","appName":"Магнит","webDir":"www","android":{"backgroundColor":"#F3E6EC"}}
+{
+  "appId": "app.magnit.planner",
+  "appName": "Магнит",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F3E6EC"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_magnit",
+      "iconColor": "#D94E75"
+    }
+  }
+}
