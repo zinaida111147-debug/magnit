@@ -1481,10 +1481,13 @@ body.hlmode #app{padding-bottom:300px}
 /* В актуальном UI закрытия дня sheet получает класс eve, а не night. */
 .sheet.eve .moodrow button.on{border:2px solid var(--acc);background:color-mix(in srgb,var(--acc) 24%,var(--glass));box-shadow:inset 0 0 0 1px var(--acc),0 2px 8px rgba(0,0,0,.12);opacity:1;font-weight:800}
 .sheet.eve .moodrow button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-/* 0.9.15 #3: привычки в «Главном» не обрезаются — несколько строк вместо невидимого горизонтального хвоста */
+/* 0.9.15: отзыв с телефона — привычки опять одной горизонтальной строкой, без переносов. */
 .hhab{min-width:0;max-width:100%}
-.hhcs{flex-wrap:wrap;overflow-x:visible;overflow-y:visible;align-content:flex-start;min-width:0}
-.hhc{flex:0 1 auto;max-width:100%;height:auto;min-height:34px;white-space:normal;overflow-wrap:anywhere;text-align:left;padding-top:6px;padding-bottom:6px}
+.hhcs{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;min-width:0;max-width:100%;align-content:normal;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hhcs::-webkit-scrollbar{display:none}
+.hhcs{touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+/* Один чип — одна полная надпись: прокручивается весь ряд, а не текст внутри чипа. */
+.hhc{flex:0 0 auto;width:max-content;max-width:none;height:34px;min-height:34px;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;text-align:left;padding:0 11px 0 9px}
 .hhc small{flex:none}
 /* 0.9.15 #6: читаемый текст «Мелочей» в тёмном дневниковом оформлении */
 :root[data-skin="diary"][data-theme="dark"] .tpill:not(.add){color:var(--fg)!important;background:var(--glass)!important;border-color:var(--edge)!important}
@@ -1517,6 +1520,55 @@ body.hlmode #app{padding-bottom:300px}
 .naudio{display:grid;gap:5px;padding:8px 0;width:100%;min-width:0}
 .naudio audio{display:block;width:100%;max-width:440px}
 .narec{margin:10px 0;padding:10px 0;border-top:1px solid var(--hair)}
+
+/* Разбор замечаний с телефона: понятные действия дневника, статус микрофона. */
+.ntools .nlabelact{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:auto;min-width:88px;padding:0 9px;color:var(--fg);opacity:1;border:1px solid var(--edge);background:var(--glass);font-size:12px;font-weight:650}
+.ntools .nlabelact.danger{color:var(--hot)}
+.ntools{flex-wrap:wrap;column-gap:5px;row-gap:4px}
+.narec .recstatus{font-weight:600;line-height:1.35}
+
+/* 0.9.15 stage 07: спокойная справка в настройках */
+.magfaq details{padding:10px 0;border-bottom:1px solid var(--hair)}
+.magfaq details:first-child{padding-top:0}
+.magfaq details:last-child{padding-bottom:0;border-bottom:none}
+.magfaq summary{cursor:pointer;font-weight:700;line-height:1.45;min-height:28px}
+.magfaq details p{margin:8px 0 3px;color:var(--fg2);font-size:14px}
+/* Аудио: статус может занимать две строки, не выталкивая кнопки за край */
+.narec .row{flex-wrap:wrap;min-width:0}
+.narec #naudtime{display:block;min-width:0;max-width:100%;font-weight:650;line-height:1.4}
+/* 0.9.15 этап 09: короткая раскрывающаяся справка в поле магнита. */
+.sheet.qmin .maghelp09{margin:8px 4px 1px;padding:7px 9px;border-radius:12px;border:1px solid var(--hair);background:var(--glass)}
+.sheet.qmin .maghelp09 summary{cursor:pointer;font-size:13px;line-height:1.35;min-height:22px;color:var(--fg2)}
+.sheet.qmin .maghelp09 code{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+
+/* 0.9.15 этап 13 — планшеты в альбомном положении / широкие экраны.
+   Телефонный интерфейс (<900px) не затрагиваем. Карточки целей и привычек
+   занимают свободное место, окна остаются удобной читаемой ширины. */
+@media (min-width:900px){
+  #app{max-width:960px;padding-left:36px;padding-right:36px}
+  .sheet:not(.night):not(.roomsheet){max-width:700px}
+  .wallet:has(.gfront):has(.band){display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:12px;align-items:start}
+  .wallet:has(.gfront):has(.band) .band{margin:0;border-radius:18px;padding:12px 16px;min-height:72px;height:auto;align-self:start}
+  .wallet:has(.gfront):has(.band) .gfront{grid-column:2;grid-row:1 / span 3;min-height:310px;height:100%}
+  .hgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hgrid .hcard.wide{grid-column:auto}
+  .jgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (min-width:900px) and (max-height:650px){
+  .sheet:not(.roomsheet){max-height:92dvh;overflow-y:auto}
+  .wallet:has(.gfront):has(.band) .gfront{min-height:270px}
+}
+
+/* 0.9.15 этап 16 — планшет: удобный размер недельных клеток для пальца.
+   Телефонную сетку и все режимы месяца/года не меняем. */
+@media (min-width:900px){
+  .tlist .trow:not(.add){grid-template-columns:minmax(0,1fr) repeat(7,44px);column-gap:8px}
+  .tlist .trow .tc{width:44px;height:44px;border-radius:14px;touch-action:manipulation}
+  .tlist .trow .tnm[data-id]{min-height:44px;justify-content:center}
+  .tlist .trow .tdh{min-width:44px}
+}
+/* Длинные записи и адреса без пробелов не должны расширять дневник. */
+.notes .ntx,.notes .nbody{min-width:0;overflow-wrap:anywhere;word-break:normal}
 </style>
 <div id="app"></div>
 <div class="tabs" id="tabs" hidden><nav aria-label="Разделы"></nav></div>
@@ -1891,7 +1943,7 @@ function vToday(){
   o+=`<form class="qadd" data-f="qadd"><label for="qadd" class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Новое дело</label><input id="qadd" class="field" placeholder="Добавить дело…" autocomplete="off" enterkeyhint="done">${micBtn("qadd")}<button type="submit" class="btn sm" aria-label="Добавить">+</button></form>`;
   const later=D.tasks.filter(t=>!t.d&&!t.done);
   if(later.length)o+=`<div class="sec"><h2>Потом</h2><button type="button" class="lnk" data-a="later" style="padding:0">${UI.openList?"свернуть":"показать "+later.length}</button></div>${UI.openList?`<div class="card" style="padding:6px 14px"><div class="tasks">${later.map(taskRow).join("")}</div></div>`:""}`;
-  if(D.habits.length){o+=`<div class="sec"><h2>Привычки</h2><span class="c">тап — сделал, ещё — минимум</span></div><div class="habs">${D.habits.map(h=>{const v=hm(h,k),y=hm(h,addDays(k,-1));return`<button type="button" class="hab d${v}" data-a="hmark" data-h="${h.id}" data-d="${k}"><span class="hring"></span><span>${esc(h.name)}</span><span class="st">${v===1?"сделано":v===2?"минимум":!y&&h.start&&h.start<k?"не пропусти":"·"}</span></button>`}).join("")}</div>`}
+  if(D.habits.length){o+=`<div class="sec"><h2>Привычки</h2><span class="c">тап — сделал, ещё — минимум</span></div><div class="habs">${D.habits.map(h=>{const v=hm(h,k),y=hm(h,addDays(k,-1));return`<button type="button" class="hab d${v}" data-a="hmark" data-h="${h.id}" data-d="${k}"><span class="hring"></span><span>${esc(h.name)}</span><span class="st">${v===1?"сделано":v===2?"минимум":!y&&h.start&&h.start<k?"можно вернуться":"·"}</span></button>`}).join("")}</div>`}
   const ms=monthStats();
   if(ms.inc>0)o+=`<button type="button" class="card money-mini tap" data-a="tab" data-t="money" style="text-align:left">${BADGE("wallet")}<div class="grow"><div class="small mut">Можно сегодня</div><div class="big-num" style="font-size:24px;color:${ms.today<0?"var(--hot)":"var(--fg)"}">${rub(ms.today)}</div></div><span class="mut" aria-hidden="true">›</span></button>`;
   if(!dy.closed)o+=`<button type="button" class="btn w ${h>=17?"":"ghost"}" data-a="evening" style="margin-top:6px">${IC("moon",18)} Закрыть день · 1 минута</button>`;
@@ -1906,7 +1958,7 @@ function taskRow(t){const g=t.goal&&goal(t.goal),sg=!t.goal&&t.sug&&goal(t.sug);
 function magnitik(){const k=TODAY(),y=addDays(k,-1),dy=day(k);if(D.hint[k]==="x")return"";
   const box=(ico,txt,btn)=>`<div class="hint"><div class="grow"><div class="k12" style="color:var(--vio);margin-bottom:4px">Магнитик</div><p>${txt}</p><div class="acts">${btn||""}<button type="button" class="chip" data-a="hintx">Понятно</button></div></div></div>`;
   const miss=D.habits.find(h=>h.start&&h.start<y&&!hm(h,y)&&hm(h,addDays(y,-1))&&!hm(h,k));
-  if(miss)return box(miss.ico,`Вчера «${esc(miss.name)}» пропущен — не страшно. Главное не пропускать дважды. Минимум на сегодня: ${esc(miss.min||"совсем чуть-чуть")}.`,`<button type="button" class="chip on" data-a="hmark" data-h="${miss.id}" data-d="${k}" data-v="2">Отметить минимум</button>`);
+  if(miss)return box(miss.ico,`Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума: ${esc(miss.min||"совсем чуть-чуть")}.`,`<button type="button" class="chip on" data-a="hmark" data-h="${miss.id}" data-d="${k}" data-v="2">Отметить минимум</button>`);
   const mv=D.tasks.find(t=>t.d===k&&!t.done&&t.moves>=3);
   if(mv)return box("think",`«${esc(mv.t)}» переносится уже ${mv.moves}-й раз. Может, разбить на шаг поменьше — или отпустить?`,`<button type="button" class="chip" data-a="tedit" data-id="${mv.id}">Разбить</button><button type="button" class="chip" data-a="tlater" data-id="${mv.id}">В «Потом»</button>`);
   const ns=work().find(g=>!g.next);
@@ -2109,17 +2161,17 @@ function vTracker(){const k=TODAY(),W=addDays(monday(k),UI.wkOff*7),E=addDays(W,
     D.habits.forEach(h=>{o+=`<button type="button" class="hn" data-a="hab" data-id="${h.id}"><span>${esc(h.name)}</span></button>`;
       for(let i=0;i<7;i++){const d=addDays(W,i),v=hm(h,d),fut=d>k,pre=h.start&&d<h.start;const nudge=d===k&&!v&&!hm(h,addDays(k,-1))&&h.start&&h.start<addDays(k,-1);
         o+=`<button type="button" class="cell d${v}${!v&&!fut&&d<k&&!pre?" miss":""}${fut?" fut":""}${d===k?" now":""}${nudge?" nudge":""}" data-a="hmark" data-h="${h.id}" data-d="${d}" ${fut?"disabled":""} aria-label="${esc(h.name)} ${dshort(d)}"></button>`}});
-    o+=`</div><div class="row small mut" style="gap:14px;margin-top:12px;flex-wrap:wrap"><span class="row" style="gap:6px"><i class="cell d1" style="width:14px;height:14px;border-radius:5px"></i>сделал</span><span class="row" style="gap:6px"><i class="cell d2" style="width:14px;height:14px;border-radius:5px"></i>минимум</span><span class="row" style="gap:6px"><i class="cell nudge" style="width:14px;height:14px;border-radius:5px"></i>не пропусти дважды</span></div>`}
+    o+=`</div><div class="row small mut" style="gap:14px;margin-top:12px;flex-wrap:wrap"><span class="row" style="gap:6px"><i class="cell d1" style="width:14px;height:14px;border-radius:5px"></i>сделал</span><span class="row" style="gap:6px"><i class="cell d2" style="width:14px;height:14px;border-radius:5px"></i>минимум</span><span class="row" style="gap:6px"><i class="cell nudge" style="width:14px;height:14px;border-radius:5px"></i>без отметки</span></div>`}
   o+=`</div>`;
   if(D.habits.length){o+=`<div class="stack">`+D.habits.map(h=>{const s=habStats(h);return`<button type="button" class="card row tap" data-a="hab" data-id="${h.id}" style="text-align:left"><div class="grow"><div class="t17">${esc(h.name)}</div><div class="small mut">${h.cue?esc(h.cue)+" · ":""}день ${s.days} из ~66${s.streak>1?" · подряд "+s.streak:""}</div></div><span class="mut">›</span></button>`}).join("")+`</div>`;
-    o+=`<p class="small mut" style="padding:12px 6px;line-height:1.4">Автоматизм складывается в среднем за ~66 дней, у всех по-разному. Один пропуск ничего не ломает — важно не пропускать дважды.</p>`}
+    o+=`<p class="small mut" style="padding:12px 6px;line-height:1.4">66 дней — примерный ориентир, а не срок. Если пропустил день, ничего страшного: продолжай в своём темпе.</p>`}
   return o}
 function sheetHabit(id){const h=D.habits.find(x=>x.id===id);if(!h)return;const k=TODAY(),s=habStats(h);const d0=fromIso(k),M=d0.getMonth(),Y=d0.getFullYear();const UIm={off:0};
   const cal=off=>{const f=new Date(Y,M+off,1),last=new Date(Y,M+off+1,0).getDate(),lead=(f.getDay()+6)%7;let c=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><button type="button" class="ib" data-a="hcal" data-id="${h.id}" data-v="${off-1}" aria-label="Прошлый месяц">‹</button><b>${MONN[f.getMonth()]} ${f.getFullYear()}</b><button type="button" class="ib" data-a="hcal" data-id="${h.id}" data-v="${off+1}" ${off>=0?"disabled":""} aria-label="Следующий месяц">›</button></div><div class="cal">${["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(x=>`<div class="h">${x}</div>`).join("")}`;
     for(let i=0;i<lead;i++)c+=`<div></div>`;for(let d=1;d<=last;d++){const kk=iso(new Date(f.getFullYear(),f.getMonth(),d)),v=hm(h,kk),fut=kk>k,pre=h.start&&kk<h.start;c+=`<div class="d d${v}${!v&&!fut&&!pre&&kk<k?" miss":""}${fut?" fut":""}${kk===k?" now":""}">${d}</div>`}return c+`</div>`};
   window.__hcal=(off)=>{$("#hcalbox").innerHTML=cal(off)};
   openSheet(`<div class="row"><div class="grow"><h3>${esc(h.name)}</h3><div class="small mut">с ${dshort(s.start)}</div></div></div>
-  <div class="row" style="gap:8px;margin-top:12px">${[[s.days,"день из ~66"],[s.streak,"подряд"],[s.twice,"раз два подряд"]].map(x=>`<div class="card grow" style="padding:12px;text-align:center"><div class="t21">${x[0]}</div><div class="small mut">${x[1]}</div></div>`).join("")}</div>
+  <div class="row" style="gap:8px;margin-top:12px">${[[s.days,"день из ~66"],[s.streak,"подряд"],[s.twice,"повторных пропусков"]].map(x=>`<div class="card grow" style="padding:12px;text-align:center"><div class="t21">${x[0]}</div><div class="small mut">${x[1]}</div></div>`).join("")}</div>
   <div class="card" style="margin-top:12px" id="hcalbox">${cal(0)}</div>
   <label class="lb" for="hc">Сигнал · после чего</label><input id="hc" class="field" value="${esc(h.cue||"")}" placeholder="После того как налил кофе">
   <label class="lb" for="hmn">Минимум · хотя бы</label><input id="hmn" class="field" value="${esc(h.min||"")}" placeholder="Хотя бы 5 карточек">
@@ -2136,7 +2188,7 @@ function sheetHabAdd(){const st={ico:"sprout",goal:null,auto:true};
   setTimeout(()=>{const i=$("#ha");if(i){i.focus();i.addEventListener("input",()=>{if(st.auto){st.ico=guessHab(i.value);document.querySelectorAll("#hico button").forEach(b=>b.classList.toggle("on",b.dataset.v===st.ico))}})}},300)}
 function markHabit(hid,d,force){const h=D.habits.find(x=>x.id===hid);if(!h)return;h.m=h.m||{};const v=hm(h,d);const nv=force!=null?force:(v+1)%3;if(nv)h.m[d]=nv;else delete h.m[d];if(!h.start||d<h.start)h.start=d;
   if(nv===1||(force&&nv))snd("click");else snd("tick");
-  if(nv&&d===TODAY()){const back=!hm(h,addDays(d,-1))&&h.start<addDays(d,-1);const n=award("h:"+h.id+":"+d,back?4:2,back?"вернулся к привычке":"привычка");if(back)sparkToast(n,"не пропустил дважды")}
+  if(nv&&d===TODAY()){const back=!hm(h,addDays(d,-1))&&h.start<addDays(d,-1);const n=award("h:"+h.id+":"+d,back?4:2,back?"вернулся к привычке":"привычка");if(back)sparkToast(n,"вернулся к привычке")}
   save();render()}
 
 /* ---------- MONEY ---------- */
@@ -2364,7 +2416,11 @@ const A={
  ijar:e=>{const id=e.dataset.id,a=SH.st.jars;const i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);e.classList.toggle("on");SH.upd()},
  isave:e=>{const a=num("ia");if(!a)return $("#ia").focus();const inc={id:"i"+uid(),d:TODAY(),amt:a,t:$("#it").value.trim()||"Доход",ts:Date.now()};D.money.inc.push(inc);
    if(e.dataset.self==="1"){const self=Math.round(a*D.money.r[2]/100);const js=SH.st.jars.map(id=>D.money.jars.find(j=>j.id===id)).filter(Boolean);
-     if(js.length){const part=Math.round(self/js.length);js.forEach(j=>{j.dep=j.dep||[];j.dep.push({d:TODAY(),amt:part,t:"сначала себе"});const g=j.goal&&goal(j.goal);if(g){g.steps=g.steps||[];g.steps.push({t:"Отложил "+rub(part),d:TODAY()});g.last=TODAY()}})}
+     if(js.length){/* Распределяем целые рубли без потери/создания денег при округлении. */
+       const base=Math.floor(self/js.length),remainder=self%js.length;
+       js.forEach((j,i)=>{const part=base+(i<remainder?1:0);if(part<=0)return;
+         j.dep=j.dep||[];j.dep.push({d:TODAY(),amt:part,t:"сначала себе"});
+         const g=j.goal&&goal(j.goal);if(g){g.steps=g.steps||[];g.steps.push({t:"Отложил "+rub(part),d:TODAY()});g.last=TODAY()}})}
      else{let j=D.money.jars.find(x=>x.name==="Себе");if(!j){j={id:"j"+uid(),name:"Себе",ico:"pig",target:0,goal:null,dep:[]};D.money.jars.push(j)}j.dep.push({d:TODAY(),amt:self,t:"сначала себе"})}
      const n=award("self:"+inc.id,4,"сначала себе");save();closeSheet();snd("chord");sparkToast(n,"сначала себе")}else{save();closeSheet()}render()},
  jar:e=>sheetJar(e.dataset.id||null),
@@ -2526,14 +2582,14 @@ function vTracker(){const k=TODAY(),mode=UI.tmode||"week";
   return o+(mode==="week"?trWeek():trMonth())}
 function trWeek(){const k=TODAY(),y=addDays(k,-1),W=monday(k);let o="";
   const miss=D.habits.find(h=>h.start&&h.start<y&&!hm(h,y)&&!hm(h,k));
-  if(miss&&D.hint[k]!=="x")o+=`<div class="mhint">${AVA()}<p>Вчера пропуск в «${esc(miss.name)}» — не страшно. Главное не два подряд. Минимум сегодня?</p></div>`;
+  if(miss&&D.hint[k]!=="x")o+=`<div class="mhint">${AVA()}<p>Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума.</p></div>`;
   o+=`<div class="hgrid">`;
   D.habits.forEach((h,i)=>{const s=habStats(h),v=hm(h,k),wide=i===D.habits.length-1&&D.habits.length%2===1;const badge=s.streak>=7?s.streak+" подряд":"день "+s.days;const yMiss=!hm(h,y)&&h.start&&h.start<y;
     const dots=[0,1,2,3,4,5,6].map(j=>{const d=addDays(W,j),x=hm(h,d),fut=d>k,pre=h.start&&d<h.start;return`<div class="dc"><span class="dl${d===k?" now":""}">${WD[fromIso(d).getDay()]}<br>${fromIso(d).getDate()}</span><i class="dt ${fut?"fut":x===1?"d1":x===2?"d2":d===k?"now":pre?"fut":"miss"}"></i></div>`}).join("");
     if(wide)o+=`<div class="hcard wide"><button type="button" class="hhead" data-a="hab" data-id="${h.id}">${HG(h.ico,26)}<b class="grow">${esc(h.name)}</b><span class="hb">день ${s.days} из ~66</span></button><div class="prog thin"><i style="width:${Math.min(100,s.days/66*100)}%;background:${HABC(h.ico)}"></i></div><div class="dots">${dots}</div><button type="button" class="hbtn${v?" ok":""}" data-a="hmark" data-h="${h.id}" data-d="${k}" data-v="${v?0:yMiss?2:1}">${v?"✓ сегодня":yMiss?"Сделал минимум":"Сделал"}</button></div>`;
     else o+=`<div class="hcard"><button type="button" class="hhead" data-a="hab" data-id="${h.id}">${HG(h.ico,26)}<span class="grow"></span><span class="hb">${badge}</span></button><button type="button" class="hname" data-a="hab" data-id="${h.id}"><b>${esc(h.name)}</b><span>${esc([h.cue,h.min].filter(Boolean).join(" · ")||"сигнал не задан")}</span></button><div class="dots">${dots}</div><button type="button" class="hbtn${v?" ok":""}" data-a="hmark" data-h="${h.id}" data-d="${k}" data-v="${v?0:yMiss?2:1}">${v?"✓ сегодня":yMiss?"Сделал минимум":"Сделал"}</button></div>`});
   o+=`<button type="button" class="hcard add" data-a="habadd">${IC("plus",22)}<span>привычка</span></button></div>`;
-  o+=`<div class="legend"><span><i class="dt d1"></i>сделал</span><span><i class="dt d2"></i>минимум</span><span><i class="dt miss"></i>один пропуск — ок</span></div>`;
+  o+=`<div class="legend"><span><i class="dt d1"></i>сделано</span><span><i class="dt d2"></i>минимум</span><span><i class="dt miss"></i>без отметки</span></div>`;
   return o}
 function missInsight(h,from,to){const c=[0,0,0,0,0,0,0],days=[];for(let d=from;d<to;d=addDays(d,1)){if(h.start&&d<h.start)continue;if(!sched(h,d))continue;if(!hm(h,d)){c[(fromIso(d).getDay()+6)%7]++;days.push(d)}}
   const tot=days.length,mx=Math.max(...c),wd=c.indexOf(mx);return{c,tot,wd,days:days.filter(d=>(fromIso(d).getDay()+6)%7===wd),strong:tot>=2&&mx/tot>=.6}}
@@ -2565,7 +2621,7 @@ function sheetHabit(id){const h=D.habits.find(x=>x.id===id);if(!h)return;const k
   <div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><b>День ${s.days} из ~66</b><span class="small mut">до «делаю на автомате»</span></div>
    <svg viewBox="0 0 340 130" width="100%" style="display:block;margin-top:6px" aria-hidden="true"><path d="M20 112 H320" stroke="var(--hair)"/><path d="${path}" fill="none" stroke="var(--accl)" stroke-width="2" stroke-dasharray="4 5"/><path d="${solid}" fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round"/><line x1="${X(66)}" y1="18" x2="${X(66)}" y2="112" stroke="var(--hair)" stroke-dasharray="3 4"/><circle cx="${X(td)}" cy="${Yv(td)}" r="6" fill="var(--sheet)" stroke="var(--acc)" stroke-width="2.5"/><text x="${X(td)+(td>60?-10:10)}" y="${Yv(td)+18}" font-size="11" font-weight="700" fill="var(--acc)" text-anchor="${td>60?"end":"start"}">ты здесь</text><text x="20" y="126" font-size="10" fill="var(--mut2)">старт</text><text x="${X(66)}" y="126" font-size="10" fill="var(--mut2)" text-anchor="middle">~66 дней</text></svg>
    <p class="small mut" style="margin:6px 0 0;line-height:1.4">Самый крутой подъём — первые недели. Потом легче: привычка держится сама.</p></div>
-  <div class="tiles3 light"><div class="tile"><b>${s.days}/${total}</b><span>дней сделано</span></div><div class="tile"><b>${best}</b><span>лучшая серия</span></div><div class="tile${s.twice===0?" good":""}"><b>${s.twice}</b><span>раз «два подряд»</span></div></div>
+  <div class="tiles3 light"><div class="tile"><b>${s.days}/${total}</b><span>дней сделано</span></div><div class="tile"><b>${best}</b><span>лучшая серия</span></div><div class="tile${s.twice===0?" good":""}"><b>${s.twice}</b><span>повторных пропусков</span></div></div>
   <div class="card" style="margin-top:12px"><b>Пропуски по дням недели</b><div class="wbars">${ins.c.map((n,i)=>`<div><i style="height:${Math.max(3,n/mx*46)}px;${ins.strong&&i===ins.wd?"background:var(--warm)":""}"></i><span${ins.strong&&i===ins.wd?' style="color:var(--spark);font-weight:700"':""}>${WDS[i]}</span></div>`).join("")}</div>
    ${ins.strong&&!h.insX?`<div class="mhint plain">${AVA()}<p>${ins.days.length===ins.tot?`Все ${ins.tot} ${plural(ins.tot,"пропуск","пропуска","пропусков")} — в ${WDN[ins.wd]}.`:`${ins.days.length} из ${ins.tot} пропусков — по ${WDP[ins.wd]}.`} Может, по таким дням утро другое? Можно поменять сигнал на этот день.</p></div><div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn sm" data-a="halt" data-id="${h.id}" data-wd="${ins.wd}">${(ins.wd===1?"Во ":"В ")+WDN[ins.wd]} — после обеда</button><button type="button" class="btn ghost sm" data-a="hkeep" data-id="${h.id}">Оставить</button></div>`:ins.tot?"":`<p class="small mut" style="margin:8px 0 0">Пропусков пока нет.</p>`}${h.alt?`<p class="small" style="margin:10px 0 0;color:var(--acc)">По ${WDP[h.alt.wd]}: ${esc(h.alt.cue)}</p>`:""}</div>
   <label class="lb" for="hc">Сигнал · после чего</label><input id="hc" class="field" value="${esc(h.cue||"")}" placeholder="после кофе">
@@ -2623,7 +2679,7 @@ function sheetJar(id){const j=id?D.money.jars.find(x=>x.id===id):null;const st={
 Object.assign(A,{
  front:(e,ev)=>{UI.front=e.dataset.id;snd("tick");render()},
  tmode:e=>{UI.tmode=e.dataset.v;render()},thab:e=>{UI.thab=e.dataset.v;render()},
- hhelp:()=>openSheet(`<h3>Как работает трекер</h3><div class="card" style="margin-top:10px;line-height:1.5;font-size:15px"><p style="margin:0 0 10px"><b>Сигнал → действие → минимум.</b> Привычка цепляется за то, что уже происходит каждый день: «после кофе», «после обеда».</p><p style="margin:0 0 10px"><b>Минимум спасает плохие дни.</b> Одна страница вместо двадцати — всё равно засчитывается.</p><p style="margin:0 0 10px"><b>Не пропускай дважды.</b> Один пропуск ничего не ломает. Два подряд — уже начало новой привычки «не делать».</p><p style="margin:0"><b>~66 дней</b> — в среднем столько нужно, чтобы действие стало автоматическим. У всех по-разному: от 18 до 254 дней.</p></div>`),
+ hhelp:()=>openSheet(`<h3>Как работает трекер</h3><div class="card" style="margin-top:10px;line-height:1.5;font-size:15px"><p style="margin:0 0 10px"><b>Сигнал → действие → минимум.</b> Привычка цепляется за то, что уже происходит каждый день: «после кофе», «после обеда».</p><p style="margin:0 0 10px"><b>Три нажатия на клетку.</b> Первое — сделано полностью, второе — минимум, третье — пусто. Минимум можно отметить даже за небольшой шаг.</p><p style="margin:0 0 10px"><b>Пропуск — не провал.</b> Если сегодня не получилось, просто вернись к привычке, когда будет удобно.</p><p style="margin:0"><b>Около 66 дней</b> — лишь ориентир. У каждого свой темп; спешить не нужно.</p></div>`),
  halt:e=>{const h=D.habits.find(x=>x.id===e.dataset.id);h.alt={wd:+e.dataset.wd,cue:"после обеда"};save();toast("Сигнал на этот день: после обеда");sheetHabit(h.id)},
  hkeep:e=>{const h=D.habits.find(x=>x.id===e.dataset.id);h.insX=true;save();sheetHabit(h.id)},
  tpick:e=>{SH.st.pick=+e.dataset.i;$("#e3").hidden=true;$("#e3").value="";pickOn(".nchip",e)},
@@ -2654,7 +2710,7 @@ function vTracker(){const k=TODAY(),mode=UI.tmode||"week";
 /* неделя — списком: строка на привычку, сколько бы их ни было */
 function trWeek(){const k=TODAY(),y=addDays(k,-1),W=addDays(monday(k),(UI.wkOff||0)*7);let o="";
   const miss=D.habits.find(h=>h.start&&h.start<y&&sched(h,y)&&sched(h,k)&&!hm(h,y)&&!hm(h,k));
-  if(miss&&!UI.wkOff)o+=`<div class="mhint">${AVA()}<p>Вчера пропуск в «${esc(miss.name)}» — не страшно. Главное не два подряд. Минимум сегодня: ${esc(miss.min||"совсем чуть-чуть")}.</p></div>`;
+  if(miss&&!UI.wkOff)o+=`<div class="mhint">${AVA()}<p>Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума: ${esc(miss.min||"совсем чуть-чуть")}.</p></div>`;
   o+=`<div class="card tlist"><div class="trow thead"><span class="tnm small mut" style="flex-direction:row;align-items:center;gap:4px"><button type="button" class="ib sm" data-a="wk" data-v="-1" aria-label="Прошлая неделя">‹</button><span style="white-space:nowrap">${UI.wkOff?dshort(W):"эта неделя"}</span>${UI.wkOff?`<button type="button" class="ib sm" data-a="wk" data-v="1" aria-label="Следующая неделя">›</button>`:""}</span>${[0,1,2,3,4,5,6].map(i=>{const d=addDays(W,i);return`<span class="tdh${d===k?" now":""}">${WD[fromIso(d).getDay()]}<b>${fromIso(d).getDate()}</b></span>`}).join("")}</div>`;
   D.habits.forEach(h=>{const s=habStats(h),c=hcol(h);
     o+=`<div class="trow"><button type="button" class="tnm" data-a="hab" data-id="${h.id}"><span class="row" style="gap:8px">${HG(h.ico,20)}<b>${esc(h.name)}</b></span><small>${h.days?"по "+h.days.map(i=>WDS[i].toLowerCase()).join(", ")+" · ":""}${s.streak>=3?s.streak+" подряд":(s.days?"день "+s.days+"/66":"новая")}</small></button>`;
@@ -2662,7 +2718,7 @@ function trWeek(){const k=TODAY(),y=addDays(k,-1),W=addDays(monday(k),(UI.wkOff|
       const dot=fut||pre?"":v===1?`<i style="background:${c}"></i>`:v===2?`<i style="box-shadow:inset 0 0 0 2px ${c}"></i>`:d<k&&sched(h,d)?`<i class="ms"></i>`:"";o+=`<button type="button" class="tc${fut?" fut":""}${!v&&!sched(h,d)?" off":""}${d===k?" now":""}${nudge?" nudge":""}" data-a="hmark" data-h="${h.id}" data-d="${d}" ${fut?"disabled":""} aria-label="${esc(h.name)}, ${dshort(d)}">${dot}</button>`}
     o+=`</div>`});
   o+=`<button type="button" class="trow add" data-a="habadd">${IC("plus",18)}<span>Привычка</span></button></div>`;
-  o+=`<div class="legend"><span><i class="dt" style="background:var(--acc)"></i>сделал</span><span><i class="dt" style="background:transparent;box-shadow:inset 0 0 0 2px var(--acc)"></i>минимум</span><span><i class="dt" style="background:transparent;box-shadow:inset 0 0 0 1.5px #B4BBB7"></i>пропуск — один не страшен</span></div><p class="small mut" style="margin:8px 6px 0">Тап по клетке: сделал → минимум → пусто. Тап по названию — карточка привычки.</p>`;
+  o+=`<div class="legend"><span><i class="dt" style="background:var(--acc)"></i>сделано</span><span><i class="dt" style="background:transparent;box-shadow:inset 0 0 0 2px var(--acc)"></i>минимум</span><span><i class="dt" style="background:transparent;box-shadow:inset 0 0 0 1.5px #B4BBB7"></i>без отметки</span></div><p class="small mut" style="margin:8px 6px 0">Тап по клетке: сделано → минимум → пусто. Тап по названию — карточка привычки.</p>`;
   return o}
 
 /* месяц: «Все» — клетка делится цветами привычек */
@@ -2694,7 +2750,7 @@ function trYear(){const k=TODAY(),Y=fromIso(k).getFullYear();const sel=UI.thab&&
   let o=filterChips(sel);let done=0,poss=0,best=0,cur=0,bestM=-1,bestMr=-1;const mr=[];
   for(let m=0;m<12;m++){let md=0,mp=0;const last=new Date(Y,m+1,0).getDate();for(let d=1;d<=last;d++){const kk=iso(new Date(Y,m,d));if(kk>k)break;let any=0,all=1,cnt=0;list.forEach(h=>{if(h.start&&kk<h.start)return;cnt++;mp++;poss++;if(hm(h,kk)){md++;done++;any=1}else all=0});if(cnt){if(H?any:all&&any){cur++;best=Math.max(best,cur)}else if(kk<k)cur=0}}
     mr.push(mp?md/mp:null);if(mp&&md/mp>bestMr){bestMr=md/mp;bestM=m}}
-  o+=`<div class="tiles3 light"><div class="tile"><b>${done}</b><span>${H?"дней сделано":"отметок за год"}</span></div><div class="tile"><b>${poss?Math.round(done/poss*100):0}%</b><span>от возможного</span></div><div class="tile"><b>${best}</b><span>${H?"лучшая серия":"дней подряд всё"}</span></div></div>`;
+  o+=`<div class="tiles3 light"><div class="tile"><b>${done}</b><span>${H?"дней отмечено":"отметок за год"}</span></div><div class="tile"><b>${poss?Math.round(done/poss*100):0}%</b><span>от возможного</span></div><div class="tile"><b>${best}</b><span>${H?"лучшая серия":"дней подряд всё"}</span></div></div>`;
   o+=`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin-bottom:10px"><b style="font-size:17px">${H?esc(H.name):"Все привычки"} · ${Y}</b>${bestM>=0?`<span class="small mut">лучший месяц — ${MONN[bestM].toLowerCase()}</span>`:""}</div><div class="year">`;
   for(let m=0;m<12;m++){const last=new Date(Y,m+1,0).getDate();o+=`<div class="ym"><span class="yl">${MONN[m].slice(0,3)}</span><span class="yd">`;
     for(let d=1;d<=31;d++){if(d>last){o+=`<i class="no"></i>`;continue}const kk=iso(new Date(Y,m,d));if(kk>k){o+=`<i class="fut"></i>`;continue}
@@ -2909,7 +2965,7 @@ function parseCmd(v,ctx){const T=norm(v).replace(/[?!.]+$/,"").trim();let m;
     if(/(можно|потрат|тратить|остал\S* денег|бюджет)/.test(T)){const ms=monthStats();return{kind:"ans",ic:"card",tone:"spend",title:ms.inc?"Можно сегодня ~"+rub(Math.max(0,ms.today)):"Доход ещё не записан",desc:ms.inc?"≈ "+rub(ms.perDay)+" в день · осталось "+ms.left+" "+plural(ms.left,"день","дня","дней")+" · не потратишь — перейдёт на завтра":"Запиши доход: «+50000 зарплата»."}}
     if(m=T.match(rx("(завтра|сегодня|послезавтра|в понедельник|во вторник|в среду|в четверг|в пятницу|в субботу|в воскресенье)"))){const d=parseDate(m[1])||TODAY();const L=D.tasks.filter(t=>t.d===d);return{kind:"ans",ic:"clock",tone:"task",title:(d===TODAY()?"Сегодня":whenLab(d).replace(/^./,c=>c.toUpperCase()))+": "+L.length+" "+plural(L.length,"дело","дела","дел"),desc:L.length?L.slice(0,6).map(t=>(t.done?"✓ ":"")+esc(t.t)+(t.time?" · "+t.time:"")).join("<br>"):"Пока пусто."}}
     const g=findGoalIn(T);if(g){const j=D.money.jars.find(x=>x.goal===g.id);const st=(g.steps||[]).length;return{kind:"ans",ic:"target",tone:"wish",title:esc(g.t),desc:(j?rub(jarSum(j))+(j.target?" из "+rub(j.target):"")+"<br>":"")+st+" "+plural(st,"шаг","шага","шагов")+(g.next?" · дальше: "+esc(g.next):" · следующий шаг не задан")}}
-    const h=habMatch(T);if(h){const s=habStats(h);return{kind:"ans",ic:"cal",tone:"task",title:esc(h.name),desc:"день "+s.days+" из ~66"+(s.streak>1?" · "+s.streak+" подряд":"")+" · «два подряд» пропущено "+s.twice+" "+plural(s.twice,"раз","раза","раз")}}
+    const h=habMatch(T);if(h){const s=habStats(h);return{kind:"ans",ic:"cal",tone:"task",title:esc(h.name),desc:"день "+s.days+" из ~66"+(s.streak>1?" · "+s.streak+" подряд":"")+" · повторных пропусков: "+s.twice+" "+plural(s.twice,"раз","раза","раз")}}
     return{kind:"ans",ic:"help",tone:"task",title:"Не нашёл ответа",desc:"Я умею отвечать: «сколько можно сегодня?», «что завтра?», «сколько до Байкала?», «как зарядка?», «сколько искр?»."}}
   /* --- перенос / отмена / важность --- */
   if(m=T.match(rx("^(перенеси|перенести|сдвинь|передвинь)\\s+(.+?)\\s+(на|в|во)\\s+(.+)$"))){const t=findTask(m[2]);const d=parseDate(m[3]+" "+m[4])||parseDate(m[4])||parseDate("в "+m[4]);if(t&&d)return{kind:"move",ic:"move",tone:"task",title:"Перенести: "+esc(t.t),desc:whenLab(t.d)+" → <b>"+whenLab(d)+"</b>",apply(){t.d=d;t.moves=(t.moves||0)+1;if(t.size==="big"&&D.tasks.some(o=>o!==t&&o.d===d&&o.size==="big"&&!o.done))t.size="mid";return"перенесено на "+whenLab(d)}};
@@ -3249,7 +3305,7 @@ const _km=kitMig;kitMig=function(){_km();D.kit.items=D.kit.items.filter(x=>!x.de
 const _demo3=demo;demo=function(){_demo3();kitMig();D.kit.items=[{id:"k1",type:"sprout",stage:1,fed:{water:2,light:1}},{id:"k2",type:"egg",stage:0,fed:{food:1}},{id:"k3",type:"kitten",stage:1,fed:{love:2}},{id:"k4",type:"candle",stage:2,fed:{}}];D.kit.mats={water:3,light:2,food:2,love:2,star:1};D.kit.order=null;save();render()};
 
 /* ===== тестовая версия: версия схемы, перенос в будущее приложение, отчёт об ошибках, защита данных ===== */
-const APP_VER="0.9.14 · тестовая",SCHEMA=2;
+const APP_VER="0.9.15 · тестовая",SCHEMA=2;
 /* миграции: каждая версия схемы доводит данные до следующей — так старые копии откроются и в будущем приложении */
 function migrate(o){if(!o)return o;const b=blank();for(const k in b)if(o[k]===undefined)o[k]=b[k];
   o.money=Object.assign({inc:[],sp:[],jars:[],r:[50,30,20]},o.money);o.money.pays=o.money.pays||[];o.money.learn=o.money.learn||{};
@@ -3272,8 +3328,8 @@ const _render7=render;render=function(){_render7();if(!D.started||UI.tab!=="toda
 /* восстановление и импорт проходят через миграции */
 const _rsgo=A.rsgo;A.rsgo=e=>{if(window.__rs)migrate(window.__rs);_rsgo(e);migrate(D);saveNow()};
 /* настройки: версия, перенос, отчёт */
-const _set5=sheetSettings;sheetSettings=function(){_set5();const el=document.createElement("div");
-  el.innerHTML=`<label class="lb">Перенос в приложение</label><div class="card"><p class="small" style="margin:0;line-height:1.45">Когда выйдет Магнит в магазине приложений, нажми «Сохранить копию файлом» и открой эту копию в приложении — перенесутся цели и желания с номерами, дела, привычки со всей историей, деньги и копилки, кухня и история дней.</p></div>
+const _set5=sheetSettings;sheetSettings=function(){_set5();const el=document.createElement("div");const cp=window.Capacitor,isApp=!!(cp&&cp.isNativePlatform&&cp.isNativePlatform());
+  el.innerHTML=`<label class="lb">${isApp?"Резервная копия":"Перенос в приложение"}</label><div class="card"><p class="small" style="margin:0;line-height:1.45">${isApp?"Сохрани копию данных файлом, прежде чем менять или удалять приложение. Для восстановления используй пункт «Восстановить из копии» в настройках. Проверь, что вместе с записями сохранились фото и аудио.":"Перед переходом в Android-приложение сохрани копию файлом, затем восстанови её в приложении через настройки. Копия включает цели, дела, привычки, дневник, деньги и другие данные. Проверь сохранность фотографий и аудио."}</p></div>
   <label class="lb">О версии</label><div class="card" style="padding:6px 16px"><div class="op"><span class="grow">Магнит</span><b>${APP_VER}</b></div><div class="op"><span class="grow">Формат данных</span><span class="mut">версия ${SCHEMA}</span></div><div class="op"><span class="grow">Ошибок записано</span><span class="mut">${(D.errs||[]).length}</span></div></div>
   <div class="stack" style="margin-top:8px"><button type="button" class="btn ghost w" data-a="report">Скопировать отчёт для разработчика</button><p class="small mut" style="margin:0;line-height:1.4">В отчёте только версия, устройство, количество записей и ошибки — без текстов твоих дел и целей.</p></div>`;
   $("#sheet").appendChild(el)};
@@ -3366,12 +3422,13 @@ D.habits.forEach((h,i)=>{if(!h.color)h.color=HPAL[i%HPAL.length]});
 /* ---------- привычки: дни, время, «когда» ---------- */
 const WDF=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
 function habDaysLab(h){return!h.days||!h.days.length||h.days.length===7?"каждый день":h.days.length===5&&[0,1,2,3,4].every(i=>h.days.includes(i))?"по будням":"по "+h.days.map(i=>WDS[i].toLowerCase()).join(", ")}
+function reminderHint15(){const cp=window.Capacitor;return cp&&cp.isNativePlatform&&cp.isNativePlatform()?"На телефоне напоминание может прийти, даже когда Магнит закрыт, если разрешены уведомления. На точность времени влияют настройки Android.":"Напоминание появится, пока Магнит открыт. В Android-приложении доступны системные уведомления при разрешении."}
 function whenBlock(h){const days=h&&h.days&&h.days.length?h.days:[0,1,2,3,4,5,6],mode=h&&h.time?"time":"after";
   return`<label class="lb">В какие дни</label><div class="wdays" id="hwd">${WDF.map((x,i)=>`<button type="button" class="${days.includes(i)?"on":""}" data-a="hwd" data-v="${i}" aria-pressed="${days.includes(i)}">${x}</button>`).join("")}</div>
   <div class="chips" style="margin-top:8px"><button type="button" class="chip sm" data-a="hwdset" data-v="all">каждый день</button><button type="button" class="chip sm" data-a="hwdset" data-v="work">по будням</button><button type="button" class="chip sm" data-a="hwdset" data-v="end">по выходным</button></div>
   <label class="lb">Когда делаешь</label><div class="seg sm" id="hwm"><button type="button" class="${mode==="after"?"on":""}" data-a="hwm" data-v="after">После привычного дела</button><button type="button" class="${mode==="time"?"on":""}" data-a="hwm" data-v="time">В своё время</button></div>
   <div id="hwa"${mode==="after"?"":" hidden"}><input id="hc" class="field" style="margin-top:8px" value="${esc(h&&!h.time?h.cue||"":"")}" placeholder="после утреннего кофе"><p class="small mut" style="margin:6px 4px 0;line-height:1.4">Это подсказка для тебя, телефон о ней не знает. Новое дело легче запомнить, если цеплять его к тому, что ты и так делаешь каждый день: налил кофе — открыл карточки.</p></div>
-  <div id="hwt"${mode==="time"?"":" hidden"}><input id="htm" class="field" type="time" style="margin-top:8px;max-width:160px" value="${h&&h.time?h.time:""}"><p class="small mut" style="margin:6px 4px 0;line-height:1.4">В это время придёт напоминание, если Магнит открыт.</p></div>`}
+  <div id="hwt"${mode==="time"?"":" hidden"}><input id="htm" class="field" type="time" style="margin-top:8px;max-width:160px" value="${h&&h.time?h.time:""}"><p class="small mut" style="margin:6px 4px 0;line-height:1.4">${reminderHint15()}</p></div>`}
 function readWhen(h){const on=[...document.querySelectorAll("#hwd button.on")].map(b=>+b.dataset.v).sort();h.days=on.length===7||!on.length?null:on;
   const tmode=$("#hwm .on")&&$("#hwm .on").dataset.v==="time";if(tmode){h.time=($("#htm").value||"").trim()||null;h.cue=""}else{h.time=null;h.cue=($("#hc").value||"").trim()}}
 sheetHabAdd=function(){const st={ico:"sprout",goal:null,auto:true};
@@ -3391,7 +3448,7 @@ const _hsave13=A.hsave;A.hsave=e=>{const h=D.habits.find(x=>x.id===e.dataset.id)
 
 /* ---------- тап по дню в «Все привычки» ---------- */
 function sheetDayHab(kk){const t=TODAY(),d=fromIso(kk),act=D.habits.filter(h=>!(h.start&&kk<h.start));
-  const lab=v=>v===1?"сделал":v===2?"минимум":"";
+  const lab=v=>v===1?"сделано":v===2?"минимум":"";
   openSheet(`<div class="k">${WDL[d.getDay()]}</div><h3 style="margin:0">${d.getDate()} ${MON[d.getMonth()]}</h3><p class="sub">${act.filter(h=>hm(h,kk)).length} из ${act.filter(h=>sched(h,kk)).length} привычек${kk<=t?" · тап по кружку меняет отметку":""}</p>
   <div class="card" style="padding:4px 14px">${D.habits.map(h=>{const v=hm(h,kk),c=hcol(h),on=sched(h,kk),pre=h.start&&kk<h.start;
     return`<div class="dhrow${!on&&!v?" off":""}"><i class="hdot" style="background:${c}"></i>${HG(h.ico,20)}<span class="grow"><b>${esc(h.name)}</b><small>${pre?"ещё не начата":!on&&!v?"не по графику":v?lab(v):kk<t?"пропуск":kk===t?"ещё не отмечена":"впереди"}</small></span>${kk<=t?`<button type="button" class="tc" data-a="dhmark" data-h="${h.id}" data-d="${kk}" aria-label="${esc(h.name)}: отметить">${v===1?`<i style="background:${c}"></i>`:v===2?`<i style="box-shadow:inset 0 0 0 2px ${c}"></i>`:""}</button>`:""}</div>`}).join("")}</div>`)}
@@ -3443,7 +3500,7 @@ const _impCheck13=impCheck;impCheck=function(){let o=null;try{o=JSON.parse(($("#
   $("#impres").innerHTML=`<div class="card" style="margin-top:12px"><div class="small" style="line-height:1.5">Это копия <b>нового</b> Магнита${o.at?" от "+dshort(iso(new Date(o.at))):""}: целей ${d.goals.length}, дел ${d.tasks.length}, привычек ${d.habits.length}, операций ${(d.money.inc||[]).length+(d.money.sp||[]).length}. Восстановлю её целиком.</div></div>`;
   const b=document.querySelector('#sheet [data-a="impcheck"]');if(b){b.textContent="Восстановить";b.dataset.a="rsgo"}};
 /* обучение: отдельный экран про кнопку-магнит + подсветка кнопки до первой записи */
-setTimeout(()=>{const s=INTRO[1];if(s){s.p="Одно главное дело, до пяти важных и сколько угодно мелочей. Полоска сверху подскажет, если дел больше, чем часов в дне.";const a=s.art;s.art=()=>a().replace(">3 важных<",">до 5 важных<").replace(">5 мелочей<",">мелочи<")}
+setTimeout(()=>{const s=INTRO[1];if(s){s.p="Одно главное дело, до пяти важных, а мелочей может быть сколько угодно. Полоска сверху покажет, если план перегружен. Тапни магнит, чтобы записать мысль; удерживай для голоса.";const a=s.art;s.art=()=>a().replace(">3 важных<",">до 5 важных<").replace(">5 мелочей<",">мелочи<")}
   const ex=[["завтра в 10 позвонить маме","Дело","завтра · 10:00","clock"],["350 кофе","Трата","350 ₽","card"],["бегаю по вторникам","Привычка","по вт · в трекер","cal"],["мысль: утром работается лучше","Дневник","сегодня","note"]];
   INTRO.splice(2,0,{h:"Кнопка-магнит — записать что угодно",p:"Пиши как думаешь, можно несколько через запятую. Магнит сам поймёт, что это: дело, привычка, трата или мысль — и перед сохранением покажет, как понял. Не так — поправишь одним тапом. Удержи кнопку, чтобы надиктовать голосом.",
    art:()=>`<div class="iart plain"><div class="qdemo">${ex.map(e=>`<div class="qd"><span class="qq">«${e[0]}»</span><span class="qa"><span class="qic">${IC(e[3],14)}</span><b>${e[1]}</b><small>${e[2]}</small></span></div>`).join("")}</div><div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="hubmini">${IC("magnet",20)}</span><span class="small mut">тап — написать · удержать — сказать</span></div></div>`})},0);
@@ -3506,23 +3563,41 @@ rollover=function(){const k=TODAY(),wk=addDays(k,-7);let moved=0,later=0;
 /* ---------- уведомления телефона в приложении Android ---------- */
 const LN=()=>{const CP=window.Capacitor;return CP&&CP.isNativePlatform&&CP.isNativePlatform()&&CP.Plugins&&CP.Plugins.LocalNotifications};
 let lnT=null;
+/* Android: dedicated private lock-screen channel. Channel ID is versioned because
+   Android may keep a previously created channel's settings on app upgrades. */
+const MAGNIT_LN_CHANNEL="magnit_private_v1";
+let magnitLnChannelReady=false;
+async function magnitLnChannel(P){
+  if(magnitLnChannelReady)return true;
+  if(!P.createChannel)return false; // Fail closed: do not post via an uncontrolled default channel.
+  await P.createChannel({id:MAGNIT_LN_CHANNEL,name:"Напоминания Магнита",
+    description:"Напоминания без личных подробностей на экране блокировки",
+    importance:3,visibility:0}); // Android VISIBILITY_PRIVATE
+  magnitLnChannelReady=true;
+  return true;
+}
 function lnPlan(){const R=D.set.rem||{},k=TODAY(),now=Date.now(),L=[];const at=(d,hm)=>{const [h,m]=hm.split(":").map(Number);const x=fromIso(d);x.setHours(h,m||0,0,0);return x};
   const add=(when,title,body)=>{if(when.getTime()>now+30e3)L.push({when,title,body})};
   for(let i=0;i<3;i++){const d=addDays(k,i),dy=D.days[d]||{};
     if(R.mOn!==false&&!dy.morning&&!dy.closed)add(at(d,R.morning||"08:30"),"Магнит · утро","Минута: выбери главное на день");
     if(R.eOn!==false&&!dy.closed)add(at(d,R.evening||"21:30"),"Закроем день?","Минута: каким был день и три хороших момента");
     if(R.hOn!==false&&D.habits.some(h=>sched(h,d)&&!hm(h,d)))add(at(d,R.habits||"20:00"),"Привычки","Отметь, что получилось сегодня — хватит и минимума");
-    if(R.tOn!==false)D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time)return;const w=at(d,t.time);w.setMinutes(w.getMinutes()-(R.lead||10));add(w,"Скоро: "+t.t,"В "+t.time)});
+    if(R.tOn!==false)D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time)return;const w=at(d,t.time);if(!t.magRemind)w.setMinutes(w.getMinutes()-(R.lead||10));add(w,t.magRemind?"Напоминание: "+t.t:"Скоро: "+t.t,"В "+t.time)});
     D.habits.forEach(h=>{if(!h.time||!sched(h,d)||hm(h,d))return;add(at(d,h.time),h.name,h.min?"Хотя бы "+h.min.replace(/^хотя бы\s*/i,""):"Время для привычки")})}
+  /* Явные напоминания планируем и дальше трёхдневного окна,
+     а не полагаемся на повторное открытие приложения. */
+  if(R.tOn!==false)D.tasks.forEach(t=>{if(!t.magRemind||t.done||!t.d||!t.time||t.d<=addDays(k,2))return;
+    add(at(t.d,t.time),"Напоминание: "+t.t,"В "+t.time)});
   return L.sort((a,b)=>a.when-b.when).slice(0,60)}
 async function lnSync(){const P=LN();if(!P||!D.started||D.demo)return;try{
   let st=await P.checkPermissions();if(st.display!=="granted"&&!D.hint.lnAsk){D.hint.lnAsk=1;save();st=await P.requestPermissions()}if(st.display!=="granted")return;
+  if(!await magnitLnChannel(P))return;
   const pend=await P.getPending();if(pend&&pend.notifications&&pend.notifications.length)await P.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
-  const L=lnPlan();if(L.length)await P.schedule({notifications:L.map((x,i)=>({id:i+1,title:x.title,body:x.body,schedule:{at:x.when,allowWhileIdle:true}}))})}catch(e){logErr&&logErr("ln: "+(e&&e.message||e))}}
+  const L=lnPlan();if(L.length)await P.schedule({notifications:L.map((x,i)=>({id:i+1,title:x.title,body:x.body,channelId:MAGNIT_LN_CHANNEL,schedule:{at:x.when,allowWhileIdle:true}}))})}catch(e){logErr&&logErr("ln: "+(e&&e.message||e))}}
 const _save13=save;save=function(){_save13.apply(this,arguments);if(LN()){clearTimeout(lnT);lnT=setTimeout(lnSync,2500)}};
 setTimeout(()=>{if(LN())lnSync()},3000);
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&LN())lnSync()});
-const _set13=sheetSettings;sheetSettings=function(){_set13();if(!LN())return;document.querySelectorAll("#sheet p, #sheet .small").forEach(p=>{if(/Напоминания приходят, пока Магнит открыт/.test(p.textContent))p.textContent="Напоминания приходят обычными уведомлениями телефона, даже когда Магнит закрыт."})};
+const _set13=sheetSettings;sheetSettings=function(){_set13();if(!LN())return;document.querySelectorAll("#sheet p, #sheet .small").forEach(p=>{if(/Напоминания приходят, пока Магнит открыт/.test(p.textContent))p.textContent="На Android уведомления могут приходить, когда Магнит закрыт, если они разрешены. На доставку влияют настройки телефона."})};
 
 /* ===== 0.9.4: цели в «Сегодня», честные деньги и разбор, мягкий лимит, пример отдельно, тихие уведомления ===== */
 
@@ -4313,7 +4388,7 @@ const _render=render;render=function(){_render();if(!D.started)return;
 /* ---------- знакомство: три экрана ---------- */
 const INTRO=[
  {h:"Цели — магниты",p:"Записываешь, чего хочется. До трёх целей берёшь в работу — и обычные дни понемногу к ним притягиваются.",art:()=>`<div class="iart">${SCN("mount")}<div class="gshade"></div><span class="gday" style="position:absolute;left:16px;top:14px">${UMAG(14,"#fff")}ДЕНЬ 1</span><b style="position:absolute;left:16px;bottom:14px;color:#fff;font-size:22px">Поездка на Байкал</b></div>`},
- {h:"День 1-3-5",p:"Одно главное дело, три важных и пять мелочей. Всё, что больше, — уже перегруз. Записать что угодно можно кнопкой-магнитом внизу, удержание — голосом.",art:()=>`<div class="iart plain"><div class="hero" style="margin:0;padding:16px"><span class="hk">ГЛАВНОЕ</span><div class="ht" style="font-size:18px;margin-top:8px">Одно дело, после которого день удался</div></div><div class="pills" style="margin-top:10px"><span class="tpill">3 важных</span><span class="tpill">5 мелочей</span><span class="hubmini">${UMAG(20)}</span></div></div>`},
+ {h:"День 1-3-5",p:"Одно главное дело, до пяти важных. Мелочей может быть сколько угодно — они не обязаны становиться главным. Тап по магниту внизу — записать мысль, удержание — надиктовать.",art:()=>`<div class="iart plain"><div class="hero" style="margin:0;padding:16px"><span class="hk">ГЛАВНОЕ</span><div class="ht" style="font-size:18px;margin-top:8px">Одно дело, после которого день удался</div></div><div class="pills" style="margin-top:10px"><span class="tpill">до 5 важных</span><span class="tpill">мелочи без лимита</span><span class="hubmini">${UMAG(20)}</span></div></div>`},
  {h:"Минута утром, минута вечером",p:"Утром выбираешь главное. Вечером отмечаешь, каким был день, и три хороших момента. По понедельникам — куда тебя притянула неделя.",art:()=>`<div class="iart plain"><div class="row" style="gap:10px"><div class="tile grow"><b>${sunI()}</b><span>утро · главное</span></div><div class="tile grow" style="background:#1E2A36;color:#F2F5F3"><b>${IC("moon",22)}</b><span style="color:#A9B4C0">вечер · итоги</span></div></div><p class="small mut" style="margin:12px 2px 0;line-height:1.4">В каждом разделе сначала бледные примеры — тапни любой, чтобы записать своё.</p></div>`}];
 function sheetIntro(i){i=i||0;const s=INTRO[i];
   openSheet(`<div class="steps">${INTRO.map((_,j)=>`<i class="${j<=i?"on":""}"></i>`).join("")}</div>${s.art()}<h3 style="margin-top:16px">${s.h}</h3><p class="sub" style="font-size:15px">${s.p}</p>
@@ -4920,18 +4995,87 @@ const GPLAN=[
  ["skill",/(научиться|играть на|гитар|пианино|укулеле|рисова|курс|освоить|программир|стрелять|лук[а]?\b|керамик|вязать|шить|готовить|танц|петь|вокал|фотограф)/i,["Посмотреть, с чего начинают — 15 минут","Найти урок, курс или наставника","Подготовить всё нужное для занятий","Первое занятие — 20 минут","Назначить два-три дня в неделю","Через месяц показать результат кому-нибудь"]],
  ["work",/(работ|карьер|повышени|резюме|собеседован|своё дело|свое дело|бизнес|клиент|зарплат|професси|уволит)/i,["Записать, чего хочу от «{t}» — три пункта","Поговорить с человеком, который уже прошёл этот путь","Обновить резюме или описание того, что умею","Выбрать один шаг на эту неделю","Отправить первую заявку или предложение","Через месяц подвести итог"]],
  ["health",/(здоров|сон\b|высып|спать|врач|зуб|анализ|тревог|стресс|медитац|сладк|сахар|курить|алкогол|вода|питани)/i,["Честно записать, что мешает сейчас — три пункта","Выбрать одну маленькую привычку для «{t}»","Убрать один соблазн из окружения","Записаться к специалисту, если нужно","Неделю отмечать привычку в трекере","Через две недели посмотреть, что изменилось"]]];
+/* 0.9.15 #13: специальные сценарии важнее широких категорий.
+   Это честные локальные подсказки, не ИИ и не обещание персонального плана для любой цели. */
+const GPLAN_SPEC=[
+ ["driving",/(права\b|водительск|научиться водить|водить машину|автошкол)/i,["Уточнить требования к обучению в автошколе","Сравнить две автошколы и расписание занятий","Определить бюджет на обучение и экзамены","Записаться на вводное занятие","Запланировать занятия по теории на этой неделе","После первого занятия записать, что нужно потренировать"]],
+ ["program",/(приложени|сайт\b|свой сервис|написать код|программирован|сделать игру)/i,["Записать, кому будет полезен первый вариант проекта","Выбрать три функции, без которых не обойтись","Набросать один главный экран на бумаге","Собрать маленький работающий прототип","Дать прототип одному человеку и записать замечания","Исправить одну самую заметную проблему по отзыву"]],
+ ["clean",/(расхлам|разобрать шкаф|разобрать вещи|убраться|генеральн|выкинуть лишн|порядок в шкаф)/i,["Выбрать конкретную полку или ящик","Приготовить три пакета: оставить, отдать, выбросить","Разобрать выбранную зону за 15 минут","Вынести или отложить ненужное на отдачу","Рассортировать оставшееся так, чтобы было удобно доставать","Через неделю проверить, сохраняется ли порядок"]],
+ ["exam",/(экзамен|огэ|егэ|подготовиться к тест|защитить диплом|сдать зач[её]т)/i,["Выписать темы и дату экзамена","Отметить две темы, которые пока сложнее всего","Найти актуальный пробный вариант или список вопросов","Решить первые пять заданий без подсказок","Разобрать ошибки и повторить слабую тему","Через неделю пройти короткую проверку снова"]],
+ ["pet",/(собак|щенк|кошк|котён|котен|кота\b|питомц)/i,["Уточнить, какой результат нужен питомцу и как заметить улучшение","Проверить, есть ли всё нужное для ухода и безопасности","Выбрать одно маленькое действие на каждый день","Если вопрос связан со здоровьем — обсудить его с ветеринаром","Отметить первые изменения в дневнике","Через неделю скорректировать уход по результатам"]],
+ ["swim",/(плавать|плавани|кролем|бассейн)/i,["Выбрать бассейн и узнать расписание","Определить свой текущий уровень на пробном занятии","Запланировать первое короткое занятие","Отработать дыхание и комфорт в воде с инструктором","Выбрать два регулярных дня для практики","Через две недели оценить, что стало получаться легче"]],
+ ["music",/(гитар|пианино|фортепиано|скрипк|укулеле|барабан|петь\b|вокал)/i,["Выбрать одно небольшое упражнение для первых занятий","Проверить настройку инструмента или подобрать вводный урок","Позаниматься 10–15 минут без спешки","Записать одно сложное место, которое хочется улучшить","Выделить три коротких занятия на этой неделе","Через две недели сыграть или спеть маленький фрагмент"]],
+ ["repair",/(ремонт|покрасить стен|поменять плитк|переделать комнат)/i,["Записать, какую именно часть помещения хочется изменить","Сделать фото текущего состояния и замеры","Составить список материалов и работ","Оценить бюджет с небольшим запасом","Выбрать первую безопасную работу или специалиста","После первого этапа проверить результат и расходы"]]
+];
 const GPLAN0=["Уточнить, какой конкретный результат означает «{t}»","Записать препятствие на пути к «{t}»","Найти пример человека или проекта с похожим результатом","Выбрать один небольшой шаг к «{t}» на эту неделю","Назначить время для первого шага к «{t}»","Через неделю проверить, что приблизило к «{t}»"];
-function gplanFor(g,alt){const t=g.t||"",T=norm(t);const hits=GPLAN.filter(x=>x[1].test(t)||x[1].test(T));let L=hits.length?hits[(alt||0)%(hits.length+1)]:null;
-  let steps=L?L[2]:GPLAN0;/* Не переключаем тематическую цель на общий шаблон: это создавало одинаковые планы. */
+/* Этап 13: персонализация только по явным деталям в названии цели.
+   Без интернета/ИИ нельзя честно придумать программу для любой формулировки.
+   Не выводим расчёты сроков для медицинских целей и не придумываем даты. */
+function gplanDetails13(t,kind){
+  const clean=String(t||"").trim(),s=norm(clean),out=[];
+  if(kind==="money"){
+    const m=clean.match(/(?:накопить|отложить|собрать|сберечь)\s+([\d\s\u00a0]{2,12})\s*(тыс(?:яч[иу])?|₽|руб(?:лей|ля|ль)?)/i);
+    if(m){const raw=Number(m[1].replace(/[^\d]/g,"")),sum=raw*(/^тыс/i.test(m[2])?1000:1);
+      if(sum>0&&sum<=1e9){const amount=sum.toLocaleString("ru-RU")+" ₽";
+        out.push("Посчитать, сколько уже отложено из "+amount);
+        const period=clean.match(/за\s+(\d{1,2})\s+месяц(?:ев|а)?/i);
+        const months=period?Number(period[1]):(/за\s+полгода/i.test(clean)?6:(/за\s+год(?:ик|а)?(?=$|\s|[,.!?])/i.test(clean)?12:null));
+        if(months&&months>0)out.push("Оценить посильный ежемесячный взнос: ориентир "+Math.ceil(sum/months).toLocaleString("ru-RU")+" ₽ (скорректировать с учётом накопленного)");
+        else out.push("Определить реальный срок накопления "+amount);
+      }
+    }
+  }
+  if(kind==="read"){
+    const m=clean.match(/(?:прочитать|прочесть|читать)\s+(\d{1,3})\s+книг/i);
+    if(m){const n=Number(m[1]);out.push(n===1?"Выбрать книгу и запланировать время для чтения":"Выбрать первые "+Math.min(n,2)+" книги из запланированных "+n)}
+  }
+  if(kind==="lang"){
+    const lang=[[/английск/i,"английскому"],[/немецк/i,"немецкому"],[/испанск/i,"испанскому"],[/французск/i,"французскому"],[/японск/i,"японскому"],[/китайск/i,"китайскому"]].find(([re])=>re.test(clean));
+    const level=clean.match(/\b(?:A[12]|B[12]|C[12])\b/i);
+    if(lang)out.push("Проверить исходный уровень по "+lang[1]+" языку");
+    if(level)out.push("Найти короткий пробный тест уровня "+level[0].toUpperCase());
+  }
+  if(kind==="sport"){
+    const km=clean.match(/\b(\d{1,3}(?:[.,]\d)?)\s*км(?=\s|$|[,.!?])/i);
+    if(km)out.push("Оценить текущий комфортный уровень перед целью "+km[1].replace(",",".")+" км");
+  }
+  if(kind==="exam"){
+    const subject=clean.match(/по\s+(истории|математике|русскому языку|биологии|физике|химии|английскому)/i);
+    if(subject)out.push("Составить список тем по "+subject[1].toLowerCase()+" и отметить пробелы");
+  }
+  return out;
+}
+/* Финальная сверка №13: явный глагол важнее совпадения по слову «книга».
+   «Написать книгу» — творчество, «прочитать книгу» — чтение;
+   «выучить язык программирования» — навык разработки, не иностранный язык. */
+function gplanChoice0915(t){
+  if(/(?:написать|сочинить|создать)\s+(?:(?:свою|свой|первую|первый|детскую|небольшую)\s+)?(?:книг\w*|роман\w*|повест\w*|рассказ\w*)/i.test(t))return ["write",GPLAN.find(x=>x[0]==="write")];
+  if(/(?:прочитать|прочесть|читать)\s+(?:(?:первую|одну|\d+)\s+)?книг\w*/i.test(t))return ["read",GPLAN.find(x=>x[0]==="read")];
+  if(/(?:язык\s+программирования|научиться\s+программировать|освоить\s+программирование)/i.test(t))return ["program",GPLAN_SPEC.find(x=>x[0]==="program")];
+  return null;
+}
+function gplanFor(g,alt){const t=g.t||"",T=norm(t);const preferred=gplanChoice0915(t);const specific=preferred?[preferred[1]]:GPLAN_SPEC.filter(x=>x[1].test(t)||x[1].test(T));const hits=specific.length?specific:GPLAN.filter(x=>x[1].test(t)||x[1].test(T));const L=hits.length?hits[(alt||0)%hits.length]:null;
+  /* Если тематика не распознана, НЕ выдаём прежние 6 одинаковых советов как персональный план. */
+  let steps=L?L[2]:[];
   const short=t.length>28?t.slice(0,27)+"…":t;let S=steps.map(s=>s.replace("{t}",short.replace(/^./,c=>c.toLowerCase())));
+  if(L&&!(alt>0)){
+    const contextual=gplanDetails13(t,L[0]);
+    if(contextual.length)S=[...contextual,...S].slice(0,7);
+  }
   const w=g.woop||{};if(w.obstacle&&w.plan)S.splice(3,0,"Помнить: "+w.plan.replace(/^./,c=>c.toLowerCase()));
-  const has=new Set([...(g.plan||[]).map(p=>norm(p.t)),...(g.steps||[]).map(s=>norm(s.t))]);return{kind:L?L[0]:"any",steps:S.filter(s=>!has.has(norm(s))).slice(0,7),variants:Math.max(1,hits.length)}}
+  const has=new Set([...(g.plan||[]).map(p=>norm(p.t)),...(g.steps||[]).map(s=>norm(s.t))]);return{kind:L?L[0]:"needs-details",steps:S.filter(s=>!has.has(norm(s))).slice(0,7),variants:Math.max(1,hits.length)}}
 sheetGoal=(function(prev){return function(id){prev(id);const g=goal(id),s=$("#sheet");if(!g||!s||g.st==="done")return;
   const h=[...s.querySelectorAll(".sec h2")].find(x=>x.textContent==="План");const card=h&&h.parentElement.nextElementSibling;if(!card||s.querySelector(".gpsug"))return;
   const few=(g.plan||[]).length<3;card.insertAdjacentHTML(few?"afterbegin":"beforeend",`<button type="button" class="gpsug${few?" big":""}" data-a="gpsug" data-g="${g.id}">${IC("bulb",18)}<span>${few?"Предложить план":"Предложить ещё шаги"}</span></button>`)}})(sheetGoal);
 function gpPreview(g,alt){const P=gplanFor(g,alt);const s=$("#sheet");const card=s&&s.querySelector(".card.plan");if(!card)return;
+  if(P.kind==="needs-details"){
+    card.innerHTML=`<div class="gpprev"><p class="small mut" style="line-height:1.5"><b>Для этой цели пока нет подходящего готового сценария.</b> Сформулируй три шага именно для «${esc(g.t||"цели")}». Это не готовые советы: ты решаешь, что действительно подходит. Можно оставить только нужные.</p>
+    ${["Какой результат будет первым?","Что можно сделать за 10–15 минут?","Что понадобится для следующего шага?"].map((hint,i)=>`<label class="gpi"><input type="checkbox" checked aria-label="Включить шаг ${i+1}"><input class="field gpt" placeholder="${hint}" aria-label="Шаг ${i+1}"></label>`).join("")}
+    <div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="gpok" data-g="${g.id}">Добавить мои шаги</button><button type="button" class="lnk" data-a="gpcancel" data-g="${g.id}">Отмена</button></div></div>`;
+    return;
+  }
   if(!P.steps.length){toast("Похожие шаги уже есть в плане");return}
-  card.innerHTML=`<div class="gpprev"><p class="small mut" style="margin:0 0 8px;line-height:1.4">Так обычно идут к таким целям. Убери лишнее, поправь слова — и добавь в план. Первый шаг — маленький.</p>
+  card.innerHTML=`<div class="gpprev"><p class="small mut" style="margin:0 0 8px;line-height:1.4">Это черновик по теме цели, а не готовый рецепт. Убери лишнее, уточни шаги под себя и начни с малого.</p>
    ${P.steps.map((t,i)=>`<label class="gpi"><input type="checkbox" checked data-i="${i}"><input class="field gpt" value="${esc(t)}" aria-label="Шаг ${i+1}"></label>`).join("")}
    <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn sm" data-a="gpok" data-g="${g.id}">Добавить в план</button>${P.variants>1?`<button type="button" class="chip" data-a="gpalt" data-g="${g.id}" data-v="${(alt||0)+1}">Другой вариант</button>`:""}<button type="button" class="lnk" data-a="gpcancel" data-g="${g.id}">Отмена</button></div></div>`;
   card.scrollIntoView({block:"nearest",behavior:"smooth"})}
@@ -4940,7 +5084,13 @@ Object.assign(A,{
  gpalt:e=>{const g=goal(e.dataset.g);if(g)gpPreview(g,+e.dataset.v)},
  gpcancel:e=>sheetGoal(e.dataset.g),
  gpok:e=>{const g=goal(e.dataset.g);if(!g)return;const L=[...document.querySelectorAll("#sheet .gpi")].filter(r=>r.querySelector('input[type="checkbox"]').checked).map(r=>r.querySelector(".gpt").value.replace(/\s+/g," ").trim()).filter(Boolean);
-   if(!L.length){sheetGoal(g.id);return}g.plan=g.plan||[];L.forEach(t=>g.plan.push({id:uid(),t}));planSync(g);save();snd("tick");sheetGoal(g.id);render();toast(`В плане ${g.plan.length} ${plural(g.plan.length,"шаг","шага","шагов")} — первый уже ждёт «в сегодня»`)}});
+   if(!L.length){toast("Напиши хотя бы один шаг");return}
+   g.plan=g.plan||[];
+   const existing=new Set([...(g.plan||[]),...(g.steps||[])].map(s=>norm(s.t||"")));
+   const additions=[];
+   for(const t of L){const key=norm(t);if(!key||existing.has(key))continue;existing.add(key);additions.push(t)}
+   if(!additions.length){toast("Все выбранные шаги уже есть в плане");return}
+   additions.forEach(t=>g.plan.push({id:uid(),t}));planSync(g);save();snd("tick");sheetGoal(g.id);render();toast(`Добавлено ${additions.length} ${plural(additions.length,"шаг","шага","шагов")} в план`)}});
 
 /* 0.9.15 #18 (часть): защита от случайного удаления записи дневника. */
 A.ndel=(function(prev){return function(e){if(!SH||SH.k==null||SH.i==null)return;
@@ -4978,11 +5128,11 @@ sheetKitchen=(function(prev){return function(){prev();const sh=$("#sheet");if(!s
 /* ===== 0.9.15 #4: чеклисты дневника; формат совместим с обычными notes. =====
    {t: заголовок, list:[{t, done}], ts, tm}. Не изменяем старые записи. */
 const nlistItems=n=>Array.isArray(n.list)?n.list:[];
-function listNoteEdit(k,i){
+function listNoteEdit(k,i,seed){
   const dy=day(k);dy.notes=dy.notes||[];const n=i!=null?dy.notes[i]:null;
-  const items=n?nlistItems(n).map(x=>x.t).join("\n"):"";
+  const items=n?nlistItems(n).map(x=>x.t).join("\n"):(seed&&seed.items||"");
   openSheet(`<h3>${n?"Изменить список":"Новый список"}</h3><p class="sub">${esc(dayTitle(k))}, ${esc(dshort(k))}</p>
-    <label class="lb" for="nltitle">Название списка</label><input id="nltitle" class="field" maxlength="160" value="${esc(n?n.t:"")}" placeholder="Например: в дорогу">
+    <label class="lb" for="nltitle">Название списка</label><input id="nltitle" class="field" maxlength="160" value="${esc(n?n.t:(seed&&seed.title||""))}" placeholder="Например: в дорогу">
     <label class="lb" for="nlitems">Пункты (каждый с новой строки)</label><textarea id="nlitems" class="field" rows="7" placeholder="Первый пункт\nВторой пункт">${esc(items)}</textarea>
     <p class="small mut">Отмечать пункты можно прямо в дневнике.</p><div class="stack"><button class="btn w" type="button" data-a="nlsave">Сохранить список</button>${n?`<button type="button" class="lnk" data-a="ndel" style="color:var(--hot)">Удалить запись</button>`:""}</div>`,
     {k,i,nlist:true,onSave(){const title=(($("#nltitle")||{}).value||"").trim();const raw=(($("#nlitems")||{}).value||"");
@@ -4996,7 +5146,7 @@ dayNotes=(function(prev){return function(k){let html=prev(k);const N=(D.days[k]&
   N.forEach((n,i)=>{if(!Array.isArray(n.list))return;
     const list=nlistItems(n).map((it,j)=>`<button type="button" class="nlitem${it.done?" done":""}" data-a="ncheck" data-d="${k}" data-i="${i}" data-j="${j}" aria-pressed="${!!it.done}" aria-label="${it.done?"Снять отметку":"Отметить"}: ${esc(it.t)}"><span class="nlcircle">${it.done?"✓":""}</span><span>${esc(it.t)}</span></button>`).join("");
     const repl=`<div class="nlwrap"><button type="button" class="nltitle" data-a="nedit" data-d="${k}" data-i="${i}">${esc(n.t||"Список")} · изменить</button><div class="nlitems">${list}</div></div>`;
-    const re=new RegExp(`<button type="button" class="ntx" data-a="nedit" data-d="${k}" data-i="${i}">[\s\S]*?<\/button>`);
+    const re=new RegExp(`<button type="button" class="ntx" data-a="nedit" data-d="${k}" data-i="${i}">[\\s\\S]*?<\/button>`);
     if(re.test(html))html=html.replace(re,repl);else{
       /* Для списка без заголовка в старых данных нет кнопки .ntx. */
       const tool=`<div class="ntools" role="group" aria-label="Действия с записью">`;
@@ -5008,71 +5158,607 @@ dayNotes=(function(prev){return function(k){let html=prev(k);const N=(D.days[k]&
 A.nlistnew=e=>listNoteEdit(e.dataset.d||viewDay(),null);
 A.nedit=(function(prev){return function(e){const n=noteOf(e.dataset.d,+e.dataset.i);if(n&&Array.isArray(n.list))return listNoteEdit(e.dataset.d,+e.dataset.i);return prev(e)}})(A.nedit);
 A.ncheck=e=>{const n=noteOf(e.dataset.d,+e.dataset.i);if(!n||!Array.isArray(n.list))return;const it=n.list[+e.dataset.j];if(!it)return;it.done=!it.done;save();render();try{snd("tick")}catch(x){}};
+
+/* №4: ненавязчивое предложение, когда пользователь сам ввёл несколько коротких строк. */
+function listCandidates0915(value){
+  const lines=(value||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(lines.length<3||lines.length>20||lines.some(x=>x.length>75))return null;
+  if(lines.some(x=>/[.!?]$/.test(x)&&x.length>45))return null;
+  return lines.map(x=>x.replace(/^[-•*✓✔☐\d]+[.)\s-]*/,"").trim()).filter(Boolean).join("\n");
+}
+sheetNote=(function(prev){return function(k,i){prev(k,i);if(i!=null)return;
+  const sh=$("#sheet"),ta=sh&&sh.querySelector("#ntx"),st=SH&&SH.nst;if(!ta||!st)return;
+  const hint=document.createElement("div");hint.id="listoffer0915";hint.hidden=true;hint.className="small mut";
+  hint.innerHTML='<button type="button" class="chip" data-a="nlistoffer">☑ Превратить строки в список</button>';
+  ta.parentElement.insertAdjacentElement("afterend",hint);
+  const update=()=>{hint.hidden=!!(st.ph&&st.ph.length)||!!st.audio||!listCandidates0915(ta.value)};
+  ta.addEventListener("input",update);update();
+}})(sheetNote);
+A.nlistoffer=()=>{const st=SH&&SH.nst,ta=$("#ntx");if(!st||st.i!=null||!ta)return;
+  if((st.ph&&st.ph.length)||st.audio){toast("Сначала сохрани вложения отдельной записью");return}
+  const items=listCandidates0915(ta.value);if(!items)return;
+  listNoteEdit(st.k,null,{items,title:""});
+};
+
 /* 0.9.15 #7-8: компактная практика магнита в обоих маршрутах знакомства.
    Пример не сохраняется, пока человек сам не нажмёт «Записать». */
 INTRO.push({h:"Попробуй кнопку-магнит",p:"Тапни магнит внизу — можно записать несколько мыслей сразу. Удерживай его, чтобы надиктовать. Магнит предложит разложить слова по местам, а ты решишь, что сохранить.",art:()=>`<div class="iart plain"><p style="font-size:15px;line-height:1.5">Например: «завтра в 19 позвонить маме, 300 на кофе, хочу на море»</p><button type="button" class="btn w" data-a="magdemo">${UMAG(22)} Попробовать на примере</button><p class="small mut">Это только пример: он не попадёт в твои дела без твоего решения.</p></div>`});
 A.magdemo=()=>{sheetQuick();setTimeout(()=>{const q=$("#qq");if(!q)return;q.value="завтра в 19 позвонить маме, 300 на кофе, хочу на море";q.dispatchEvent(new Event("input",{bubbles:true}));if(typeof drawPrev==="function")drawPrev()},90)};
 suDone=(function(prev){return function(){prev();const sh=$("#sheet");if(sh&&!sh.querySelector(".magtry")){const b=document.createElement("button");b.type="button";b.className="btn ghost w magtry";b.dataset.a="magdemo";b.textContent="Попробовать кнопку-магнит на примере";const target=sh.querySelector(".stack");if(target)target.appendChild(b)}}})(suDone);
 /* Подсказка доступна из обычного интерфейса, а не только при первом запуске. */
-A.maghelp=()=>openSheet(`<h3>Как работает Магнит</h3><div class="card"><p><b>Утром</b> выбери главное дело дня. Вечером отметь, что получилось, и как прошёл день.</p><p><b>Цели</b> — до трёх активных магнитов. Дела можно связывать с целями.</p><p><b>Минимум привычки</b> — даже маленькое действие считается движением: удержи клетку в трекере.</p><p><b>Кнопка-магнит</b> — тап для текста, удержание для голоса.</p></div><button type="button" class="btn w" data-a="magdemo">Попробовать на примере</button>`);
+A.maghelp=()=>openSheet(`<h3>Как работает Магнит</h3><div class="card"><p><b>Утром</b> выбери главное дело дня. Вечером отметь, что получилось, и как прошёл день.</p><p><b>Цели</b> — до трёх активных магнитов. Дела можно связывать с целями.</p><p><b>Минимум привычки</b> — нажимай клетку по кругу: сделано → минимум → пусто.</p><p><b>Кнопка-магнит</b> — тап для текста, удержание для голоса.</p></div><button type="button" class="btn w" data-a="magdemo">Попробовать на примере</button>`);
 render=(function(prev){return function(){prev();if(!D.started||UI.tab!=="today")return;const hd=$("#app .hd");if(hd&&!hd.querySelector(".maghelp"))hd.insertAdjacentHTML("beforeend",`<button type="button" class="ib sm maghelp" data-a="maghelp" aria-label="Как пользоваться Магнитом" title="Подсказки">?</button>`)}})(render);
 A.nlsave=()=>{if(SH&&SH.nlist&&typeof SH.onSave==="function")SH.onSave()};
 
 /* 0.9.15 #18 — аудиозаметки. Запись локальная, без отправки на сервер.
    Храним рядом с фото в IndexedDB и включаем в JSON-копию через views26.
    Распознавание сохранённого файла в текст НЕ реализовано: не обещать офлайн. */
-let NOTE_AUDIO=null;
+let NOTE_AUDIO=null,NOTE_AUDIO_PENDING=null,NOTE_AUDIO_SAVING=false;
 function audHydrate(root){(root||document).querySelectorAll("audio[data-audio]").forEach(async el=>{
   if(el.dataset.loaded)return;el.dataset.loaded="1";const url=await PH.get(el.dataset.audio);
   if(url&&el.isConnected)el.src=url;else if(!url)el.outerHTML='<span class="small mut">Аудиофайл не найден — проверь резервную копию</span>'
 })}
 function audBtn(k,i,n){if(!n.audio||!n.audio.id)return"";
-  return`<div class="naudio"><span class="small mut">Голосовая запись</span>${!n.t?`<button type="button" class="lnk" data-a="nedit" data-d="${k}" data-i="${i}">Изменить запись</button>`:""}<audio controls preload="none" data-audio="${esc(n.audio.id)}" aria-label="Аудио в дневнике"></audio></div>`}
+  return`<div class="naudio"><span class="small mut">Голосовая запись</span>${!n.t?`<button type="button" class="lnk" data-a="nedit" data-d="${k}" data-i="${i}">Изменить запись</button>`:""}<audio controls preload="none" data-audio="${esc(n.audio.id)}" aria-label="Аудио в дневнике"></audio><button type="button" class="lnk" data-a="naudexport" data-audio="${esc(n.audio.id)}" aria-label="Поделиться аудиозаписью">Поделиться аудио</button></div>`}
 dayNotes=(function(prev){return function(k){let h=prev(k),N=(D.days[k]&&D.days[k].notes)||[];
   N.forEach((n,i)=>{if(!n.audio||!n.audio.id)return;const tool=NOTEBAR(k,i);h=h.replace(tool,audBtn(k,i,n)+tool)});return h}})(dayNotes);
 render=(function(prev){return function(){prev();audHydrate($("#app"))}})(render);
 sheetNote=(function(prev){return function(k,i){prev(k,i);const sh=$("#sheet"),st=SH&&SH.nst;if(!sh||!st)return;
   const n=i!=null?(D.days[k].notes||[])[i]:null;st.audio=n&&n.audio?{...n.audio}:null;
   const box=document.createElement("div");box.className="narec";
-  box.innerHTML=`<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="chip" data-a="naudrec">● Записать аудио</button><button type="button" class="chip" data-a="naudstop" hidden>■ Остановить</button><span id="naudtime" class="small mut"></span></div><div id="naudioprev">${st.audio?audBtn(k,i,{audio:st.audio}):""}</div><p class="small mut">Аудио хранится на устройстве. Расшифровка сохранённого файла пока недоступна; текст можно написать рядом.</p>${st.audio?`<button type="button" class="lnk" data-a="naudremove">Убрать аудио</button>`:""}`;
+  box.innerHTML=`<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="chip" data-a="naudrec">● Записать аудио</button><button type="button" class="chip" data-a="naudstop" hidden>■ Остановить</button><span id="naudtime" class="small mut" role="status" aria-live="polite"></span></div><div id="naudioprev">${st.audio?audBtn(k,i,{audio:st.audio}):""}</div><p class="small mut">Аудио хранится на устройстве. Автоматической расшифровки файла пока нет. Можно надиктовать текст микрофоном рядом с полем или поделиться звуковым файлом вручную.</p>${st.audio?`<button type="button" class="lnk" data-a="naudremove">Убрать аудио</button>`:""}`;
   const stack=sh.querySelector(".stack");if(stack)stack.before(box);else sh.append(box);audHydrate(sh)
 }})(sheetNote);
-function stopNoteAudio(cancel){const r=NOTE_AUDIO;if(!r)return;NOTE_AUDIO=null;clearTimeout(r.timeout);
-  try{r.rec.stop()}catch(e){}if(cancel)r.cancel=true;
-  try{r.stream.getTracks().forEach(t=>t.stop())}catch(e){}
+/* Запись: один запрос разрешения за раз, понятный статус и безопасная отмена.
+   Переход к другой записи / закрытие окна отменяют отложенный запуск. */
+function naudStatus(text){const e=$("#naudtime");if(e)e.textContent=text||""}
+function naudControls(recording){const a=$("[data-a=naudrec]"),b=$("[data-a=naudstop]");
+  if(a){a.hidden=!!recording;a.disabled=!!NOTE_AUDIO_PENDING||!!NOTE_AUDIO_SAVING}
+  if(b)b.hidden=!recording;
+}
+function naudTracksStop(stream){try{stream&&stream.getTracks().forEach(t=>t.stop())}catch(e){}}
+function cancelNoteAudioPending(){const p=NOTE_AUDIO_PENDING;if(!p)return;
+  p.cancelled=true;clearTimeout(p.timer);NOTE_AUDIO_PENDING=null;naudControls(false)}
+function stopNoteAudio(cancel){const r=NOTE_AUDIO;if(!r)return;NOTE_AUDIO=null;
+  clearTimeout(r.timeout);clearInterval(r.tick);if(cancel)r.cancel=true;
+  if(!cancel){NOTE_AUDIO_SAVING=true;naudStatus("Сохраняем аудио…")}
+  try{if(r.rec.state!=="inactive")r.rec.stop()}
+  catch(e){r.cancel=true;NOTE_AUDIO_SAVING=false;naudStatus("Не удалось остановить запись")}
+  naudTracksStop(r.stream);naudControls(false);
+}
+function naudFailureMessage(error){const name=error&&error.name||"";
+  if(name==="NotAllowedError"||name==="SecurityError"||name==="PermissionDeniedError")return"Микрофон запрещён. Разреши доступ для Магнита в настройках телефона.";
+  if(name==="NotFoundError"||name==="DevicesNotFoundError")return"Микрофон не найден на устройстве.";
+  if(name==="NotReadableError"||name==="TrackStartError")return"Микрофон занят другим приложением. Закрой его и попробуй снова.";
+  if(name==="TimeoutError")return"Микрофон долго не отвечает. Проверь системный запрос разрешения и попробуй ещё раз.";
+  return"Не удалось подключить микрофон. Проверь разрешение и попробуй снова.";
 }
 A.naudrec=async()=>{
-  if(NOTE_AUDIO)return;
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==="undefined"){
-    toast("Запись аудио недоступна на этом устройстве");return}
+  if(NOTE_AUDIO||NOTE_AUDIO_PENDING||NOTE_AUDIO_SAVING)return;
   const st=SH&&SH.nst;if(!st)return;
-  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){toast("Нет доступа к микрофону");return}
-  if(!SH||SH.nst!==st){stream.getTracks().forEach(t=>t.stop());return}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==="undefined"){
+    naudStatus("Аудиозапись не поддерживается на этом устройстве");toast("Запись аудио недоступна на этом устройстве");return}
+  const p={st,cancelled:false,timer:null};NOTE_AUDIO_PENDING=p;
+  naudStatus("Запрашиваем доступ к микрофону…");naudControls(false);
+  const request=navigator.mediaDevices.getUserMedia({audio:true});
+  // Поздний ответ системного окна не должен запускать запись после отмены.
+  request.then(stream=>{if(p.cancelled)naudTracksStop(stream)},()=>{});
+  let stream;
+  try{stream=await Promise.race([request,new Promise((_,reject)=>{
+    p.timer=setTimeout(()=>reject(Object.assign(new Error("Microphone timeout"),{name:"TimeoutError"})),25000)
+  })]);}catch(e){p.cancelled=true;clearTimeout(p.timer);
+    if(NOTE_AUDIO_PENDING===p){NOTE_AUDIO_PENDING=null;naudStatus(naudFailureMessage(e));naudControls(false)}return}
+  clearTimeout(p.timer);
+  if(NOTE_AUDIO_PENDING===p)NOTE_AUDIO_PENDING=null;
+  if(p.cancelled||!SH||SH.nst!==st){naudTracksStop(stream);naudControls(false);return}
   const fmt=["audio/webm;codecs=opus","audio/mp4","audio/webm"].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
-  let rec;try{rec=new MediaRecorder(stream,fmt?{mimeType:fmt}:{})}catch(e){stream.getTracks().forEach(t=>t.stop());toast("Запись аудио недоступна");return}
-  const r={rec,stream,st,chunks:[],cancel:false,timeout:null};NOTE_AUDIO=r;
+  let rec;try{rec=new MediaRecorder(stream,fmt?{mimeType:fmt}:{})}
+  catch(e){naudTracksStop(stream);naudStatus("Это устройство не смогло начать запись");naudControls(false);return}
+  const r={rec,stream,st,chunks:[],cancel:false,timeout:null,tick:null,started:Date.now()};NOTE_AUDIO=r;
   rec.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
-  rec.onstop=async()=>{try{if(!r.cancel&&r.chunks.length){const blob=new Blob(r.chunks,{type:rec.mimeType||"audio/webm"});
+  rec.onerror=()=>{r.cancel=true;naudStatus("Произошла ошибка аудиозаписи");stopNoteAudio(true)};
+  rec.onstop=async()=>{
+    clearInterval(r.tick);clearTimeout(r.timeout);
+    if(r.cancel)return;
+    if(!r.chunks.length){NOTE_AUDIO_SAVING=false;naudControls(false);naudStatus("Запись не получилась — звуковой файл пуст");return}
+    NOTE_AUDIO_SAVING=true;naudControls(false);
+    try{const blob=new Blob(r.chunks,{type:rec.mimeType||"audio/webm"});
       const url=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(fr.error);fr.readAsDataURL(blob)});
       const id=phNew();await PH.put(id,url);r.st.audio={id,mime:blob.type,ms:Date.now()-r.started};
-      if(SH&&SH.nst===r.st){const prev=$("#naudioprev");if(prev){prev.innerHTML=audBtn(r.st.k,r.st.i,{audio:r.st.audio});audHydrate(prev)}toast("Аудио добавлено — сохрани запись")}}
-    }catch(e){toast("Не удалось сохранить аудио")}
+      if(SH&&SH.nst===r.st){const el=$("#naudioprev");if(el){el.innerHTML=audBtn(r.st.k,r.st.i,{audio:r.st.audio});audHydrate(el)}
+        naudStatus("Аудио готово · нажми «Сохранить»");toast("Аудио добавлено — сохрани запись")}
+    }catch(e){naudStatus("Не удалось сохранить аудиофайл");toast("Не удалось сохранить аудио")}
+    finally{NOTE_AUDIO_SAVING=false;naudControls(false)}
   };
-  try{rec.start(500)}catch(e){NOTE_AUDIO=null;stream.getTracks().forEach(t=>t.stop());toast("Не удалось начать запись");return}
-  r.started=Date.now();r.timeout=setTimeout(()=>stopNoteAudio(false),120000);
-  const a=$("[data-a=naudrec]"),b=$("[data-a=naudstop]");if(a)a.hidden=true;if(b)b.hidden=false;
-  const t=$("#naudtime");if(t)t.textContent="Идёт запись · до 2 минут";
+  try{rec.start(500)}catch(e){NOTE_AUDIO=null;naudTracksStop(stream);naudStatus("Не удалось начать запись");naudControls(false);return}
+  naudControls(true);
+  const update=()=>{if(NOTE_AUDIO!==r)return;const sec=Math.min(120,Math.floor((Date.now()-r.started)/1000));
+    naudStatus(`Записываем ${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")} · максимум 2 минуты`)};
+  update();r.tick=setInterval(update,1000);r.timeout=setTimeout(()=>stopNoteAudio(false),120000);
 };
-A.naudstop=()=>{stopNoteAudio(false);const b=$("[data-a=naudstop]");if(b)b.hidden=true};
+A.naudstop=()=>stopNoteAudio(false);
 A.naudremove=()=>{if(SH&&SH.nst){SH.nst.audio=null;const el=$("#naudioprev");if(el)el.innerHTML="";const btn=$("[data-a=naudremove]");if(btn)btn.remove()}};
+/* Аудио не отправляется из Магнита без нажатия пользователя.
+   Встроенной транскрипции сохранённого файла нет: экспорт даёт возможность
+   сохранить оригинал или добровольно открыть его в другой программе. */
+function audioBlob0915(data){
+  const m=String(data||"").match(/^data:([^;,]+)?(;base64)?,([\s\S]*)$/);
+  if(!m||!m[2])throw new Error("Unsupported audio format");
+  const binary=atob(m[3].replace(/\s/g,"")),bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes],{type:m[1]||"audio/webm"});
+}
+A.naudexport=async e=>{
+  const id=e&&e.dataset&&e.dataset.audio;if(!id)return;
+  const b=e;b.disabled=true;
+  try{
+    const data=await PH.get(id);
+    const blob=audioBlob0915(data);
+    const ext=/mp4|m4a/i.test(blob.type)?"m4a":/ogg/i.test(blob.type)?"ogg":"webm";
+    const filename="Magnit-audio-"+Date.now()+"."+ext;
+    const CP=window.Capacitor,P=CP&&CP.Plugins||{};
+    if(CP&&CP.isNativePlatform&&CP.isNativePlatform()&&P.Filesystem&&P.Share){
+      const r=await P.Filesystem.writeFile({path:filename,data:data.slice(data.indexOf(",")+1),directory:"CACHE"});
+      await P.Share.share({title:"Аудио из Магнита",files:[r.uri],dialogTitle:"Выбери приложение или место сохранения"});
+      return;
+    }
+    const f=new File([blob],filename,{type:blob.type});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
+      await navigator.share({files:[f],title:"Аудио из Магнита"});return;
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    try{a.href=url;a.download=filename;document.body.appendChild(a);a.click();toast("Аудиофайл подготовлен к сохранению")}
+    finally{setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},5000)}
+  }catch(error){if(!/abort|cancel|dismiss/i.test(String(error&&error.name||"")+" "+String(error&&error.message||"")))toast("Не удалось поделиться аудио — исходная запись сохранена")}
+  finally{b.disabled=false}
+};
+
 A.nsave=(function(prev){return function(e){const st=SH&&SH.nst;if(!st)return prev(e);
+  if(NOTE_AUDIO_PENDING){toast("Дождись подключения микрофона или закрой окно");return}
   if(NOTE_AUDIO){toast("Сначала останови запись");return}
+  if(NOTE_AUDIO_SAVING){toast("Подожди, аудио сохраняется");return}
   const txt=(($("#ntx")||{}).value||"").trim();if(!txt&&!st.ph.length&&!st.audio){toast("Добавь текст, фото или аудио");return}
   const dy=day(st.k);dy.notes=dy.notes||[];const n=st.i!=null?dy.notes[st.i]:null;
   if(n){n.t=txt;n.ph=st.ph.length?st.ph:undefined;n.audio=st.audio||undefined}
   else{const d=new Date();dy.notes.push({t:txt,ts:Date.now(),tm:pad(d.getHours())+":"+pad(d.getMinutes()),...(st.ph.length?{ph:st.ph}:{}),...(st.audio?{audio:st.audio}:{})})}
   save();closeSheet();render()
 }})(A.nsave);
-closeSheet=(function(prev){return function(...args){if(NOTE_AUDIO)stopNoteAudio(true);return prev(...args)}})(closeSheet);
+closeSheet=(function(prev){return function(...args){cancelNoteAudioPending();if(NOTE_AUDIO)stopNoteAudio(true);return prev(...args)}})(closeSheet);
+
+
+/* ====== ОТЗЫВЫ ТЕСТИРОВАНИЯ 22.11: №3, №5, №7–8, №18 ======
+   Старые записи и отметки сохраняются. Изменения не зависят от новых полей D. */
+
+/* №5: один тап — сделано, второй — минимум, третий — пусто.
+   Удержание больше не требуется и не открывает меню. */
+function cycleHab0915(e){
+  const id=e.dataset.h||e.dataset.id,d=e.dataset.d||viewDay();
+  const h=D.habits.find(x=>x.id===id);
+  if(!h||d>TODAY())return;
+  const current=hm(h,d);markHabit(id,d,(current+1)%3);
+}
+A.hmark=cycleHab0915;
+A.thmark=cycleHab0915;
+/* One-tap cycle is also used by tracker. Remove stale long-hold instructions. */
+vTracker=(function(prev){return function(){return prev().replace(/Тап по клетке — сделал\. Удержать — минимум или отмена\./g,"Тап по клетке: сделано → минимум → пусто.")}})(vTracker);
+A.dhmark=e=>{cycleHab0915(e);sheetDayHab(e.dataset.d)};
+render=(function(prev){return function(){
+  prev();const app=$("#app");if(!app)return;
+  app.querySelectorAll('[data-a="hmark"],[data-a="thmark"],[data-a="dhmark"]').forEach(b=>b.removeAttribute("data-hold"));
+  /* №7: общую справку убрали из перегруженной шапки «Сегодня». */
+  app.querySelectorAll(".maghelp").forEach(b=>b.remove());
+}})(render);
+/* Обновляем старую подсказку о жесте в уже существующем диалоге. */
+A.maghelp=()=>openSheet(`<h3>Как пользоваться Магнитом</h3>
+<p class="small mut">Короткая справка. Здесь нет обязательных правил — выбирай то, что помогает.</p>
+<div class="card magfaq" style="line-height:1.5">
+<details open><summary>Минута утром и минута вечером</summary><p>Утром выбери главное дело, если хочешь. Вечером отметь настроение и хорошее за день. В понедельник можно оглянуться на неделю. Не обязательно заполнять всё каждый раз.</p></details>
+<details><summary>Главное, важное и мелочи</summary><p>Главное — одно дело. Важных дел — до пяти. Мелочи можно записывать без ограничения. Если день перегружен, приложение подскажет.</p></details>
+<details><summary>Цели и магниты</summary><p>В работе может быть до трёх целей. Шаги — небольшие действия, которые приближают к цели. Число дней около 66 — ориентир, а не крайний срок и не оценка успеха.</p></details>
+<details><summary>Привычки и минимум</summary><p>В трекере нажимай клетку: первый раз — сделано, второй — минимум, третий — пусто. Минимум означает: маленький шаг тоже считается.</p></details>
+<details><summary>Искры и нашивки</summary><p>Искры — игровые награды за движение. Их можно тратить на уютные вещи в комнате. Нашивки за «Ассоциации» собираются на кухне Магнитика. Не нужно зарабатывать их любой ценой.</p></details>
+<details><summary>Кнопка-магнит</summary><p>Нажми магнит, чтобы написать сразу несколько мыслей. Удерживай для голоса, если устройство поддерживает распознавание. Перед сохранением можно исправить то, как Магнит разложил записи.</p></details>
+<details><summary>Напоминания и личные данные</summary><p>В уведомлениях названия дел по умолчанию скрыты. Показ можно включить в настройках. Дневник и вложения остаются на устройстве; делай резервную копию перед переустановкой.</p></details>
+</div><div class="stack"><button type="button" class="btn w" data-a="magdemo">Попробовать магнит на примере</button><button type="button" class="btn ghost w" data-a="magintro">Повторить знакомство</button></div>`);
+A.magintro=()=>sheetIntro(0);
+sheetSettings=(function(prev){return function(){
+  prev();const sh=$("#sheet");if(!sh||sh.querySelector('[data-a="maghelp"]'))return;
+  const b=document.createElement("div");b.className="stack";
+  b.innerHTML=`<button type="button" class="btn ghost w" data-a="maghelp">? Как пользоваться Магнитом</button>`;
+  const first=sh.querySelector(".lb");if(first)first.before(b);else sh.appendChild(b);
+}})(sheetSettings);
+
+/* №18: чётко обозначенные кнопки под каждой записью, включая чеклисты и фото. */
+dayNotes=(function(prev){return function(k){let html=prev(k);const notes=(D.days[k]&&D.days[k].notes)||[];
+  notes.forEach((n,i)=>{const bar=NOTEBAR(k,i);const actions=`<button type="button" class="nlabelact" data-a="nedit" data-d="${k}" data-i="${i}">Изменить</button><button type="button" class="nlabelact danger" data-a="nremove" data-d="${k}" data-i="${i}">Удалить</button>`;
+    html=html.replace(bar,bar.replace('</div>',actions+'</div>'));
+  });return html;
+}})(dayNotes);
+A.nremove=e=>{const k=e.dataset.d,i=+e.dataset.i,n=noteOf(k,i);if(!n)return;
+  if(!window.confirm('Удалить эту запись из дневника? Это действие нельзя отменить.'))return;
+  const dy=day(k);dy.notes.splice(i,1);save();render();toast('Запись удалена');
+};
+
+/* №18: отображаем запуск голосового ввода без искусственной блокировки на 900 мс.
+   Повторный тап штатно останавливает VOX; скорость нативного движка зависит от Android. */
+A.mic=(function(prev){return function(e){
+  const b=e;if(!b)return;
+  const wasOn=!!(typeof VOX!=="undefined"&&VOX.on);
+  b.setAttribute("aria-label",wasOn?"Останавливаем надиктовку":"Подключаем микрофон");
+  const result=prev(e);
+  setTimeout(()=>{if(b.isConnected)b.setAttribute("aria-label",typeof VOX!=="undefined"&&VOX.on?"Остановить надиктовку":"Надиктовать")},250);
+  return result;
+}})(A.mic);
+
+/* 0.9.15 stage 07 #1/#18: резервная копия с вложениями без глобальной
+   подмены JSON.stringify. Сначала проверяем файлы, потом сохраняем копию. */
+function backupAttachmentIds0915(data){const ids=new Set();Object.values(data.days||{}).forEach(d=>{
+  (d.notes||[]).forEach(n=>{(n.ph||[]).forEach(id=>{if(id)ids.add(id)});if(n.audio&&n.audio.id)ids.add(n.audio.id)})
+});return [...ids]}
+async function backupPayload0915(){const photos={};for(const id of backupAttachmentIds0915(D)){
+  const data=await PH.get(id);
+  if(typeof data!=="string"||!data.startsWith("data:"))throw new Error("Не найдено вложение "+id);
+  photos[id]=data;
+}return JSON.stringify({magnitBackup:2,schema:SCHEMA,app:APP_VER,at:Date.now(),data:D,photos})}
+saveBackup=async function(btn){let data;
+  try{if(btn)btn.disabled=true;data=await backupPayload0915()}
+  catch(e){toast("Не все вложения доступны. Копия не создана — проверь фото и аудио в дневнике.");return false}
+  finally{if(btn)btn.disabled=false}
+  const CP=window.Capacitor;const P=CP&&CP.Plugins||{};
+  if(CP&&CP.isNativePlatform&&CP.isNativePlatform()){
+    try{const w=await P.Filesystem.writeFile({path:backupName(),data,directory:"CACHE",encoding:"utf8"});
+      try{await P.Share.share({title:"Копия Магнита",text:"Резервная копия Магнита",files:[w.uri],dialogTitle:"Куда сохранить копию?"})}
+      catch(e){if(/cancel|dismiss/i.test(String(e&&e.message||e))){toast("Сохранение копии отменено");return false}throw e}
+      D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return true
+    }catch(e){try{await P.Filesystem.writeFile({path:backupName(),data,directory:"DOCUMENTS",encoding:"utf8"});
+      D.lastBackup=TODAY();save();toast("Копия сохранена в «Документах»");return true
+    }catch(e2){toast("Не удалось сохранить файл. Данные не удалены.");return false}}
+  }
+  if(DL){try{await DL.save({filename:backupName(),data});D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return true}
+    catch(e){if(e&&e.code&&/not_granted|declined|dismiss/i.test(e.code)){toast("Сохранение отменено");return false}}}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=backupName();document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},700);D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия подготовлена ✓";return true}
+  catch(e){toast("Не удалось подготовить файл копии");return false}
+};
+/* Сначала вложения из того же файла — и только после их успешного сохранения
+   заменяем D. При ошибке старые записи на устройстве не трогаем. */
+A.rsgo=async function(){const d0=window.__rs;if(!d0)return;
+  const f=$("#rsf")&&$("#rsf").files&&$("#rsf").files[0];let o=null;
+  if(f){try{o=JSON.parse(await f.text())}catch(e){toast("Файл копии не читается — данные не изменены");return}}
+  const d=o?(o.magnitBackup?o.data:o):d0;
+  if(!d||!Array.isArray(d.tasks)||!Array.isArray(d.habits)||!Array.isArray(d.goals)||!d.days){toast("Копия неполная — данные не изменены");return}
+  const files=o&&o.photos||window.__rsph||{};
+  const ids=backupAttachmentIds0915(d),missing=ids.filter(id=>typeof files[id]!=="string"||!files[id].startsWith("data:"));
+  if(missing.length){toast("В копии не хватает фото или аудио ("+missing.length+"). Данные не изменены.");return}
+  const b=$("#sheet [data-a=rsgo]");if(b)b.disabled=true;
+  try{for(const id of ids)await PH.put(id,files[id])}
+  catch(e){toast("Не удалось сохранить вложения. Старые записи не изменены.");if(b)b.disabled=false;return}
+  D=Object.assign(blank(),d);D.started=true;D.set=Object.assign(blank().set,d.set||{});
+  save();window.__rs=null;window.__rsph=null;closeSheet();applyLook();UI.tab="today";render();toast("Восстановлено из копии вместе с вложениями");
+};
+
+
+/* ===== 0.9.15 этап 08, №22: полезные команды центрального магнита =====
+   Ничего не сохраняем на этапе разбора: пользователь видит карточку и
+   подтверждает действие обычной кнопкой. Формат старых записей не меняем. */
+function magnetChecklist08(v){
+  const m=String(v||"").match(/^\s*(?:(?:создай|сделай|запиши|добавь|составь)\s+)?(?:список|чеклист)(?:\s+([^:\n]{0,80}?))?\s*[:—-]\s*([^\n]+(?:\n[^\n]+)*)$/i);
+  if(!m)return null;
+  const name=(m[1]||"").trim().replace(/^(покупок|продуктов)$/i,"Покупки")||"Список";
+  const lines=m[2].split(/\s*,\s*|\s*;\s*|\r?\n/).map(x=>x.replace(/^[-•*☐✓]\s*/,"").trim()).filter(Boolean);
+  if(lines.length<2||lines.length>30||lines.some(x=>x.length>120))return{kind:"ans",ic:"help",tone:"task",title:"Уточни пункты списка",desc:"Например: «список покупок: хлеб, молоко, яйца». От 2 до 30 коротких пунктов."};
+  const title=name.charAt(0).toUpperCase()+name.slice(1);
+  return{kind:"maglist08",ic:"note",tone:"task",title:"Список «"+esc(title)+"» в дневник",desc:lines.map(x=>"☐ "+esc(x)).join("<br>"),apply(){
+    const d=new Date(),dy=day(TODAY());dy.notes=dy.notes||[];
+    dy.notes.push({t:title,list:lines.map(t=>({t,done:false})),ts:Date.now(),tm:pad(d.getHours())+":"+pad(d.getMinutes())});
+    return"список «"+title+"» в дневнике"}};
+}
+/* Не изменяем похожие дела наугад: однозначное буквальное совпадение либо
+   заметное преимущество одного кандидата. Иначе просим уточнить название. */
+function magnetFindTask08(text){
+  const q=norm(String(text||"").trim().replace(/^[«“"]+|[»”"]+$/g,"")).trim();if(!q)return null;
+  const tasks=D.tasks.filter(t=>!t.done);
+  const exact=tasks.filter(t=>norm(t.t).trim()===q);
+  if(exact.length===1)return exact[0];if(exact.length>1)return null;
+  const scored=tasks.map(t=>({t,s:sim(q,t.t)})).sort((a,b)=>b.s-a.s);
+  if(!scored.length||scored[0].s<.7)return null;
+  if(scored[1]&&scored[0].s-scored[1].s<.2)return null;
+  return scored[0].t;
+}
+const _p22=parseOne;
+parseOne=function(v,ctx){
+  const list=magnetChecklist08(v);if(list)return list;
+  let m=String(v||"").match(/^\s*(?:отметь|отметить|выполнил|выполнила|завершил|завершила)\s+(?:дело\s+)?(.+?)(?:\s+(?:выполненн(?:ым|ой)|сделанн(?:ым|ой)))?\s*$/i);
+  if(m){const t=magnetFindTask08(m[1]);if(!t)return{kind:"ans",ic:"help",tone:"task",title:"Не нашёл однозначное дело",desc:"Укажи полное название незавершённого дела. Я не стану отмечать другое случайно."};
+    return{kind:"magdone08",ic:"check",tone:"task",title:"Отметить выполненным: "+esc(t.t),desc:"Дело «"+esc(t.t)+"» · "+esc(t.d?dshort(t.d):"без даты")+". Отметится только после подтверждения.",apply(){
+      if(t.done)return"уже выполнено";toggleTask(t.id);return"дело «"+t.t+"» выполнено"}}}
+  m=String(v||"").match(/^\s*(?:измени|поменяй|перенеси|установи)\s+(?:время\s+)?(?:дела\s+)?(.+?)\s+(?:на|в)\s+(\d{1,2}:\d{2})\s*$/i);
+  if(m){const t=magnetFindTask08(m[1]),h=+m[2].split(":")[0],min=+m[2].split(":")[1];
+    if(h>23||min>59)return{kind:"ans",ic:"help",tone:"task",title:"Неверное время",desc:"Напиши время от 00:00 до 23:59."};
+    if(!t)return{kind:"ans",ic:"help",tone:"task",title:"Не нашёл однозначное дело",desc:"Укажи точное название дела, чтобы изменить время без ошибки."};
+    const time=m[2].padStart(5,"0");
+    return{kind:"magtime08",ic:"clock",tone:"task",title:"Время дела: "+esc(t.t),desc:esc(t.time||"без времени")+" → <b>"+time+"</b> · после подтверждения",apply(){t.time=time;return"время «"+t.t+"»: "+time}}}
+  return _p22(v,ctx);
+};
+/* Команда списка содержит запятые: это один чеклист, не три покупки.
+   Существующие комбинированные команды по запятым остаются прежними. */
+const _split22=splitLines;
+splitLines=function(v){if(/^\s*(?:(?:создай|сделай|запиши|добавь|составь)\s+)?(?:список|чеклист)(?=\s|:|—|$)/i.test(v))return[v.trim()];return _split22(v)};
+/* На карточке явно написано, что действие требует подтверждения. */
+drawPrev=(function(prev){return function(){prev();const st=SH&&SH.st,b=$("#qbtn");if(!st||!b||st.items.length!==1)return;
+ const r=st.items[0];if(r.kind==="maglist08")b.textContent="Создать список";
+ if(r.kind==="magdone08"||r.kind==="magtime08")b.textContent="Подтвердить изменение";
+}})(drawPrev);
+
+
+/* ====== 0.9.15 этап 09 — №7/8/22: обучение отражает реальные команды ======
+   В двух путях знакомства и в справке показываем только то, что есть в парсере.
+   Образцы открывают предпросмотр, а не записывают данные автоматически. */
+function magnetPractice09(sample){
+  sheetQuick(false);
+  const q=$("#qq");if(!q)return;
+  q.value=sample;
+  q.dispatchEvent(new Event("input",{bubbles:true}));
+}
+A.magdemo=()=>magnetPractice09("завтра в 19 позвонить маме, 300 на кофе, хочу на море");
+A.magdemolist=()=>magnetPractice09("список покупок: хлеб, молоко, яйца");
+/* «С чистого листа»: расширяем последний экран существующего знакомства,
+   не добавляя обязательные шаги и не меняя поведение остальных экранов. */
+const MAGNET_INTRO_09=INTRO.find(s=>s.h==="Попробуй кнопку-магнит");
+if(MAGNET_INTRO_09){
+  MAGNET_INTRO_09.h="Магнит помогает с делами";
+  MAGNET_INTRO_09.p="Нажми магнит для текста или удерживай для голоса. Он может разобрать несколько мыслей, сделать чеклист и изменить уже записанное дело. Сначала покажет результат — решаешь ты.";
+  MAGNET_INTRO_09.art=()=>`<div class="iart plain magnetlearn09">
+    <p class="small" style="line-height:1.45;margin:0 0 10px"><b>Несколько мыслей сразу</b><br>«завтра в 19 позвонить маме, 300 на кофе, хочу на море»</p>
+    <button type="button" class="btn w" data-a="magdemo">Попробовать разбор мыслей</button>
+    <p class="small" style="line-height:1.45;margin:12px 0 10px"><b>Чеклист одной фразой</b><br>«список покупок: хлеб, молоко, яйца»</p>
+    <button type="button" class="btn ghost w" data-a="magdemolist">Попробовать список</button>
+    <p class="small mut" style="line-height:1.45;margin:12px 0 0"><b>Когда дело уже есть:</b> «измени время встречи с врачом на 18:30» или <code>отметь «Встреча с врачом» выполненным</code>. Название должно совпадать с существующим делом. Изменение — только после подтверждения.</p>
+    <p class="small mut" style="margin-top:8px">Примеры можно посмотреть без сохранения. Чтобы записать что-то по-настоящему, отдельно нажми кнопку подтверждения.</p>
+  </div>`;
+}
+/* «Познакомиться · 2 минуты»: тот же практический пример после настройки.
+   Завершение знакомства по-прежнему необязательное; ввод не меняет данные. */
+suDone=(function(prev){return function(){
+  prev();const sh=$("#sheet"),button=sh&&sh.querySelector(".magtry");
+  if(!button||sh.querySelector(".magtrylist09"))return;
+  const hint=document.createElement("p");hint.className="small mut";
+  hint.textContent="Магнит также создаёт чеклисты и помогает изменить время или завершить уже записанное дело — после твоего подтверждения.";
+  const listBtn=document.createElement("button");listBtn.type="button";
+  listBtn.className="btn ghost w magtrylist09";listBtn.dataset.a="magdemolist";
+  listBtn.textContent="Попробовать список покупок";
+  button.after(hint,listBtn);
+}})(suDone);
+/* Справка в Настройках: обогащаем существующий раздел, не дублируя всё окно. */
+A.maghelp=(function(prev){return function(){
+  prev();const sh=$("#sheet");if(!sh)return;
+  const details=[...sh.querySelectorAll(".magfaq details")];
+  const section=details.find(el=>el.querySelector("summary")&&el.querySelector("summary").textContent.trim()==="Кнопка-магнит");
+  if(section)section.innerHTML=`<summary>Кнопка-магнит</summary>
+    <p>Тап — написать, удержание — надиктовать, если устройство поддерживает голосовой ввод. Можно записать несколько разных мыслей сразу.</p>
+    <p><b>Создать список:</b> «список покупок: хлеб, молоко, яйца». Получится чеклист в дневнике.</p>
+    <p><b>Изменить дело:</b> «измени время встречи с врачом на 18:30». <b>Отметить сделанным:</b> <code>отметь «Встреча с врачом» выполненным</code>. Эти команды работают с уже записанным делом; если совпадений несколько, Магнит попросит уточнить.</p>
+    <p>Перед созданием или изменением Магнит показывает предпросмотр. Ничего не меняется без подтверждения. Можно закрыть окно, ничего не сохраняя.</p>`;
+  const b=sh.querySelector('[data-a="magdemo"]');
+  if(b&&!sh.querySelector('[data-a="magdemolist"]'))b.insertAdjacentHTML("afterend",'<button type="button" class="btn ghost w" data-a="magdemolist">Попробовать чеклист</button>');
+}})(A.maghelp);
+/* Подсказка рядом с полем ввода: компактно и раскрывается по желанию.
+   На реальном экране qmin удаляет старую .qhelp; вставляем после его обработки. */
+sheetQuick=(function(prev){return function(...args){
+  prev(...args);const sh=$("#sheet"),prevBox=sh&&sh.querySelector("#qprev");
+  if(!prevBox||sh.querySelector(".maghelp09"))return;
+  const detail=document.createElement("details");detail.className="maghelp09 small mut";
+  detail.innerHTML=`<summary>Примеры команд</summary><div style="line-height:1.55;padding-top:6px">
+    <b>Несколько мыслей:</b> «завтра в 19 позвонить маме, 300 на кофе, хочу на море»<br>
+    <b>Чеклист:</b> «список покупок: хлеб, молоко, яйца»<br>
+    <b>Существующее дело:</b> «измени время встречи с врачом на 18:30» или <code>отметь «Встреча с врачом» выполненным</code><br>
+    Сначала проверь предложенное действие, потом подтверждай.</div>`;
+  prevBox.after(detail);
+}})(sheetQuick);
+
+
+/* ===== 0.9.15 этап 10 — №22: привязка к целям и точное напоминание =====
+   Работаем локально, без ИИ и без сохранения до подтверждения. Не выбираем
+   похожую цель при неоднозначном названии. Старые задачи не переписываем. */
+function magnetGoal10(q){
+  const name=norm(String(q||"").trim().replace(/^[«“\"]+|[»”\"]+$/g,"")).trim();
+  if(name.length<3)return null;
+  const all=work();
+  const exact=all.filter(g=>norm(g.t).trim()===name);
+  if(exact.length===1)return exact[0];if(exact.length>1)return null;
+  const partial=all.filter(g=>norm(g.t).includes(name)||name.includes(norm(g.t)));
+  return partial.length===1?partial[0]:null;
+}
+function magnetReminder10(text){
+  const raw=String(text||"").trim();
+  const m=raw.match(/^напомни(?:\s+мне)?\s+(.+)$/i);
+  if(!m)return null;
+  const v=m[1],n=norm(v),d=parseDate(n),time=parseTime(n);
+  /* В старом парсере «в 6» автоматически означало 18:00. Для
+     напоминания это опасная догадка: просим явно 06:00/18:00. */
+  if(time&&/(?:^|\s)(?:в|к|до)\s*[1-7](?!\s*(?:утра|вечера|дня))(?:\s|$)/.test(n))
+    return{kind:"ans",ic:"help",tone:"task",title:"Уточни время",desc:"Напиши 06:00, 18:00 или добавь «утра» / «вечера». Не буду угадывать час напоминания."};
+  if(!d||!time)return{kind:"ans",ic:"help",tone:"task",title:"Укажи дату и время",desc:"Например: «напомни завтра в 8 взять документы». Без даты и времени я не создам напоминание наугад."};
+  const parts=time.split(":").map(Number),when=fromIso(d);
+  when.setHours(parts[0],parts[1],0,0);
+  if(when.getTime()<=Date.now()+30000)return{kind:"ans",ic:"help",tone:"task",title:"Время уже прошло",desc:"Выбери будущую дату и время для напоминания."};
+  const task=cleanText(v);
+  if(!task||!/[а-яёa-z]/i.test(task)||task.length>160)return{kind:"ans",ic:"help",tone:"task",title:"Что напомнить?",desc:"Добавь короткое действие после даты и времени."};
+  return{kind:"magremind10",ic:"clock",tone:"task",text:task,d,time,
+    title:"Напомнить: "+esc(task),
+    desc:"<b>"+esc(dshort(d))+" в "+esc(time)+"</b> · уведомление в указанное время, если напоминания разрешены на телефоне и в приложении. Сохранится только после подтверждения.",
+    apply(){const x=addTask(task,{d,size:"mid"});x.time=time;x.magRemind=true;return"напоминание «"+task+"» на "+dshort(d)+" в "+time}};
+}
+const _p10=parseOne;
+parseOne=function(v,ctx){
+  const input=String(v||"").trim();
+  let m=input.match(/^(?:для\s+цели|к\s+цели|для\s+магнита)\s+(.+?)\s+(?:добавь|запиши|поставь|создай|напомни)\s+(.+)$/i);
+  if(m){
+    const g=magnetGoal10(m[1]);
+    if(!g)return{kind:"ans",ic:"help",tone:"task",title:"Не нашёл одну подходящую цель",desc:"Укажи точное название одной активной цели. Если целей с похожим названием несколько, сначала уточни название."};
+    const reminder=/\s+напомни\s+/i.test(input);
+    const item=reminder?magnetReminder10("напомни "+m[2]):_p10(m[2],"today");
+    if(item.kind==="ans")return item;
+    if(item.kind!=="task"&&item.kind!=="magremind10")return{kind:"ans",ic:"help",tone:"task",title:"Нужен шаг к цели",desc:"Например: «для цели английский добавь повторить 10 слов завтра»."};
+    const d=item.d||TODAY(),title=item.text;
+    if(!title||!title.trim())return{kind:"ans",ic:"help",tone:"task",title:"Не понял действие",desc:"Напиши, какой конкретно шаг добавить к цели."};
+    return{kind:"maggoal10",ic:"target",tone:"task",title:"Шаг к «"+esc(g.t)+"»",text:title,
+      desc:"<b>"+esc(title)+"</b> · "+esc(dshort(d))+(item.time?" · "+esc(item.time):"")+(reminder?" · напоминание в точное время (если разрешено)":"")+". Добавится только после подтверждения.",
+      apply(){const current=goal(g.id);if(!current||current.st!=="work")return"цель больше не активна, шаг не записан";
+        const x=addTask(title,{d,size:item.size||"mid",goal:g.id});if(item.time)x.time=item.time;if(item.est)x.est=item.est;if(reminder)x.magRemind=true;
+        return"шаг «"+title+"» к цели «"+g.t+"»"}};
+  }
+  /* Отдельная команда переноса даты не должна притворяться новым делом. */
+  const move=input.match(/^перенеси\s+(?:дело\s+)?(.+?)\s+(?:на|в|во)\s+(сегодня|завтра|послезавтра|понедельник|вторник|среду|четверг|пятницу|субботу|воскресенье|пн|вт|ср|чт|пт|сб|вс|через\s+\d+\s+(?:дней|дня|день))\s*$/i);
+  if(move){const t=magnetFindTask08(move[1]),d=parseDate(norm(move[2]));
+    if(!t||!d)return{kind:"ans",ic:"help",tone:"task",title:"Нужно уточнить дело или дату",desc:"Напиши полное название существующего дела и будущий день. Похожие дела не переношу наугад."};
+    if(t.magRemind&&t.time){const x=fromIso(d),m=t.time.split(":").map(Number);x.setHours(m[0],m[1],0,0);
+      if(x.getTime()<=Date.now()+30000)return{kind:"ans",ic:"help",tone:"task",title:"Время напоминания уже прошло",desc:"У этого дела есть напоминание. Выбери будущий день, чтобы оно не потерялось."};}
+    return{kind:"magmove10",ic:"clock",tone:"task",title:"Перенести: "+esc(t.t),desc:"<b>"+esc(t.d?dshort(t.d):"без даты")+" → "+esc(dshort(d))+"</b> · только после подтверждения.",apply(){const cur=D.tasks.find(x=>x.id===t.id);if(!cur||cur.done)return"дело больше недоступно";cur.d=d;return"дело «"+cur.t+"» перенесено на "+dshort(d)}};
+  }
+  const rem=magnetReminder10(input);if(rem)return rem;
+  return _p10(v,ctx);
+};
+/* Чтобы одна команда «для цели …» не разбилась по запятым на разные дела. */
+const _split10=splitLines;
+splitLines=function(v){if(/^\s*(?:для\s+цели|к\s+цели|для\s+магнита)\s+/i.test(v))return[v.trim()];return _split10(v)};
+drawPrev=(function(prev){return function(){prev();const st=SH&&SH.st,b=$("#qbtn");if(!st||!b||st.items.length!==1)return;
+  if(st.items[0].kind==="maggoal10")b.textContent="Добавить шаг к цели";
+  if(st.items[0].kind==="magremind10")b.textContent="Создать напоминание";
+  if(st.items[0].kind==="magmove10")b.textContent="Подтвердить перенос";
+}})(drawPrev);
+/* Пробные команды не изменяют реальные записи до подтверждения. */
+A.magdemogoal=()=>magnetPractice09("для цели английский добавь повторить 10 слов завтра");
+A.magdemorem=()=>magnetPractice09("напомни завтра в 8 взять документы");
+const _intro10=INTRO.find(s=>s.h==="Магнит помогает с делами");
+if(_intro10){
+  const previous=_intro10.art;
+  _intro10.p="Нажми магнит для текста или удерживай для голоса. Он разбирает мысли, делает чеклисты, помогает с делами и шагами к целям, создаёт напоминания. Сначала покажет результат — решаешь ты.";
+  _intro10.art=()=>previous()+`<div class="iart plain magnetlearn09"><p class="small mut" style="line-height:1.45">Можно также написать: «для цели английский добавь повторить 10 слов завтра», «напомни завтра в 8 взять документы» или «перенеси тренировку на пятницу». Для шага нужна уже созданная цель. Ничего не сохраняется без подтверждения.</p><button type="button" class="btn ghost w" data-a="magdemorem">Попробовать напоминание</button></div>`;
+}
+suDone=(function(prev){return function(){prev();const sh=$("#sheet"),btn=sh&&sh.querySelector(".magtrylist09");if(!btn||sh.querySelector(".magtryrem10"))return;
+  const p=document.createElement("p");p.className="small mut";p.textContent="Магнит также связывает дела с существующими целями и предлагает напоминания на нужное время.";
+  const b=document.createElement("button");b.type="button";b.className="btn ghost w magtryrem10";b.dataset.a="magdemorem";b.textContent="Попробовать напоминание";btn.after(p,b);
+}})(suDone);
+A.maghelp=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh)return;
+  const section=[...sh.querySelectorAll(".magfaq details")].find(el=>el.querySelector("summary")&&el.querySelector("summary").textContent.trim()==="Кнопка-магнит");
+  if(section){const p=document.createElement("p");p.innerHTML="<b>Шаг к цели:</b> «для цели английский добавь повторить 10 слов завтра» (цель должна быть в работе).<br><b>Напоминание:</b> «напомни завтра в 8 взять документы».<br><b>Перенос:</b> «перенеси тренировку на пятницу». Уведомление планируется на указанное время, если оно разрешено на Android и в Магните. Для неизвестных или неоднозначных целей и дел приложение попросит уточнить.";section.appendChild(p)}
+  const btn=sh.querySelector('[data-a="magdemolist"]');if(btn&&!sh.querySelector('[data-a="magdemorem"]'))btn.insertAdjacentHTML("afterend",'<button type="button" class="btn ghost w" data-a="magdemorem">Попробовать напоминание</button>');
+}})(A.maghelp);
+sheetQuick=(function(prev){return function(...args){prev(...args);const sh=$("#sheet"),detail=sh&&sh.querySelector(".maghelp09>div");if(!detail||detail.querySelector(".maghint10"))return;
+  detail.insertAdjacentHTML("beforeend",'<span class="maghint10"><br><b>Шаг к цели:</b> «для цели английский добавь повторить 10 слов завтра»<br><b>Напоминание:</b> «напомни завтра в 8 взять документы»<br><b>Перенести дело:</b> «перенеси тренировку на пятницу»</span>');
+}})(sheetQuick);
+
+/* ===== 0.9.15 этап 11 — №22: безопасный разбор нескольких явных команд =====
+   При смешанном вводе не дробим запятые внутри чеклистов и названий целей.
+   Разделяем только при явном переходе к новой команде; остальное оставляем
+   существующему разбору монолога, чтобы сохранить обратную совместимость. */
+const MAGNET_TOO_MANY11="__MAGNET_TOO_MANY_11__";
+const MAGNET_START11="(?:напомни(?:\\s+мне)?|для\\s+цели|к\\s+цели|для\\s+магнита|перенеси(?:\\s+дело)?|измени(?:\\s+время)?|поменяй(?:\\s+время)?|отметь(?:\\s+дело)?|сделай\\s+(?:список|чеклист)|создай\\s+(?:список|чеклист)|запиши\\s+(?:список|чеклист)|добавь\\s+(?:список|чеклист)|составь\\s+(?:список|чеклист)|список|чеклист)(?=\\s|[:—-]|$)";
+const MAGNET_BOUND11=new RegExp("(?:\\s*[,;.!?]\\s*(?:(?:а|и)\\s+ещ[её]\\s+|а\\s+также\\s+|затем\\s+)?|\\s+(?:(?:а|и)\\s+ещ[её]|а\\s+также|затем|после\\s+этого)\\s+)(?="+MAGNET_START11+")","gi");
+function magnetCommands11(value){
+  const v=String(value||"").trim();if(!v)return null;
+  /* Точка с запятой — намеренный разделитель. Но в списке это может
+     быть разделитель самих покупок: собираем элементы списка обратно,
+     пока не встретится следующая явно выраженная команда. */
+  const listStart=/^(?:(?:создай|сделай|запиши|добавь|составь)\s+)?(?:список|чеклист)(?=\s|[:—-]|$)/i;
+  const cmdStart=new RegExp("^"+MAGNET_START11,"i");
+  const sections=[];
+  if(v.includes(";"))v.split(";").map(x=>x.trim()).filter(Boolean).forEach(x=>{
+    if(sections.length&&listStart.test(sections[sections.length-1])&&!cmdStart.test(x))sections[sections.length-1]+="; "+x;
+    else sections.push(x)
+  });
+  else sections.push(v);
+  const pieces=sections.flatMap(x=>x.split(MAGNET_BOUND11)).map(s=>s.trim().replace(/^[,;.!?\s]+|[,;.!?\s]+$/g,"")).filter(Boolean);
+  if(pieces.length<2)return null;
+  /* Защитный отказ вместо потери хвоста либо случайного сохранения одного дела. */
+  if(pieces.length>12)return [MAGNET_TOO_MANY11];
+  return pieces;
+}
+const _split11=splitLines;
+splitLines=function(v){return magnetCommands11(v)||_split11(v)};
+const _parse11=parseOne;
+parseOne=function(v,ctx){if(v===MAGNET_TOO_MANY11)return{kind:"ans",ic:"help",tone:"task",title:"Слишком много команд",desc:"Раздели сообщение на несколько частей — не более 12 команд за раз. Ничего не записано."};return _parse11(v,ctx)};
+/* Прежний quickSave отбрасывал карточки «не понял», молча сохраняя остальные.
+   Для смешанных голосовых команд это риск: требуем исправить ввод либо убрать
+   непонятную карточку нажатием × до единого подтверждения. */
+const _draw11=drawPrev;
+drawPrev=function(){_draw11();const st=SH&&SH.st,b=$("#qbtn"),box=$("#qprev");if(!st||!b||!box)return;
+  const blocked=st.items.some(r=>r.kind==="ans")&&st.items.some(r=>r.kind!=="ans");
+  const prev=box.querySelector(".magwarn11");if(prev)prev.remove();
+  if(blocked){b.disabled=true;b.textContent="Уточни непонятное";
+    const warning=document.createElement("p");warning.className="magwarn11 small mut";warning.setAttribute("role","status");
+    warning.textContent="Есть непонятная команда. Исправь текст или убери её карточку (×), прежде чем сохранять остальные.";
+    box.appendChild(warning)}
+};
+const _quick11=quickSave;
+quickSave=function(){const st=SH&&SH.st;if(st&&st.items.some(r=>r.kind==="ans")&&st.items.some(r=>r.kind!=="ans")){
+  toast("Уточни непонятную команду или убери её карточку (×)");return}
+  return _quick11()};
+/* Одно и то же поведение объясняем при первом запуске и в справке. */
+const _intro11=INTRO.find(s=>s.h==="Магнит помогает с делами");
+if(_intro11){const old=_intro11.art;_intro11.art=()=>old()+`<div class="iart plain magnetlearn09"><p class="small mut" style="line-height:1.5"><b>Несколько команд сразу:</b> «напомни завтра в 8 взять документы, а ещё список покупок: хлеб, молоко, яйца». Магнит покажет две карточки. Если не понял одну из них, попросит уточнить, а не сохранит часть молча.</p><button type="button" class="btn ghost w" data-a="magdemomulti">Попробовать две команды</button></div>`}
+A.magdemomulti=()=>magnetPractice09("напомни завтра в 8 взять документы, а ещё список покупок: хлеб, молоко, яйца");
+suDone=(function(prev){return function(){prev();const sh=$("#sheet"),b=sh&&sh.querySelector(".magtryrem10");if(!b||sh.querySelector(".magtrymulti11"))return;
+  const p=document.createElement("p");p.className="small mut";p.textContent="Можно произнести несколько разных команд за один раз: Магнит покажет каждую перед сохранением.";
+  const demo=document.createElement("button");demo.type="button";demo.className="btn ghost w magtrymulti11";demo.dataset.a="magdemomulti";demo.textContent="Попробовать две команды";b.after(p,demo)
+}})(suDone);
+A.maghelp=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh)return;
+  const section=[...sh.querySelectorAll(".magfaq details")].find(el=>el.querySelector("summary")&&el.querySelector("summary").textContent.trim()==="Кнопка-магнит");
+  if(section){const p=document.createElement("p");p.innerHTML="<b>Несколько команд:</b> «напомни завтра в 8 взять документы, а ещё список покупок: хлеб, молоко, яйца». Можно говорить сразу несколько просьб. Если одна непонятна, Магнит попросит уточнить, прежде чем записывать остальные.";section.appendChild(p)}
+  const b=sh.querySelector('[data-a="magdemorem"]');if(b&&!sh.querySelector('[data-a="magdemomulti"]'))b.insertAdjacentHTML("afterend",'<button type="button" class="btn ghost w" data-a="magdemomulti">Попробовать две команды</button>');
+}})(A.maghelp);
+sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#sheet .maghelp09>div");if(box&&!box.querySelector(".maghint11"))box.insertAdjacentHTML("beforeend",'<span class="maghint11"><br><b>Несколько команд:</b> «напомни завтра в 8 взять документы, а ещё список покупок: хлеб, молоко, яйца»</span>')
+}})(sheetQuick);
+
+/* ===== 0.9.15 этап 12 — №22: осторожный разбор разговорных перечислений =====
+   Пауза/запятая + узнаваемое начало нового намерения — отдельная карточка.
+   Не делим произвольный текст, дневниковые заметки и названия покупок; не
+   обещаем свободное распознавание речи без ИИ. Сохраняем проверенные этапы 08–11. */
+const MAGNET_LEAD12="(?:напомни(?:\\s+мне)?|для\\s+цели|к\\s+цели|для\\s+магнита|перенеси(?:\\s+дело)?|измени(?:\\s+время)?|поменяй(?:\\s+время)?|отметь(?:\\s+дело)?|(?:создай|сделай|запиши|добавь|составь)\\s+(?:список|чеклист)|список|чеклист|сегодня|завтра|послезавтра|хочу|мечтаю|потратил[аи]?|заплатил[аи]?|купил[аи]?|получил[аи]?|заработал[аи]?|\\+?\\d{1,6}(?:\\s*(?:₽|руб(?:лей|ля|ль)?|р\\.(?=\\s|$))|(?=\\s+на\\s+)))(?=\\s|[:—-]|$)";
+const MAGNET_BOUND12=new RegExp("(?:\\s*[,!?…]\\s*|\\.\\s+|\\s+(?:(?:а|и)\\s+ещ[её]|а\\s+также|затем|после\\s+этого|а\\s+потом|потом)\\s+)(?="+MAGNET_LEAD12+")","gi");
+const MAGNET_DIARY12=/^\s*(?:мысль|мысли|заметка|дневник|запись|запиши\s+в\s+дневник|идея)\s*(?:[:—-]|\s)/i;
+const MAGNET_LIST12=/^\s*(?:(?:создай|сделай|запиши|добавь|составь)\s+)?(?:список|чеклист)(?=\s|[:—-]|$)/i;
+function magnetVoice12(value){
+  const v=String(value||"").trim();if(!v||MAGNET_DIARY12.test(v))return null;
+  const out=[];let from=0;
+  const re=new RegExp(MAGNET_BOUND12.source,"gi");let m;
+  while((m=re.exec(v))){
+    /* Предложение в русских кавычках — часть названия, не новая просьба. */
+    const prefix=v.slice(0,m.index);
+    if((prefix.match(/«/g)||[]).length>(prefix.match(/»/g)||[]).length)continue;
+    /* Без явного «а ещё» запятые в списке — разделители покупок. */
+    if(MAGNET_LIST12.test(v.slice(from))&&!/(?:а|и)\s+ещ[её]|а\s+также|затем|после\s+этого/i.test(m[0]))continue;
+    const head=v.slice(from,m.index).trim().replace(/[,.!?…]+$/g,"");
+    if(!head)continue;
+    out.push(head);from=re.lastIndex;
+  }
+  const tail=v.slice(from).trim();if(tail)out.push(tail);
+  if(out.length<2)return null;
+  if(out.length>12)return[MAGNET_TOO_MANY11];
+  return out;
+}
+const _split12=splitLines;
+splitLines=function(v){
+  if(MAGNET_DIARY12.test(String(v||"")))return[String(v).trim()];
+  /* Путь этапа 11 приоритетен: уже проверенные явные команды неизменны. */
+  if(magnetCommands11(v))return _split12(v);
+  return magnetVoice12(v)||_split12(v);
+};
+/* Новые примеры показываем во всех трёх местах обучения, без автосохранения. */
+A.magdemovoice12=()=>magnetPractice09("завтра в 19 позвонить маме, а ещё потратил 350 на кофе, и ещё хочу велосипед");
+const _intro12=INTRO.find(s=>s.h==="Магнит помогает с делами");
+if(_intro12){const p=_intro12.art;_intro12.art=()=>p()+`<div class="iart plain magnetlearn09"><p class="small mut" style="line-height:1.5"><b>Можно говорить по-человечески:</b> «завтра в 19 позвонить маме, а ещё потратил 350 на кофе, и ещё хочу велосипед». Магнит покажет три карточки. Проверь их перед сохранением.</p><button type="button" class="btn ghost w" data-a="magdemovoice12">Попробовать длинную фразу</button></div>`;}
+suDone=(function(prev){return function(){prev();const sh=$("#sheet"),b=sh&&sh.querySelector(".magtrymulti11");if(!b||sh.querySelector(".magtryvoice12"))return;
+  const p=document.createElement("p");p.className="small mut";p.textContent="Можно говорить естественно: Магнит попробует выделить разные намерения и покажет их отдельно.";
+  const a=document.createElement("button");a.type="button";a.className="btn ghost w magtryvoice12";a.dataset.a="magdemovoice12";a.textContent="Попробовать длинную фразу";b.after(p,a);
+}})(suDone);
+A.maghelp=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh)return;
+  const s=[...sh.querySelectorAll(".magfaq details")].find(x=>x.querySelector("summary")&&x.querySelector("summary").textContent.trim()==="Кнопка-магнит");
+  if(s){const p=document.createElement("p");p.textContent="Длинная фраза: «завтра в 19 позвонить маме, а ещё потратил 350 на кофе, и ещё хочу велосипед». Магнит отделит намерения, если услышит понятные переходы («а ещё», «затем») или паузы. Если не уверен — проверь и поправь карточки перед сохранением.";s.appendChild(p)}
+  const b=sh.querySelector('[data-a="magdemomulti"]');if(b&&!sh.querySelector('[data-a="magdemovoice12"]'))b.insertAdjacentHTML("afterend",'<button type="button" class="btn ghost w" data-a="magdemovoice12">Попробовать длинную фразу</button>');
+}})(A.maghelp);
+sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#sheet .maghelp09>div");if(box&&!box.querySelector(".maghint12"))box.insertAdjacentHTML("beforeend",'<span class="maghint12"><br><b>Длинная фраза:</b> «завтра в 19 позвонить маме, а ещё потратил 350 на кофе, и ещё хочу велосипед»</span>');
+}})(sheetQuick);
 </script>
 <script>if("serviceWorker"in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script></body></html>
