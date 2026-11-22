@@ -87,6 +87,10 @@ jobs:
           PYCODE
       - name: Build signed release APK
         working-directory: android
+        env:
+          MAGNIT_KEYSTORE_PASSWORD: ${{ secrets.MAGNIT_KEYSTORE_PASSWORD }}
+          MAGNIT_KEY_ALIAS: ${{ secrets.MAGNIT_KEY_ALIAS }}
+          MAGNIT_KEY_PASSWORD: ${{ secrets.MAGNIT_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
