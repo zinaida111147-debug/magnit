@@ -66,6 +66,58 @@
 .drugoy-fx-releasing{animation:drugoy-v4-out .22s ease-out forwards}
 @keyframes drugoy-v4-out{from{opacity:1}to{opacity:0}}
 @media(prefers-reduced-motion:reduce){.drugoy-fx-layer{display:none!important}}
+/* DRUGOY H1.3 — Деньги: только согласованный экран и фильтры */
+.dm-balance{position:relative;min-height:176px;justify-content:center}
+.dm-balance .dm-amount{font-size:clamp(39px,10.8vw,54px);letter-spacing:-.038em;color:var(--hot);font-variant-numeric:tabular-nums;line-height:1.08;overflow-wrap:anywhere}
+.dm-balance .dm-infobtn{position:absolute;top:14px;right:16px;border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:50%;width:29px;height:29px;font-size:17px}
+.dm-balance .dm-hint{margin-top:8px;line-height:1.3}
+.mtop.dm-quick{margin:15px 0 10px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 62px;gap:9px}
+.mtop.dm-quick .dm-qbtn{min-width:0;height:56px;padding:8px 4px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:750}
+.dm-quick .dm-ops{height:56px;display:flex;gap:6px;align-items:center;justify-content:center;padding:0}
+.dm-quick .dm-ops span{font-size:13px;font-weight:700;color:var(--mut)}
+.dm-goals,.dm-expense,.dm-upload{margin-top:12px}
+.dm-cardtitle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+.dm-cardtitle b{font-size:18px}
+.dm-cardtitle .dm-more{border:0;background:none;color:var(--mut);font:inherit;font-size:13px;padding:6px;white-space:nowrap}
+.dm-jar{display:flex;gap:11px;align-items:center;width:100%;text-align:left;background:none;border:0;padding:9px 1px;color:var(--fg);font:inherit}
+.dm-jar + .dm-jar{border-top:1px solid var(--line)}
+.dm-jar-icon{flex:0 0 42px;width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--accsoft)}
+.dm-jar-info{flex:1;min-width:0}
+.dm-jar-name{display:flex;gap:7px;justify-content:space-between;align-items:center;font-size:15px;font-weight:750}
+.dm-jar-name span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-jar-sub{font-size:12px;color:var(--mut);margin:3px 0 6px}
+.dm-prog{height:7px;border-radius:20px;background:var(--line);overflow:hidden}
+.dm-prog i{display:block;height:100%;border-radius:inherit;background:var(--acc);max-width:100%}
+.dm-saved{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:11px;padding:13px 15px;background:var(--sparkbg);border-radius:18px;font-size:13px}
+.dm-saved strong{color:var(--spark);font-size:19px;white-space:nowrap}
+.dm-expense{text-align:left;width:100%;font:inherit;color:var(--fg);cursor:pointer}
+.dm-expense .dm-exphead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dm-expense .sbar{margin:14px 0 11px}
+.dm-expense .catl{margin-top:6px}
+.dm-upload{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:var(--fg)}
+.dm-upload .dm-upload-copy{flex:1;min-width:0}
+.dm-upload small{font-size:12px;font-weight:450;color:var(--mut);line-height:1.35;display:block;margin-top:4px}
+.dm-filters{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.dm-filters .chip{font-size:12px;min-height:36px;padding:7px 11px}
+.dm-custom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:9px 0 11px}
+.dm-custom label{font-size:12px;color:var(--mut);display:block}
+.dm-custom input{margin-top:5px;width:100%;min-width:0;font-size:13px}
+.dm-ops-summary{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;font-size:13px;color:var(--mut);margin:10px 2px}
+.dm-ops-summary b{color:var(--fg)}
+.dm-op-title{font-size:13px;overflow-wrap:anywhere}
+.dm-none{margin:12px 0 4px;color:var(--mut);font-size:14px;line-height:1.4}
+.pmoney .mml{font-size:11px}
+.pmoney .dm-stuck-bal{color:var(--hot)}
+@media(max-width:350px){.mtop.dm-quick{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 52px;gap:6px}.dm-quick .dm-qbtn{font-size:13px}.dm-jar-icon{width:36px;flex-basis:36px}.dm-balance .dm-amount{font-size:37px}}
+
+
+/* Другой H1.4: выбор действий вечером должен быть виден при любой теме. */
+#sheet #etail .nchip,#sheet #etaild .nchip{border:1.5px solid var(--edge);background:var(--glass2);color:var(--fg);font-weight:600;min-height:38px}
+#sheet #etail .nchip.on,#sheet #etaild .nchip.on{background:#C0577A!important;border-color:#C0577A!important;color:#fff!important;box-shadow:0 2px 9px rgba(192,87,122,.24);font-weight:800}
+#sheet #etail .nchip:focus-visible,#sheet #etaild .nchip:focus-visible{outline:3px solid #C0577A;outline-offset:2px}
+:root[data-theme="dark"] #sheet #etail .nchip:not(.on),:root[data-theme="dark"] #sheet #etaild .nchip:not(.on){background:#262233;color:#EDE7F2;border-color:#76627A}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #sheet #etail .nchip:not(.on),:root:not([data-theme="light"]) #sheet #etaild .nchip:not(.on){background:#262233;color:#EDE7F2;border-color:#76627A}}
+
 </style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Магнит"><meta name="apple-mobile-web-app-status-bar-style" content="default"></head><body><title>Магнит</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#F3E6EC">
@@ -4456,7 +4508,7 @@ function askTime(t){D.tlAsk=D.tlAsk||{};const k=TODAY();if((D.tlAsk[k]||0)>=3||t
 const _toggle=toggleTask;toggleTask=function(id){const t=D.tasks.find(x=>x.id===id);const was=t&&t.done;_toggle(id);if(t&&!was&&t.done)setTimeout(()=>askTime(t),t.goal?2600:300)};
 
 /* ---------- разделы открываются постепенно ---------- */
-const UNL=[["goals",3,"Цели","магниты, к которым притягиваются дни. Запиши первое желание — его можно сделать целью"],["tracker",5,"Трекер","привычки по схеме сигнал → действие → минимум"],["money",7,"Деньги","сколько можно тратить сегодня и «сначала себе»"]];
+const UNL=[["goals",3,"Цели","магниты, к которым притягиваются дни. Запиши первое желание — его можно сделать целью"],["tracker",5,"Трекер","привычки по схеме сигнал → действие → минимум"],["money",7,"Деньги","баланс, доходы, траты и копилки"]];
 function isOpen(tab){return true}
 function checkUnlock(){if(!D.started)return;D.unlock=D.unlock||{};const days=Math.floor((Date.now()-(D.created||Date.now()))/864e5)+1;let ch=false;
   UNL.forEach(([t,dd])=>{if(D.unlock[t])return;const by=t==="goals"?D.goals.length>0:t==="tracker"?D.habits.length>0:(D.money.inc.length+D.money.sp.length)>0;if(days>=dd||by){D.unlock[t]=TODAY();D.unNew=t;ch=true}});if(ch)save()}
@@ -5876,4 +5928,184 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  window.addEventListener('blur',stop);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
 })();</script>
+<script>
+/* DRUGOY H1.3 — одобренный экран денег. Не менять схему D.money. */
+(function(){
+  const sumAmount=L=>(L||[]).reduce((s,x)=>s+(Number(x.amt)||0),0);
+  const signedBalance=()=>sumAmount(D.money.inc)-sumAmount(D.money.sp);
+  const monthRows=(L,M)=>L.filter(x=>x.d&&mkey(x.d)===M);
+  const mMoney=()=>mkey(TODAY());
+  const moneyCount=()=>monthRows(D.money.inc,mMoney()).length+monthRows(D.money.sp,mMoney()).length;
+  const allOperations=()=>[...D.money.inc.map(x=>({...x,in:1})),...D.money.sp.map(x=>({...x,in:0}))].sort((a,b)=>String(b.d||'').localeCompare(String(a.d||''))||(b.ts||0)-(a.ts||0));
+  const pocketTotal=()=>D.money.jars.reduce((s,j)=>s+jarSum(j),0);
+  const dmInfo=()=>openSheet('<h3>О балансе</h3><p class="sub">Это разница между всеми записанными доходами и тратами за всё время. Если записи ведутся не с самого начала, сумма может отличаться от денег на счетах.</p><p class="sub">Пополнение копилки не является тратой и не уменьшает баланс. Копилки показывают, сколько ты решил отложить.</p>');
+  vMoney=function(){
+    const m=D.money,k=TODAY(),M=mMoney(),balance=signedBalance(),allSaved=pocketTotal();
+    const income=sumAmount(monthRows(m.inc,M)),spent=sumAmount(monthRows(m.sp,M)),cnt=moneyCount();
+    const savedMonth=m.jars.reduce((s,j)=>s+(j.dep||[]).filter(x=>x.d&&mkey(x.d)===M).reduce((a,x)=>a+(Number(x.amt)||0),0),0);
+    let out=H2('','Деньги','');
+    out+=`<div class="card mcenter dm-balance"><button type="button" class="dm-infobtn" data-a="dmbalinfo" aria-label="Как считается баланс">ⓘ</button><div class="mut" style="font-size:15px">Общий баланс</div><div class="mbig dm-amount">${rub(balance)}</div><div class="small mut dm-hint">По записанным доходам и тратам</div></div>`;
+    out+=`<div class="mtop dm-quick"><button type="button" class="btn dm-qbtn" data-a="income" aria-label="Добавить доход">+ Доход</button><button type="button" class="btn ghost dm-qbtn" data-a="spend" aria-label="Добавить трату">− Трата</button><button type="button" class="btn ghost dm-ops" data-a="ops" aria-label="Операции за месяц: ${cnt}">${IC('list',18)}${cnt?`<span>${cnt}</span>`:''}</button></div>`;
+    out+=`<div class="card dm-goals"><div class="dm-cardtitle"><b>Мои цели и копилки</b><button type="button" class="dm-more" data-a="dmalljars">Все ›</button></div>`;
+    if(m.jars.length){out+=m.jars.slice(0,3).map(j=>{const total=jarSum(j),g=j.goal&&goal(j.goal),pc=j.target>0?Math.min(100,Math.max(0,Math.round(total/j.target*100))):null;
+      return`<button type="button" class="dm-jar" data-a="jar" data-id="${esc(j.id)}"><span class="dm-jar-icon">${GLY(g?g.cover:(j.ico||'pig'),27)}</span><span class="dm-jar-info"><span class="dm-jar-name"><span>${esc(j.name)}</span>${pc!=null?`<strong>${pc}%</strong>`:''}</span><span class="dm-jar-sub">${rub(total)}${j.target?' из '+rub(j.target):' отложено'}</span>${pc!=null?`<span class="dm-prog"><i style="width:${pc}%"></i></span>`:''}</span></button>`}).join('');}
+    else out+='<p class="dm-none">Копилки пока нет. Можно создать её для цели или важной покупки.</p><button type="button" class="chip" data-a="jar">+ Создать копилку</button>';
+    if(savedMonth>0)out+=`<div class="dm-saved"><span>Отложено в этом месяце</span><strong>+${rub(savedMonth)}</strong></div>`;
+    else if(allSaved>0)out+=`<div class="dm-saved"><span>Всего отложено на цели</span><strong>${rub(allSaved)}</strong></div>`;
+    out+='</div>';
+    const groups={};for(const x of monthRows(m.sp,M)){const c=spCat(x);groups[c]=(groups[c]||0)+(Number(x.amt)||0)}
+    const categories=Object.entries(groups).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+    out+=`<button type="button" class="card dm-expense" data-a="cats"><div class="dm-exphead"><b>Расходы · ${MONN[fromIso(k).getMonth()]}</b><span class="small mut">${rub(spent)} ›</span></div>`;
+    if(categories.length){out+=`<div class="sbar" style="height:10px">${categories.map(([c,v])=>`<span style="flex:${v};background:${BANK.col[c]||'#999'}"></span>`).join('')}</div><div class="catl">${categories.slice(0,4).map(([c,v])=>`<span><i style="background:${BANK.col[c]||'#999'}"></i>${esc(c)} <b>${Math.round(v/spent*100)}%</b></span>`).join('')}</div>`}
+    else out+='<p class="dm-none">За этот месяц трат пока нет.</p>';
+    out+='</button>';
+    out+=`<button type="button" class="card dm-upload" data-a="bank">${IC('card',22)}<span class="dm-upload-copy"><b>Загрузить выписку из банка</b><small>PDF, Excel, CSV или текст. Проверка перед добавлением операций.</small></span><span class="mut">›</span></button>`;
+    return out;
+  };
+  /* Быстрый ввод без принудительного распределения 50 / 30 / 20. */
+  sheetIncome=function(){const jars=D.money.jars;
+    openSheet(`<h3>Добавить доход</h3><p class="sub">Запиши поступление. Если хочешь, сразу выдели часть в копилку.</p>
+      <label class="lb" for="ia">Сумма, ₽</label><input id="ia" class="field" inputmode="decimal" placeholder="0" style="font-size:24px;font-weight:700;height:56px">
+      <label class="lb" for="it">Откуда</label><input id="it" class="field" placeholder="Зарплата, подработка, подарок">
+      ${jars.length?`<div class="card" style="margin-top:14px"><b>Отложить в копилку (по желанию)</b><label class="lb" for="dmialloc">Сумма, ₽</label><input id="dmialloc" class="field" inputmode="decimal" placeholder="0"><label class="lb" for="dmij">В какую копилку</label><select id="dmij" class="field">${jars.map(j=>`<option value="${esc(j.id)}">${esc(j.name)}</option>`).join('')}</select><p class="small mut" style="margin:8px 0 0">Эта сумма останется внутри общего баланса.</p></div>`:''}
+      <div class="stack"><button type="button" class="btn w" data-a="isave">Сохранить доход</button></div>`);};
+  sheetSpend=function(){openSheet(`<h3>Добавить трату</h3><p class="sub">Запиши сумму и на что потратил.</p>
+    <label class="lb" for="sa">Сумма, ₽</label><input id="sa" class="field" inputmode="decimal" placeholder="0" style="font-size:24px;font-weight:700;height:56px">
+    <label class="lb" for="st">На что</label><div class="row"><input id="st" class="field" placeholder="Продукты, кафе, такси…">${micBtn('st')}</div>
+    <label class="lb" for="dmcat">Категория (по желанию)</label><select class="field" id="dmcat"><option value="">Определить по названию</option>${BANK.cats.filter(c=>c!=='Переводы').map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+    <div class="stack"><button type="button" class="btn w" data-a="spsave">Сохранить трату</button></div>`);};
+  A.isave=function(){const a=num('ia');if(!Number.isFinite(a)||a<=0){toast('Укажи положительную сумму дохода');return $('#ia').focus()};const field=$('#dmialloc'),deposit=field?(parseFloat(String(field.value).replace(',','.'))||0):0;
+    if(!Number.isFinite(deposit)||deposit<0||deposit>a){toast('Сумма в копилку не может быть больше дохода');if(field)field.focus();return}
+    const j=deposit>0&&D.money.jars.find(x=>x.id===$('#dmij')?.value);if(deposit>0&&!j){toast('Выбери копилку');return}
+    const inc={id:'i'+uid(),d:TODAY(),amt:a,t:$('#it').value.trim()||'Доход',ts:Date.now()};D.money.inc.push(inc);
+    if(j){j.dep=j.dep||[];j.dep.push({d:TODAY(),amt:deposit,t:'из дохода'});const g=j.goal&&goal(j.goal);if(g){g.steps=g.steps||[];g.steps.push({t:'Отложил '+rub(deposit),d:TODAY()});g.last=TODAY()}}
+    save();closeSheet();snd('tick');render();};
+  A.spsave=function(){const a=num('sa');if(!Number.isFinite(a)||a<=0){toast('Укажи положительную сумму траты');return $('#sa').focus()};const t=$('#st').value.trim(),select=$('#dmcat'),cat=select&&select.value?select.value:catOf(t,a);
+    D.money.sp.push({id:'s'+uid(),d:TODAY(),amt:a,t:t||'Трата',cat,b:WANTC.includes(cat)?'want':'need',ts:Date.now()});save();closeSheet();snd('tick');render();};
+  /* Сохраняем компактную историю, добавляем только фильтрацию без мутации данных. */
+  const filter={kind:'all',range:'month',from:'',to:''};
+  const bounds=()=>{const k=TODAY();switch(filter.range){case '7':return [addDays(k,-6),k];case '30':return [addDays(k,-29),k];case 'all':return ['0000-01-01','9999-12-31'];case 'custom':return [filter.from||mkey(k)+'-01',filter.to||k];default:return [mkey(k)+'-01',iso(new Date(fromIso(k).getFullYear(),fromIso(k).getMonth()+1,0))]}};
+  sheetOps=function(){const [from,to]=bounds();const lo=from<=to?from:to,hi=from<=to?to:from;
+    const items=allOperations().filter(x=>x.d&&x.d>=lo&&x.d<=hi&&(filter.kind==='all'||(filter.kind==='inc'?x.in:!x.in)));
+    const inc=sumAmount(items.filter(x=>x.in)),sp=sumAmount(items.filter(x=>!x.in));
+    openSheet(`<h3>Операции</h3><p class="sub">Выбери, что и за какой период посмотреть.</p>
+      <div class="dm-filters" aria-label="Вид операций">${[['all','Все'],['inc','Доходы'],['sp','Траты']].map(([v,t])=>`<button type="button" class="chip${filter.kind===v?' on':''}" data-a="dmopfilter" data-v="${v}" aria-pressed="${filter.kind===v}">${t}</button>`).join('')}</div>
+      <label class="lb" style="margin-top:4px">Период</label><div class="dm-filters" aria-label="Период операций">${[['7','7 дней'],['30','30 дней'],['month','Месяц'],['all','Всё время'],['custom','Свои даты']].map(([v,t])=>`<button type="button" class="chip${filter.range===v?' on':''}" data-a="dmoprange" data-v="${v}" aria-pressed="${filter.range===v}">${t}</button>`).join('')}</div>
+      ${filter.range==='custom'?`<div class="dm-custom"><label>С даты<input type="date" class="field" id="dmfrom" value="${lo}"></label><label>По дату<input type="date" class="field" id="dmto" value="${hi}"></label></div>`:''}
+      <div class="dm-ops-summary"><span>Найдено: <b>${items.length}</b></span><span>+ ${rub(inc)} / − ${rub(sp)}</span></div>
+      <div class="card ops2">${items.length?items.map(x=>`<div class="op2"><span class="od">${dshort(x.d)}</span><span class="ot"><b class="dm-op-title">${esc(x.t||(x.in?'Доход':'Трата'))}</b><small>${x.in?'Доход':esc(spCat(x))}</small></span><span class="a${x.in?' in':''}">${x.in?'+':'−'}${rub(x.amt)}</span><button type="button" class="ox" data-a="opdel2" data-id="${esc(x.id)}" data-in="${x.in?1:0}" aria-label="Удалить операцию">×</button></div>`).join(''):'<p class="dm-none">За выбранный период записей нет.</p>'}</div>
+      <div class="opbtns top"><button type="button" class="btn" data-a="income">+ Доход</button><button type="button" class="btn ghost" data-a="spend">− Трата</button></div>`);
+  };
+  A.dmopfilter=e=>{filter.kind=e.dataset.v;sheetOps()};
+  A.dmoprange=e=>{filter.range=e.dataset.v;if(filter.range==='custom'&&!filter.from){filter.from=mMoney()+'-01';filter.to=TODAY()}sheetOps()};
+  document.addEventListener('change',e=>{if(e.target.id==='dmfrom'||e.target.id==='dmto'){if(e.target.id==='dmfrom')filter.from=e.target.value;else filter.to=e.target.value;sheetOps()}});
+  A.dmbalinfo=dmInfo;
+  A.dmalljars=()=>openSheet(`<h3>Мои цели и копилки</h3><p class="sub">Отложенные суммы не вычитаются из общего баланса.</p>${D.money.jars.map(j=>`<button type="button" class="grow-row" data-a="jar" data-id="${esc(j.id)}"><span class="grow">${esc(j.name)}</span><b>${rub(jarSum(j))}</b><span class="mut">›</span></button>`).join('')||'<p class="dm-none">Пока нет копилок.</p>'}<div class="stack"><button type="button" class="btn w" data-a="jar">+ Создать копилку</button></div>`);
+  sheetCats=function(){const M=mMoney(),C={};monthRows(D.money.sp,M).forEach(x=>{const c=spCat(x);(C[c]=C[c]||[]).push(x)});
+    const L=Object.entries(C).map(([c,a])=>[c,a,sumAmount(a)]).sort((a,b)=>b[2]-a[2]);
+    openSheet(`<h3>Расходы</h3><p class="sub">${MONN[fromIso(TODAY()).getMonth()]} · при необходимости уточни категорию.</p>${L.map(([c,a,v])=>`<div class="sec" style="padding:8px 2px 0"><h2 style="display:flex;align-items:center;gap:6px"><i class="hdot" style="background:${BANK.col[c]||'#999'}"></i>${esc(c)}</h2><span class="c">${rub(v)}</span></div><div class="card" style="padding:4px 14px;margin-top:6px">${a.sort((x,y)=>y.d.localeCompare(x.d)).map(x=>`<div class="op"><span class="small mut" style="width:48px;flex:none">${dshort(x.d)}</span><span class="grow" style="min-width:0;overflow-wrap:anywhere">${esc(x.t)}</span><span class="a">−${rub(x.amt)}</span><select class="catsel" data-sid="${esc(x.id)}" aria-label="Категория">${BANK.cats.map(cc=>`<option${cc===c?' selected':''}>${esc(cc)}</option>`).join('')}</select></div>`).join('')}</div>`).join('')||'<p class="dm-none">Трат в этом месяце пока нет.</p>'}`);
+  };
+  /* Шапка после прокрутки отражает реальный баланс и порядок действий. */
+  const oldStkMini=stkMini;
+  stkMini=function(){if(UI.tab==='money')return `<div class="stkmini pmoney"><span class="mml">баланс</span><b class="dm-stuck-bal">${rub(signedBalance())}</b><span class="grow"></span><button type="button" class="chip on" data-a="income">+ Доход</button><button type="button" class="chip" data-a="spend">− Трата</button><button type="button" class="ib sm" data-a="ops" aria-label="Операции">${IC('list',16)}</button></div>`;return oldStkMini();};
+})();
+
+</script>
+<script>
+/* Другой H1.4: утверждённые исправления вечера и искр. */
+(function(){
+  // Не пересчитываем и не забираем ранее заработанные искры. Новые правила - только для новых действий.
+  const prevAwardH14=award;
+  award=function(key,n,why){
+    if(/^m:|^c:/.test(key)) n=1;
+    else if(/^h:/.test(key)) n=1;
+    else if(/^gp:/.test(key)) n=3;
+    else if(/^t:/.test(key)) n=why==='шаг к цели'?3:(n>1?2:1);
+    else if(/^wk:/.test(key)) n=1;
+    else if(/^g:|^jar:|^self:|^g3:/.test(key)) n=0;
+    if(n<=0){if(!D.aw[key])D.aw[key]=1;return 0}
+    return prevAwardH14(key,n,why);
+  };
+  // Подсказки в три шага, только после 3/6/9 собственных догадок.
+  const guessesH14=w=>(w&&Array.isArray(w.g)?w.g.filter(x=>!x.hint).length:0);
+  const gatesH14=[3,6,9];
+  wordHint=function(){
+    const w=day(TODAY()).word;if(!w||w.won||w.gave)return;
+    const tier=Math.min(3,w.hints||0),count=guessesH14(w);
+    if(tier>=3){toast('Все три подсказки уже открыты');return}
+    if(count<gatesH14[tier]){toast('Следующая подсказка после '+gatesH14[tier]+' попыток');return}
+    if(D.sparks<1){toast('На подсказку нужна 1 искра');return}
+    const W=findW(w),have=new Set(w.g.map(x=>norm(x.w)));
+    const all=Object.entries(W.a).filter(([word,heat])=>!have.has(word)&&word!==norm(w.t)&&Number.isFinite(heat));
+    if(!all.length){toast('Для этого слова больше нет подсказок');return}
+    // Сначала самый дальний от ответа ориентир. Горячую подсказку не выдаём первой.
+    const targets=[35,60,78],ceilings=[84,84,84];
+    const pool=all.filter(x=>x[1]<=ceilings[tier]);
+    if(!pool.length){toast('Нет достаточно мягкой подсказки. Попробуй ещё догадку');return}
+    pool.sort((a,b)=>Math.abs(a[1]-targets[tier])-Math.abs(b[1]-targets[tier])||a[1]-b[1]);
+    const hint=pool[0];spend(1,'подсказка к слову');
+    w.hints=tier+1;w.g.push({w:hint[0],s:hint[1],hint:1});save();sheetWord();
+  };
+  const prevGuessH14=wordGuess;
+  wordGuess=function(v){
+    const w=day(TODAY()).word,q=norm(v),count=guessesH14(w);
+    if(w&&!w.won&&!w.gave&&q&&!w.g.some(x=>norm(x.w)===q)){
+      const s=score(w,q);
+      if(s!=null&&s<100&&count>=10&&(w.penalty||0)<3&&D.sparks>=1){
+        w.penalty=(w.penalty||0)+1;spend(1,'ошибка после 10-й попытки');
+      }
+    }
+    return prevGuessH14(v);
+  };
+  // Верный ответ с 11-й попытки - тоже победа, но без искр.
+  wordLoot=function(w){
+    const n=guessesH14(w),reward=Math.max(0,11-n);
+    w.reward=award('w:'+TODAY(),reward,'слово дня');
+    return{};  // Все старые ресурсы кухни уже заменены искрами.
+  };
+  const prevSheetWordH14=sheetWord;
+  sheetWord=function(){
+    prevSheetWordH14();
+    const w=day(TODAY()).word;if(!w||w.won||w.gave)return;
+    const count=guessesH14(w),tier=Math.min(3,w.hints||0),next=gatesH14[tier],btn=document.querySelector('#sheet [data-a="whint"]');
+    const f=document.querySelector('#sheet [data-f="wguess"]');
+    if(f){const info=f.nextElementSibling;if(info&&info.classList.contains('row')){
+      const p=info.querySelector('span');if(p)p.textContent='Попыток: '+count+(w.g.length>count?' · подсказок: '+(w.hints||0):'');
+    }}
+    if(btn){const text=btn.parentElement.querySelector('.grow');
+      if(next){btn.disabled=D.sparks<1||count<next;
+        if(text)text.textContent=count<next?'Мягкая подсказка после '+next+' попыток':'Открыть подсказку '+(tier+1)+' из 3';
+      }else{btn.disabled=true;if(text)text.textContent='Все подсказки использованы'}
+    }
+    if(count>=10&&!document.querySelector('#sheet .wordrisk14')){
+      const info=document.createElement('p');info.className='wordrisk14 small mut';info.setAttribute('role','status');
+      info.style.cssText='margin:8px 4px;line-height:1.4';
+      info.textContent='С 11-й попытки ошибка стоит 1 искру (не больше 3 за игру). Угадать можно без штрафа, но уже без награды. Потрачено на ошибки: '+(w.penalty||0)+' из 3.';
+      if(f)f.after(info);
+    }
+  };
+  const prevDoneH14=sheetWordDone;
+  sheetWordDone=function(fresh){
+    prevDoneH14(fresh);
+    const w=day(TODAY()).word,win=document.querySelector('#sheet .win');
+    if(!w||!w.won||!win||win.querySelector('.wordreward14')||w.reward==null)return;
+    const el=document.createElement('p');el.className='wordreward14';el.style.cssText='font-weight:700;margin-top:8px;color:var(--spark)';
+    el.textContent=w.reward>0?'За слово дня: +'+w.reward+' '+plural(w.reward,'искра','искры','искр'):'Слово найдено! После 10-й попытки награда 0 искр.';
+    win.appendChild(el);
+  };
+  // Визуально закрепляем состояние выбора в вечернем листе и доступность для экранного диктора.
+  const prevTailActionH14=A.etail;
+  A.etail=function(e){prevTailActionH14(e);
+    const group=document.querySelector('#etail');if(group)group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.classList.contains('on'))));
+  };
+  const prevTailDateH14=A.etaild;
+  A.etaild=function(e){prevTailDateH14(e);
+    const group=document.querySelector('#etaild');if(group)group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.classList.contains('on'))));
+  };
+  const prevEveningH14=sheetEvening;
+  sheetEvening=function(){prevEveningH14();
+    const group=document.querySelector('#etail');if(group){group.setAttribute('role','group');group.setAttribute('aria-label','Что сделать с незавершёнными делами');group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.classList.contains('on'))))}
+  };
+})();
+</script>
 </body></html>
