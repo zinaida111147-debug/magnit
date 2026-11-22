@@ -1,8 +1,14 @@
-name: Android signed APK (manual)
+name: Android signed APK (build / publish)
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish signed APK to Releases/latest (after testing)?'
+        required: true
+        type: boolean
+        default: false
 permissions:
-  contents: read
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -100,3 +106,26 @@ jobs:
           name: Magnit-signed-apk
           path: Magnit-signed.apk
           retention-days: 14
+
+      - name: Verify APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS_DIR="$(find "${ANDROID_HOME}/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "${TOOLS_DIR}/apksigner"
+          "${TOOLS_DIR}/apksigner" verify --verbose Magnit-signed.apk
+
+      - name: Publish signed APK to Releases/latest (manual approval only)
+        if: ${{ inputs.publish_release == true }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # GitHub Actions artifact keeps its own filename; the public release asset is Magnit.apk.
+          cp Magnit-signed.apk Magnit.apk
+          if ! gh release view latest >/dev/null 2>&1; then
+            gh release create latest --title 'Магнит — последняя подписанная сборка' --notes 'Подписанная сборка для тестирования. Перед установкой убедитесь, что данные старого приложения сохранены.' --latest
+          fi
+          gh release upload latest Magnit.apk --clobber
+          gh release edit latest --title 'Магнит — последняя подписанная сборка' --latest

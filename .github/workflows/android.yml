@@ -1,57 +1,13 @@
-name: Android APK
+# Old debug APK workflow is intentionally disabled to prevent replacing Releases/latest with an incompatible key.
+# Use android-signed.yml for testing and controlled publishing.
+name: Android APK (legacy disabled)
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  apk:
+  legacy-disabled:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-      - name: Capacitor
-        run: |
-          npm install
-          npx cap add android
-          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
-          python3 - <<'PY'
-          p='android/app/src/main/AndroidManifest.xml';s=open(p).read()
-          if 'android.permission.CAMERA' not in s:
-              s=s.replace('</manifest>','    <uses-permission android:name="android.permission.CAMERA" />\n</manifest>')
-          if 'SendIntentActivity' not in s:
-              act='''        <activity android:name="de.mindlib.sendIntent.SendIntentActivity" android:label="@string/app_name" android:exported="true" android:theme="@style/AppTheme.NoActionBar">
-                      <intent-filter>
-                          <action android:name="android.intent.action.SEND" />
-                          <category android:name="android.intent.category.DEFAULT" />
-                          <data android:mimeType="text/plain" />
-                          <data android:mimeType="image/*" />
-                      </intent-filter>
-                      <intent-filter>
-                          <action android:name="android.intent.action.SEND_MULTIPLE" />
-                          <category android:name="android.intent.category.DEFAULT" />
-                          <data android:mimeType="image/*" />
-                      </intent-filter>
-                  </activity>
-              </application>'''
-              s=s.replace('</application>',act,1)
-          open(p,'w').write(s)
-          PY
-          grep -n "uses-permission\|SendIntentActivity" android/app/src/main/AndroidManifest.xml || true
-          npx capacitor-assets generate --android --iconBackgroundColor '#1C4F3C' --splashBackgroundColor '#F3E6EC' || true
-          npx cap sync android
-      - name: Build APK
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon || (echo 'повтор через 60 с — сбой загрузки зависимостей'; sleep 60; ./gradlew assembleDebug --no-daemon --refresh-dependencies)
-          cp app/build/outputs/apk/debug/app-debug.apk ../Magnit.apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Magnit-apk
-          path: Magnit.apk
+      - name: Explain
+        run: echo "Legacy Debug APK publishing disabled. Use Android signed APK (build / publish)."
