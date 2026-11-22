@@ -1,10 +1,8 @@
 name: Android APK
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -57,11 +55,3 @@ jobs:
         with:
           name: Magnit-apk
           path: Magnit.apk
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: Магнит — последняя сборка
-          body: Скачай Magnit.apk на Android-телефон и установи.
-          files: Magnit.apk
-          make_latest: true

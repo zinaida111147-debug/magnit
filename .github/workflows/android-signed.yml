@@ -1,0 +1,98 @@
+name: Android signed APK (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Capacitor
+        run: |
+          npm install
+          npx cap add android
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          python3 - <<'PY'
+          p='android/app/src/main/AndroidManifest.xml';s=open(p).read()
+          if 'android.permission.CAMERA' not in s:
+              s=s.replace('</manifest>','    <uses-permission android:name="android.permission.CAMERA" />\n</manifest>')
+          if 'SendIntentActivity' not in s:
+              act='''        <activity android:name="de.mindlib.sendIntent.SendIntentActivity" android:label="@string/app_name" android:exported="true" android:theme="@style/AppTheme.NoActionBar">
+                      <intent-filter>
+                          <action android:name="android.intent.action.SEND" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <data android:mimeType="text/plain" />
+                          <data android:mimeType="image/*" />
+                      </intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.SEND_MULTIPLE" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <data android:mimeType="image/*" />
+                      </intent-filter>
+                  </activity>
+              </application>'''
+              s=s.replace('</application>',act,1)
+          open(p,'w').write(s)
+          PY
+          grep -n "uses-permission\|SendIntentActivity" android/app/src/main/AndroidManifest.xml || true
+          npx capacitor-assets generate --android --iconBackgroundColor '#1C4F3C' --splashBackgroundColor '#F3E6EC' || true
+          npx cap sync android
+      - name: Configure release signing (secrets required)
+        env:
+          MAGNIT_KEYSTORE_BASE64: ${{ secrets.MAGNIT_KEYSTORE_BASE64 }}
+          MAGNIT_KEYSTORE_PASSWORD: ${{ secrets.MAGNIT_KEYSTORE_PASSWORD }}
+          MAGNIT_KEY_ALIAS: ${{ secrets.MAGNIT_KEY_ALIAS }}
+          MAGNIT_KEY_PASSWORD: ${{ secrets.MAGNIT_KEY_PASSWORD }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          for var in MAGNIT_KEYSTORE_BASE64 MAGNIT_KEYSTORE_PASSWORD MAGNIT_KEY_ALIAS MAGNIT_KEY_PASSWORD; do
+            if [ -z "${!var:-}" ]; then echo "Missing secret: $var"; exit 1; fi
+          done
+          printf '%s' "$MAGNIT_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/magnit-release.jks"
+          test -s "$RUNNER_TEMP/magnit-release.jks"
+          python3 - <<'PYCODE'
+          import os,re,pathlib
+          path=pathlib.Path('android/app/build.gradle')
+          s=path.read_text()
+          code=100000+int(os.environ['BUILD_NUMBER'])
+          s,n=re.subn(r'versionCode\s+\d+',f'versionCode {code}',s,count=1)
+          if n!=1:raise RuntimeError('versionCode not found')
+          s,n=re.subn(r'versionName\s+"[^"]+"','versionName "0.9.15"',s,count=1)
+          if n!=1:raise RuntimeError('versionName not found')
+          if 'signingConfigs {' in s:raise RuntimeError('unexpected existing signing config: inspect manually')
+          signing='''signingConfigs {
+              release {
+                  storeFile file(System.getenv('RUNNER_TEMP') + '/magnit-release.jks')
+                  storePassword System.getenv('MAGNIT_KEYSTORE_PASSWORD')
+                  keyAlias System.getenv('MAGNIT_KEY_ALIAS')
+                  keyPassword System.getenv('MAGNIT_KEY_PASSWORD')
+              }
+          }
+          '''
+          s,n=re.subn(r'(?m)^(\s*)buildTypes\s*\{',lambda m:m.group(1)+signing+'\n'+m.group(0),s,count=1)
+          if n!=1:raise RuntimeError('buildTypes not found')
+          s,n=re.subn(r'(buildTypes\s*\{\s*release\s*\{)',r'\1\n            signingConfig signingConfigs.release',s,count=1)
+          if n!=1:raise RuntimeError('release buildType not found')
+          path.write_text(s)
+          print('Release signing configured; versionCode:',code)
+          PYCODE
+      - name: Build signed release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../Magnit-signed.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Magnit-signed-apk
+          path: Magnit-signed.apk
+          retention-days: 14
