@@ -1522,7 +1522,8 @@ body.hlmode #app{padding-bottom:300px}
 .narec{margin:10px 0;padding:10px 0;border-top:1px solid var(--hair)}
 
 /* Разбор замечаний с телефона: понятные действия дневника, статус микрофона. */
-.ntools .nlabelact{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:auto;min-width:88px;padding:0 9px;color:var(--fg);opacity:1;border:1px solid var(--edge);background:var(--glass);font-size:12px;font-weight:650}
+.ntools .nlabelact{display:inline-flex;align-items:center;justify-content:center;width:34px;min-width:34px;height:34px;padding:0;color:var(--fg);opacity:1;border:1px solid var(--edge);background:var(--glass)}
+.ntools .nlabelact:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .ntools .nlabelact.danger{color:var(--hot)}
 .ntools{flex-wrap:wrap;column-gap:5px;row-gap:4px}
 .narec .recstatus{font-weight:600;line-height:1.35}
@@ -1569,6 +1570,9 @@ body.hlmode #app{padding-bottom:300px}
 }
 /* Длинные записи и адреса без пробелов не должны расширять дневник. */
 .notes .ntx,.notes .nbody{min-width:0;overflow-wrap:anywhere;word-break:normal}
+
+/* Проверка RC1: дневные взносы читаются в копилке как сумма в день. */
+.jtile .jar-rate{font-size:10px;line-height:1.25;font-weight:650;white-space:nowrap}
 </style>
 <div id="app"></div>
 <div class="tabs" id="tabs" hidden><nav aria-label="Разделы"></nav></div>
@@ -1695,6 +1699,9 @@ const ICP={sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l
  bulb:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
  palette:'<path d="M12 3a9 9 0 1 0 9 9c0-1.4-1.2-2.4-2.6-2.4h-2c-1.3 0-2.1-1.5-1.4-2.6.8-1.3-.2-4-3-4z"/><circle cx="7.5" cy="11" r=".8"/><circle cx="10" cy="7.7" r=".8"/><circle cx="15" cy="7.5" r=".8"/><circle cx="7.8" cy="15.5" r=".8"/>'};
+// Системные действия дневника: иконки вместо длинных кнопок.
+ICP.pen='<path d="M12 20h9"/><path d="M16.2 3.8a2.1 2.1 0 0 1 3 3L8.5 17.5 4 19l1.5-4.5L16.2 3.8z"/>';
+ICP.trash='<path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/>';
 const IC=(n,s,st)=>`<svg class="ic" width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${st?` style="${st}"`:""}>${ICP[n]||""}</svg>`;
 const SP=(s,st)=>`<svg class="sp" width="${s||18}" height="${s||18}" viewBox="0 0 24 24" aria-hidden="true"${st?` style="${st}"`:""}><path d="M12 1.5c.7 4.6 2.4 7.6 9.5 10.5-7.1 2.9-8.8 5.9-9.5 10.5-.7-4.6-2.4-7.6-9.5-10.5C9.6 9.1 11.3 6.1 12 1.5z" fill="var(--spark)"/><path d="M19.5 1.5c.25 1.6.8 2.6 3 3.5-2.2.9-2.75 1.9-3 3.5-.25-1.6-.8-2.6-3-3.5 2.2-.9 2.75-1.9 3-3.5z" fill="var(--spark)" opacity=".6"/></svg>`;
 const BADGE=(n,tone)=>`<span class="badge2${tone?" "+tone:""}">${IC(n,22)}</span>`;
@@ -2642,7 +2649,7 @@ function vMoney(){const k=TODAY(),ms=monthStats(k),m=D.money,dp=daysToPay();
      <div class="row three"><div><b style="color:#4A6FA5">${p[0]}%</b><span>необходимое</span></div><div><b style="color:#C9783A">${p[1]}%</b><span>желания</span></div><div><b style="color:var(--acc)">${p[2]}%</b><span>накопления</span></div></div></button>`}
   o+=`<div class="sec2"><b>Копилки</b><span>в день</span></div><div class="jgrid">`;
   o+=m.jars.map(j=>{const s=jarSum(j),g=j.goal&&goal(j.goal),cov=g?g.cover:j.ico;const left=j.until?Math.max(1,Math.round((fromIso(j.until)-fromIso(TODAY()))/864e5)):null;const pd=j.target&&left?Math.max(0,Math.round((j.target-s)/left/10)*10):null;
-    return`<button type="button" class="jtile" data-a="jar" data-id="${j.id}">${SCN(cov)}<div class="gshade"></div><b>${esc(j.name)}</b><div class="jsum"><span>${rub(s)}</span><small>${j.target?"из "+rub(j.target).replace(" ₽",""):""}${pd!=null?" · "+rub(pd):""}</small></div></button>`}).join("")+`<button type="button" class="jtile add" data-a="jar">${IC("plus",22)}<span>копилка</span></button></div>`;
+    return`<button type="button" class="jtile" data-a="jar" data-id="${j.id}">${SCN(cov)}<div class="gshade"></div><b>${esc(j.name)}</b><div class="jsum"><span>${rub(s)}</span>${j.target?`<small>из ${rub(j.target)}</small>`:""}${pd!=null?`<small class="jar-rate" title="Примерно столько нужно откладывать каждый день, чтобы накопить к сроку">≈${rub(pd)}/день</small>`:""}</div></button>`}).join("")+`<button type="button" class="jtile add" data-a="jar">${IC("plus",22)}<span>копилка</span></button></div>`;
   const ops=[...m.inc.map(x=>({...x,in:1})),...m.sp].filter(x=>mkey(x.d)===mkey(k));
   if(ops.length)o+=`<button type="button" class="grow-row" data-a="ops" style="margin-top:14px">${IC("card",18)}<span class="grow">Операции за ${MONN[fromIso(k).getMonth()].toLowerCase()}</span><span class="mut">${ops.length} ›</span></button>`;
   return o}
@@ -5206,7 +5213,7 @@ render=(function(prev){return function(){prev();audHydrate($("#app"))}})(render)
 sheetNote=(function(prev){return function(k,i){prev(k,i);const sh=$("#sheet"),st=SH&&SH.nst;if(!sh||!st)return;
   const n=i!=null?(D.days[k].notes||[])[i]:null;st.audio=n&&n.audio?{...n.audio}:null;
   const box=document.createElement("div");box.className="narec";
-  box.innerHTML=`<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="chip" data-a="naudrec">● Записать аудио</button><button type="button" class="chip" data-a="naudstop" hidden>■ Остановить</button><span id="naudtime" class="small mut" role="status" aria-live="polite"></span></div><div id="naudioprev">${st.audio?audBtn(k,i,{audio:st.audio}):""}</div><p class="small mut">Аудио хранится на устройстве. Автоматической расшифровки файла пока нет. Можно надиктовать текст микрофоном рядом с полем или поделиться звуковым файлом вручную.</p>${st.audio?`<button type="button" class="lnk" data-a="naudremove">Убрать аудио</button>`:""}`;
+  box.innerHTML=`<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="chip" data-a="naudrec">● Записать аудио</button><button type="button" class="chip" data-a="naudstop" hidden>■ Остановить</button><span id="naudtime" class="small mut" role="status" aria-live="polite"></span></div><div id="naudioprev">${st.audio?audBtn(k,i,{audio:st.audio}):""}</div><p class="small mut">Аудио хранится на устройстве. Его можно прослушать или поделиться файлом. При желании текст можно написать рядом.</p>${st.audio?`<button type="button" class="lnk" data-a="naudremove">Убрать аудио</button>`:""}`;
   const stack=sh.querySelector(".stack");if(stack)stack.before(box);else sh.append(box);audHydrate(sh)
 }})(sheetNote);
 /* Запись: один запрос разрешения за раз, понятный статус и безопасная отмена.
@@ -5370,7 +5377,7 @@ sheetSettings=(function(prev){return function(){
 
 /* №18: чётко обозначенные кнопки под каждой записью, включая чеклисты и фото. */
 dayNotes=(function(prev){return function(k){let html=prev(k);const notes=(D.days[k]&&D.days[k].notes)||[];
-  notes.forEach((n,i)=>{const bar=NOTEBAR(k,i);const actions=`<button type="button" class="nlabelact" data-a="nedit" data-d="${k}" data-i="${i}">Изменить</button><button type="button" class="nlabelact danger" data-a="nremove" data-d="${k}" data-i="${i}">Удалить</button>`;
+  notes.forEach((n,i)=>{const bar=NOTEBAR(k,i);const actions=`<button type="button" class="nlabelact" data-a="nedit" data-d="${k}" data-i="${i}" title="Изменить запись" aria-label="Изменить запись">${IC("pen",17)}</button><button type="button" class="nlabelact danger" data-a="nremove" data-d="${k}" data-i="${i}" title="Удалить запись" aria-label="Удалить запись">${IC("trash",17)}</button>`;
     html=html.replace(bar,bar.replace('</div>',actions+'</div>'));
   });return html;
 }})(dayNotes);
