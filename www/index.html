@@ -1411,9 +1411,13 @@ body::after{animation:iris 26s ease-in-out infinite alternate}
 .ndots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.55)}
 .ndots i.on{background:#fff;width:14px}
 .phx.gone{display:none}
-.ntools{display:flex;gap:2px;margin:-2px 0 0 -8px}
-.ntools button{width:34px;height:30px;border:0;border-radius:10px;background:none;color:var(--mut2);display:grid;place-items:center;opacity:.8}
+/* Другой: дневник — вариант №1. Маленькие контурные значки, без видимых рамок. */
+.ntools{display:flex;gap:3px;margin:0 0 0 -4px;align-items:center}
+.ntools button{width:36px;min-width:36px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--mut2);display:grid;place-items:center;opacity:1;flex:0 0 auto;line-height:1;-webkit-tap-highlight-color:transparent}
+.ntools button .ic{width:16px;height:16px;stroke-width:1.7}
+.ntools button:hover{color:var(--fg)}
 .ntools button:active{background:var(--hair);opacity:1}
+.ntools button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 /* окно записи: миниатюры */
 .nph{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none;align-items:center}
 .nph[hidden]{display:none}
@@ -1590,10 +1594,11 @@ body.hlmode #app{padding-bottom:300px}
 .narec{margin:10px 0;padding:10px 0;border-top:1px solid var(--hair)}
 
 /* Разбор замечаний с телефона: понятные действия дневника, статус микрофона. */
-.ntools .nlabelact{display:inline-flex;align-items:center;justify-content:center;width:34px;min-width:34px;height:34px;padding:0;color:var(--fg);opacity:1;border:1px solid var(--edge);background:var(--glass)}
-.ntools .nlabelact:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.ntools .nlabelact{display:grid;place-items:center;width:36px;min-width:36px;height:44px;padding:0;color:var(--mut2);opacity:1;border:0;border-radius:50%;background:transparent}
+.ntools .nlabelact:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 .ntools .nlabelact.danger{color:var(--hot)}
-.ntools{flex-wrap:wrap;column-gap:5px;row-gap:4px}
+.ntools .nlabelact.danger:hover{color:var(--hot)}
+.ntools{flex-wrap:wrap;column-gap:3px;row-gap:0}
 .narec .recstatus{font-weight:600;line-height:1.35}
 
 /* 0.9.15 stage 07: спокойная справка в настройках */
@@ -5445,7 +5450,7 @@ sheetSettings=(function(prev){return function(){
 
 /* №18: чётко обозначенные кнопки под каждой записью, включая чеклисты и фото. */
 dayNotes=(function(prev){return function(k){let html=prev(k);const notes=(D.days[k]&&D.days[k].notes)||[];
-  notes.forEach((n,i)=>{const bar=NOTEBAR(k,i);const actions=`<button type="button" class="nlabelact" data-a="nedit" data-d="${k}" data-i="${i}" title="Изменить запись" aria-label="Изменить запись">${IC("pen",17)}</button><button type="button" class="nlabelact danger" data-a="nremove" data-d="${k}" data-i="${i}" title="Удалить запись" aria-label="Удалить запись">${IC("trash",17)}</button>`;
+  notes.forEach((n,i)=>{const bar=NOTEBAR(k,i);const actions=`<button type="button" class="nlabelact" data-a="nedit" data-d="${k}" data-i="${i}" title="Изменить запись" aria-label="Изменить запись">${IC("pen",16)}</button><button type="button" class="nlabelact danger" data-a="nremove" data-d="${k}" data-i="${i}" title="Удалить запись" aria-label="Удалить запись">${IC("trash",16)}</button>`;
     html=html.replace(bar,bar.replace('</div>',actions+'</div>'));
   });return html;
 }})(dayNotes);
