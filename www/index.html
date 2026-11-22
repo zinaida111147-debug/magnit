@@ -1,4 +1,72 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#F3E6EC"><style>:root{color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Магнит"><meta name="apple-mobile-web-app-status-bar-style" content="default"></head><body><title>Магнит</title>
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#F3E6EC"><style>:root{color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}
+/* DRUGOY 12A-1 experimental button, 2026-11-22. Theme-aware, not a public rebrand. */
+.tabs .hub.drugoy-hub-preview{
+  position:relative;overflow:visible;background:linear-gradient(150deg,var(--acc2),var(--acc3))!important;
+  box-shadow:0 7px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.22)!important;
+  isolation:isolate;transition:background-color .25s ease,box-shadow .25s ease;
+}
+.tabs .hub.drugoy-hub-preview::before{
+  content:"";position:absolute;inset:3px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 28% 20%,rgba(255,255,255,.16),transparent 62%);
+}
+.tabs .hub.drugoy-hub-preview .drugoy-ring{
+  width:48px;height:48px;display:block;object-fit:contain;pointer-events:none;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.22));
+}
+.tabs .hub.drugoy-hub-preview.drugoy-tapped .drugoy-ring{animation:drugoy-brush-pulse .55s cubic-bezier(.22,1,.36,1) 1}
+@keyframes drugoy-brush-pulse{
+  0%{transform:scale(.94) rotate(-7deg);filter:brightness(1)}
+  40%{transform:scale(1.09) rotate(3deg);filter:brightness(1.27) drop-shadow(0 0 5px rgba(255,145,30,.65))}
+  100%{transform:scale(1) rotate(0);filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .tabs .hub.drugoy-hub-preview,.tabs .hub.drugoy-hub-preview .drugoy-ring{transition:none!important;animation:none!important}
+}
+
+/* DRUGOY preview 12A-1 v2: independent animation above re-rendered navigation. */
+@keyframes drugoy-fx-stroke{
+  0%{transform:scale(.84) rotate(-14deg);opacity:.82;filter:brightness(1)}
+  45%{transform:scale(1.22) rotate(7deg);opacity:1;filter:brightness(1.45) drop-shadow(0 0 7px rgba(255,153,35,.9))}
+  100%{transform:scale(1.06) rotate(0deg);opacity:1;filter:brightness(1.16)}
+}
+@keyframes drugoy-fx-halo{
+  0%{transform:scale(.70);opacity:0}
+  35%{transform:scale(1.12);opacity:.95}
+  100%{transform:scale(1.5);opacity:.18}
+}
+@keyframes drugoy-fx-hold{
+  0%{transform:scale(1.07) rotate(-4deg);filter:brightness(1.2)}
+  100%{transform:scale(1.2) rotate(5deg);filter:brightness(1.55) drop-shadow(0 0 10px rgba(255,159,40,.85))}
+}
+@keyframes drugoy-fx-hold-halo{
+  from{opacity:.35;transform:scale(1.25)}to{opacity:.8;transform:scale(1.48)}
+}
+@keyframes drugoy-fx-release{
+  from{transform:scale(1.12);opacity:1}to{transform:scale(1);opacity:0}
+}
+@keyframes drugoy-fx-release-halo{
+  from{opacity:.65;transform:scale(1.35)}to{opacity:0;transform:scale(1.65)}
+}
+@media(prefers-reduced-motion:reduce){.drugoy-fx-layer{display:none!important}}
+
+/* 12A-1 v4: detail stays inside the hub and below all sheets (z=40/41). */
+.drugoy-fx-layer{position:fixed;z-index:21;pointer-events:none;overflow:hidden;isolation:isolate;clip-path:circle(49% at 50% 50%);border-radius:50%;display:grid;place-items:center;contain:paint}
+.drugoy-fx-ring{width:48px;height:48px;object-fit:contain;transform-origin:center;animation:drugoy-v4-tap .64s cubic-bezier(.2,.8,.25,1) both}
+.drugoy-fx-glint{position:absolute;inset:13%;border-radius:50%;background:conic-gradient(from 230deg,transparent 0deg,transparent 100deg,rgba(255,248,218,.07) 135deg,rgba(255,244,197,.35) 151deg,transparent 175deg,transparent 360deg);mix-blend-mode:screen;opacity:0;animation:drugoy-v4-glint .64s ease-out both}
+.drugoy-fx-speck{position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdc89;box-shadow:0 0 4px #ffad48;opacity:0;animation:drugoy-v4-speck .64s ease-out both}
+.drugoy-fx-speck.a{left:75%;top:26%}.drugoy-fx-speck.b{left:81%;top:48%;animation-delay:.07s}.drugoy-fx-speck.c{left:60%;top:77%;animation-delay:.11s}
+@keyframes drugoy-v4-tap{0%{transform:scale(.96) rotate(-4deg);filter:brightness(1)}35%{transform:scale(1.10) rotate(2deg);filter:brightness(1.35) drop-shadow(0 0 4px rgba(255,155,42,.55))}100%{transform:scale(1) rotate(0deg);filter:brightness(1)}}
+@keyframes drugoy-v4-glint{0%,12%{opacity:0;transform:rotate(-45deg)}45%{opacity:1}100%{opacity:0;transform:rotate(65deg)}}
+@keyframes drugoy-v4-speck{0%,20%{opacity:0;transform:scale(.5)}48%{opacity:.9;transform:scale(1.3)}100%{opacity:0;transform:scale(.4)}}
+.drugoy-fx-holding .drugoy-fx-ring{animation:drugoy-v4-hold 1.05s ease-in-out infinite alternate!important}
+.drugoy-fx-holding .drugoy-fx-glint{animation:drugoy-v4-hold-glint 1.05s ease-in-out infinite alternate!important}
+.drugoy-fx-holding .drugoy-fx-speck{animation:none;opacity:0}
+@keyframes drugoy-v4-hold{from{transform:scale(1);filter:brightness(1.06)}to{transform:scale(1.065);filter:brightness(1.28) drop-shadow(0 0 3px rgba(255,169,67,.55))}}
+@keyframes drugoy-v4-hold-glint{from{opacity:.1}to{opacity:.58}}
+.drugoy-fx-releasing{animation:drugoy-v4-out .22s ease-out forwards}
+@keyframes drugoy-v4-out{from{opacity:1}to{opacity:0}}
+@media(prefers-reduced-motion:reduce){.drugoy-fx-layer{display:none!important}}
+</style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Магнит"><meta name="apple-mobile-web-app-status-bar-style" content="default"></head><body><title>Магнит</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#F3E6EC">
 <style>/* Layout: one phone column (max 480px), glass cards over a warm dawn gradient, sticky glass tab bar at the bottom */
@@ -2496,7 +2564,7 @@ const TABS2=[["today","Сегодня","clock"],["tracker","Трекер","cal"]
 function render(){const app=$("#app");
   if(!D.started){app.innerHTML=welcome();$("#tabs").hidden=true;return}
   $("#tabs").hidden=false;const tb=t=>`<button type="button" class="${UI.tab===t[0]?"on":""}" data-a="tab" data-t="${t[0]}" aria-label="${t[1]}">${IC(t[2],22)}<span>${t[1]}</span></button>`;
-  $("#tabs nav").innerHTML=tb(TABS2[0])+tb(TABS2[1])+`<button type="button" class="hub" id="hub" data-a="quick" aria-label="Записать. Удерживай, чтобы надиктовать">${UMAG(26)}</button>`+tb(TABS2[2])+tb(TABS2[3]);
+  $("#tabs nav").innerHTML=tb(TABS2[0])+tb(TABS2[1])+`<button type="button" class="hub drugoy-hub-preview" id="hub" data-a="quick" aria-label="Записать. Удерживай, чтобы надиктовать"><img class="drugoy-ring" src="brand/12a1-ring-foreground.png" alt="" aria-hidden="true"></button>`+tb(TABS2[2])+tb(TABS2[3]);
   app.innerHTML=(({today:vToday,goals:vGoals,tracker:vTracker,money:vMoney})[UI.tab]||vToday)()}
 function welcome(){return`<div class="welcome"><span class="hubbig">${UMAG(64)}</span><h1>Магнит</h1><p>Твои цели — магниты. Минута утром, минута вечером — и дни начинают к ним притягиваться.</p>
 <button type="button" class="btn w" data-a="start">Начать с чистого листа</button><button type="button" class="btn ghost w" data-a="demo">Посмотреть на примере</button><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="restore">Восстановить из копии</button></div>`}
@@ -5768,4 +5836,39 @@ A.maghelp=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh)r
 sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#sheet .maghelp09>div");if(box&&!box.querySelector(".maghint12"))box.insertAdjacentHTML("beforeend",'<span class="maghint12"><br><b>Длинная фраза:</b> «завтра в 19 позвонить маме, а ещё потратил 350 на кофе, и ещё хочу велосипед»</span>');
 }})(sheetQuick);
 </script>
-<script>if("serviceWorker"in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script></body></html>
+<script>if("serviceWorker"in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
+<script>/* DRUGOY 12A-1 v4: scoped visual effect, no changes to actual quick/hold actions. */
+(function(){
+ let layer=null,holdTimer=null,closeTimer=null,activePointer=null,lastPointerAt=0;
+ const prefersLess=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const modalVisible=()=>!!document.querySelector('.sheet.open, .scrim.show, [role="dialog"][open], dialog[open]');
+ function stop(){clearTimeout(holdTimer);clearTimeout(closeTimer);holdTimer=null;closeTimer=null;if(layer)layer.remove();layer=null;activePointer=null;}
+ function launch(button,pointer){
+   if(prefersLess()||modalVisible())return;
+   stop();const r=button.getBoundingClientRect();if(!r.width||!r.height)return;
+   const img=button.querySelector('.drugoy-ring');if(!img)return;
+   const host=document.createElement('div');host.className='drugoy-fx-layer';
+   host.style.left=r.left+'px';host.style.top=r.top+'px';host.style.width=r.width+'px';host.style.height=r.height+'px';
+   const ring=img.cloneNode(true);ring.className='drugoy-fx-ring';ring.alt='';ring.setAttribute('aria-hidden','true');
+   const glint=document.createElement('span');glint.className='drugoy-fx-glint';
+   host.append(ring,glint);
+   for(const x of ['a','b','c']){const p=document.createElement('span');p.className='drugoy-fx-speck '+x;host.append(p);}
+   document.body.append(host);layer=host;activePointer=pointer;
+   holdTimer=setTimeout(()=>{if(layer&&!modalVisible())layer.classList.add('drugoy-fx-holding');},470);
+   closeTimer=setTimeout(stop,4000); // lost pointer protection
+ }
+ function release(e){if(!layer)return;if(e&&activePointer!==null&&e.pointerId!==undefined&&e.pointerId!==activePointer)return;
+   clearTimeout(holdTimer);holdTimer=null;
+   if(layer.classList.contains('drugoy-fx-holding')){layer.classList.remove('drugoy-fx-holding');layer.classList.add('drugoy-fx-releasing');}
+   clearTimeout(closeTimer);closeTimer=setTimeout(stop,230);
+ }
+ document.addEventListener('pointerdown',e=>{const b=e.target.closest?.('#hub.drugoy-hub-preview');if(!b)return;lastPointerAt=Date.now();launch(b,e.pointerId);},{capture:true,passive:true});
+ for(const name of ['pointerup','pointercancel'])document.addEventListener(name,release,{capture:true,passive:true});
+ document.addEventListener('click',e=>{const b=e.target.closest?.('#hub.drugoy-hub-preview');if(!b||Date.now()-lastPointerAt<800)return;launch(b,null);setTimeout(()=>release(),340);},true);
+ // Hide as soon as a modal appears; scrim/sheet always sit above the nav.
+ const observer=new MutationObserver(()=>{if(layer&&modalVisible())stop();});
+ observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
+ window.addEventListener('blur',stop);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+})();</script>
+</body></html>
