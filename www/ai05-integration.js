@@ -1,4 +1,4 @@
-/* AI-05 H1.50: scaled H1.38 visual transfer and screen blur, correcting Android screenshots.
+/* AI-05 H1.51: restore approved H1.38 visual geometry / living ring and Android speech recovery.
  * Original 12A-1 stays as the only ring; visual layers, cloud, trail and
  * lock/stop derive from the actual app button diameter. Background is softly blurred. The single-mic native Android
  * transcription+audio conflict is NOT solved here; verify on device.
@@ -17,35 +17,75 @@ let stream=null,recorder=null,recordPending=null,recordChunks=[],recordBlob=null
 let asr=null,spoken='',speechIssue='',audioContext=null,audioSource=null,analyser=null,raf=0;
 let stagedMenu=false;
 const style=document.createElement('style');
-style.id='ai05-h150-styles';
+style.id='ai05-h151-styles';
 style.textContent=`
-/* AI-05 H1.50 - approved H1.38 composition mapped at 58/138; preserve original app 12A-1 ring. */
+/* AI-05 H1.51 - original H1.38 ring geometry, 138px reference -> real measured #hub. */
+/* The app's existing preview uses a theme gradient, which made the original
+   dark-green 12A-1 object purple or grey on device. Restore the accepted
+   deep-green object and retain a slight tint from the active theme. */
+.tabs #hub.drugoy-hub-preview{
+  border-radius:50%!important;overflow:visible;
+  background:radial-gradient(circle at 34% 28%,#2f5a45,#16392d 54%,#0d281f 82%,#0a2119)!important;
+  background:radial-gradient(circle at 34% 28%,
+    color-mix(in srgb, #2f5a45 84%, var(--acc2) 16%) 0%,
+    color-mix(in srgb, #16392d 89%, var(--acc3) 11%) 54%,
+    #0d281f 82%,#0a2119 100%)!important;
+  box-shadow:0 5px 13px rgba(17,53,38,.29),inset 0 1px 1px #ffffff30!important;
+}
+.tabs #hub.drugoy-hub-preview .drugoy-ring{
+  width:112%;height:112%;max-width:none;max-height:none;
+  filter:drop-shadow(0 0 3px rgba(255,177,92,.22));
+}
+.tabs #hub.drugoy-hub-preview::before{background:radial-gradient(circle at 34% 24%,rgba(183,230,191,.18),transparent 69%)}
+@media(prefers-reduced-motion:no-preference){
+ .tabs #hub.drugoy-hub-preview:not(.drugoy-tapped) .drugoy-ring{animation:ai05-idle-brush 13.8s ease-in-out infinite}
+}
+@keyframes ai05-idle-brush{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.018);filter:brightness(1.085)}}
 #hub.drugoy-hub-preview{touch-action:none;-webkit-user-select:none;user-select:none}
-body.ai05-focused #app{filter:blur(2.25px) saturate(.87);opacity:.53;transition:filter .28s ease,opacity .28s ease}
+body.ai05-focused #app{filter:blur(2.1px) saturate(.91);opacity:.67;transition:filter .28s ease,opacity .28s ease}
 /* The active layer is above the glass navigation. Hide the original face while its
    exact 12A-1 artwork is displayed in the same position in the visual layer. */
-body.ai05-focused #tabs{opacity:.34;filter:blur(2px);transition:opacity .26s ease,filter .26s ease}
+body.ai05-focused #tabs{opacity:.54;filter:blur(2.15px);transition:opacity .26s ease,filter .26s ease}
 body.ai05-focused #tabs nav button:not(#hub){pointer-events:none}
 body.ai05-focused #hub{opacity:0!important}
 body.ai05-focused .drugoy-fx-layer{display:none!important}
-.ai05-face{position:absolute;inset:0;border-radius:50%;background:linear-gradient(150deg,var(--acc2),var(--acc3));box-shadow:0 7px 18px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.22);overflow:hidden}
-.ai05-ring-copy{position:absolute;inset:0;margin:auto;display:block;width:82.7586%;height:82.7586%;object-fit:contain;z-index:5;filter:drop-shadow(0 1px 1px rgba(0,0,0,.22))}
-.ai05-layer[data-state=holding] .ai05-ring-copy{animation:ai05-hold-ring 1.05s ease-in-out infinite alternate}
+.ai05-face{position:absolute;inset:0;border-radius:50%;
+ background:radial-gradient(circle at 34% 28%,#2f5a45,#16392d 54%,#0d281f 82%,#0a2119);
+ background:radial-gradient(circle at 34% 28%,
+ color-mix(in srgb,#2f5a45 84%,var(--acc2) 16%),
+ color-mix(in srgb,#16392d 89%,var(--acc3) 11%) 54%,#0d281f 82%,#0a2119 100%);
+ box-shadow:0 7px 17px rgba(11,38,25,.36),inset 0 1px 1px rgba(255,255,255,.20);
+ overflow:hidden}
+.ai05-ring-copy{position:absolute;left:-7%;top:-7%;display:block;width:114%;height:114%;max-width:none;max-height:none;object-fit:contain;z-index:6;filter:drop-shadow(0 0 3px rgba(255,184,102,.22))}
+.ai05-layer[data-state=holding] .ai05-ring-copy{animation:ai05-hold-ring 7.2s linear infinite}
 .ai05-layer[data-state=recording] .ai05-ring-copy{animation:ai05-record-ring 3.8s ease-in-out infinite}
 .ai05-layer[data-state=locked] .ai05-ring-copy{animation:ai05-record-ring 6.8s ease-in-out infinite}
 .ai05-layer{position:fixed;inset:0;z-index:39;pointer-events:none;overflow:hidden;--ai05-volume:0;--ai05-size:58px;--ai05-rise:64px;--ai05-focus:0;--ai05-move-x:0px;--ai05-blur:4px}
-.ai05-backdrop{position:absolute;inset:0;background:rgba(22,45,33,.26);-webkit-backdrop-filter:blur(1.4px) saturate(.83);backdrop-filter:blur(1.4px) saturate(.83);transition:background .28s ease}
-.ai05-layer[data-state=holding] .ai05-backdrop{background:rgba(22,45,33,.19)}
-.ai05-layer[data-state=locked] .ai05-backdrop{background:rgba(22,45,33,.22)}
+.ai05-backdrop{position:absolute;inset:0;background:rgba(17,42,31,.20);-webkit-backdrop-filter:blur(1.3px) saturate(.9);backdrop-filter:blur(1.3px) saturate(.9);transition:background .28s ease}
+.ai05-layer[data-state=holding] .ai05-backdrop{background:rgba(17,42,31,.14)}
+.ai05-layer[data-state=locked] .ai05-backdrop{background:rgba(17,42,31,.18)}
 /* Outer living halo and three independent organic gradients. Original painted ring stays above these. */
 .ai05-visual{position:absolute;left:var(--cx);top:var(--cy);width:var(--ai05-size);height:var(--ai05-size);transform:translate(-50%,-50%);pointer-events:none;isolation:isolate}
-.ai05-visual::before{content:'';position:absolute;inset:-31%;border-radius:49% 51% 46% 54%;background:radial-gradient(ellipse at 50% 53%,rgba(233,183,115,.29) 3%,rgba(153,189,145,.27) 36%,rgba(101,144,111,.11) 58%,transparent 76%);filter:blur(calc(var(--ai05-blur)*1.8));opacity:.52;animation:ai05-aura 5.3s ease-in-out infinite}
-.ai05-aura-mesh{z-index:1;position:absolute;inset:-21%;filter:blur(var(--ai05-blur));opacity:.61;isolation:isolate;transform:scale(.94);transition:transform .34s ease,opacity .3s ease}
+/* These two thin irregular H1.38 waves were missing from the integrated app. */
+.ai05-halo,.ai05-halo-two{position:absolute;inset:-18%;z-index:0;pointer-events:none;
+ border:1px solid rgba(181,216,172,.33);border-radius:48% 52% 55% 45%/43% 57% 46% 54%;opacity:0;
+ filter:blur(1.2px)}
+.ai05-layer[data-state=holding] .ai05-halo,.ai05-layer[data-state=recording] .ai05-halo{animation:ai05-fluid-halo-a 6.8s ease-out infinite}
+.ai05-layer[data-state=holding] .ai05-halo-two,.ai05-layer[data-state=recording] .ai05-halo-two{animation:ai05-fluid-halo-b 9.4s ease-out -3.2s infinite}
+.ai05-layer[data-state=locked] .ai05-halo{animation:ai05-fluid-halo-a 11.6s ease-out infinite}
+.ai05-layer[data-state=locked] .ai05-halo-two{animation:ai05-fluid-halo-b 13.8s ease-out -4s infinite}
+@keyframes ai05-fluid-halo-a{0%{opacity:.32;transform:scale(.78) rotate(-8deg)}40%{opacity:.24;border-radius:57% 43% 48% 52%/51% 44% 56% 49%}100%{opacity:0;transform:scale(1.48) rotate(18deg)}}
+@keyframes ai05-fluid-halo-b{0%{opacity:.24;transform:scale(.7) rotate(11deg)}40%{opacity:.19;border-radius:42% 58% 52% 48%/48% 52% 44% 56%}100%{opacity:0;transform:scale(1.57) rotate(-16deg)}}
+.ai05-visual::before{content:'';position:absolute;inset:-70%;z-index:-1;
+ border-radius:49% 51% 46% 54%;background:radial-gradient(ellipse at 50% 53%,
+ rgba(237,186,108,.34) 4%,rgba(153,197,148,.31) 34%,rgba(101,144,111,.15) 57%,transparent 75%);
+ filter:blur(calc(var(--ai05-blur)*2.1));opacity:.77;animation:ai05-aura 5.3s ease-in-out infinite}
+.ai05-aura-mesh{z-index:1;position:absolute;inset:-30%;filter:blur(var(--ai05-blur));opacity:.72;isolation:isolate;transform:scale(.94);transition:transform .34s ease,opacity .3s ease}
 .ai05-aura-mesh i{position:absolute;inset:0;border-radius:45% 55% 53% 47%/51% 43% 57% 49%;display:block;mix-blend-mode:screen}
 .ai05-aura-mesh i:nth-child(1){background:conic-gradient(from 34deg,transparent,#769c7a55 19%,#cbd4ad88 34%,transparent 53%,#e4ac7577 73%,transparent 91%);animation:ai05-organic-a 7.1s ease-in-out infinite alternate}
 .ai05-aura-mesh i:nth-child(2){inset:8%;background:conic-gradient(from -41deg,#729a8466,transparent 22%,#d3cc9e99 44%,transparent 64%,#7ca88b77 80%,transparent);animation:ai05-organic-b 9.4s ease-in-out infinite alternate-reverse}
 .ai05-aura-mesh i:nth-child(3){inset:14%;background:radial-gradient(ellipse at 60% 40%,rgba(160,194,147,.52),rgba(230,175,111,.28) 32%,transparent 70%);animation:ai05-organic-c 6.3s ease-in-out infinite alternate}
-.ai05-core{z-index:2;position:absolute;inset:10%;border-radius:50%;overflow:hidden;clip-path:circle(49%);background:radial-gradient(ellipse at 41% 34%,rgba(251,243,193,.60) 0%,rgba(195,216,165,.50) 19%,rgba(117,159,132,.30) 44%,transparent 76%);mix-blend-mode:screen;animation:ai05-breathe 4.4s ease-in-out infinite}
+.ai05-core{z-index:5;position:absolute;inset:19%;border-radius:50%;overflow:hidden;clip-path:circle(49%);background:radial-gradient(ellipse at 41% 34%,rgba(251,243,193,.42) 0%,rgba(195,216,165,.27) 19%,rgba(117,159,132,.15) 44%,transparent 76%);mix-blend-mode:screen;animation:ai05-breathe 4.4s ease-in-out infinite}
 .ai05-core::before{content:'';position:absolute;inset:-13%;border-radius:46% 54% 47% 53%/52% 43% 57% 48%;background:conic-gradient(from 65deg,transparent 0deg,#d3e4bc77 38deg,transparent 98deg,#f4c1896b 173deg,transparent 240deg,#8ab39d55 310deg,transparent 360deg);filter:blur(var(--ai05-blur));animation:ai05-swirl 9.2s ease-in-out infinite alternate}
 .ai05-core::after{content:'';position:absolute;inset:21%;border-radius:57% 43% 55% 45%;background:radial-gradient(ellipse at 38% 30%,#fff4d6bf,transparent 65%);filter:blur(var(--ai05-blur));animation:ai05-drift 5.8s ease-in-out infinite alternate}
 .ai05-radar{z-index:3;position:absolute;inset:5%;border-radius:50%;background:conic-gradient(from 20deg,transparent 0deg,transparent 285deg,#fef4d075 332deg,transparent 355deg);-webkit-mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);opacity:0}
@@ -55,14 +95,26 @@ body.ai05-focused .drugoy-fx-layer{display:none!important}
 .ai05-layer[data-state=locked] .ai05-core{animation-duration:6.8s;filter:brightness(calc(1 + var(--ai05-volume)*.28))}
 .ai05-layer[data-state=locked] .ai05-visual::before{animation-duration:8.2s}
 /* No pointed triangle: translucent elliptical flow with moving focus and soft wide foot. */
-.ai05-path{position:absolute;left:calc(var(--cx) + var(--ai05-move-x)*.22);bottom:calc(100% - var(--cy) + var(--ai05-size)*.22);width:var(--ai05-trail-width);height:var(--ai05-rise);opacity:0;pointer-events:none;border-radius:46% 54% 42% 58%/58% 51% 49% 42%;filter:blur(calc(var(--ai05-blur)*2));background:radial-gradient(ellipse at 51% 94%,rgba(247,199,141,.76),rgba(181,208,167,.54) 29%,rgba(112,168,131,.30) 56%,transparent 78%);transform:translateX(-50%) scaleX(calc(1 - var(--ai05-focus)*.52));transform-origin:50% 100%;transition:height .18s ease,opacity .24s ease,transform .22s ease,left .19s ease;animation:ai05-cloud-shape 7.9s ease-in-out infinite alternate}
+.ai05-path{position:absolute;left:calc(var(--cx) + var(--ai05-move-x)*.22);
+ bottom:calc(100% - var(--cy) + var(--ai05-size)*.14);width:var(--ai05-trail-width);height:var(--ai05-rise);
+ opacity:0;pointer-events:none;border-radius:46% 54% 42% 58%/58% 51% 49% 42%;
+ filter:blur(calc(var(--ai05-blur)*1.3));
+ background:radial-gradient(ellipse at 51% 92%,rgba(247,199,141,.79),rgba(181,208,167,.67) 28%,rgba(112,168,131,.40) 53%,transparent 82%);
+ transform:translateX(-50%) scaleX(calc(1 - var(--ai05-focus)*.48));transform-origin:50% 100%;
+ transition:height .18s ease,opacity .24s ease,transform .22s ease,left .19s ease;
+ animation:ai05-cloud-shape 7.9s ease-in-out infinite alternate}
 .ai05-path::before{content:'';position:absolute;left:25%;right:25%;top:1%;height:48%;border-radius:58% 42% 55% 45%/43% 57% 46% 54%;background:radial-gradient(ellipse at 48% 44%,rgba(255,237,194,.75),rgba(255,192,118,.34) 29%,transparent 78%);filter:blur(calc(var(--ai05-blur)*.9));opacity:var(--ai05-focus);animation:ai05-organic-c 8.7s ease-in-out infinite alternate}
 .ai05-path::after{content:'';position:absolute;inset:21% 14% -8%;border-radius:48% 52% 56% 44%;background:radial-gradient(ellipse at 50% 85%,rgba(234,206,150,.39),rgba(170,209,172,.20) 46%,transparent 73%);filter:blur(calc(var(--ai05-blur)*1.5));animation:ai05-cloud-shape 9.4s ease-in-out -2s infinite alternate}
-.ai05-layer[data-state=holding] .ai05-path{height:calc(var(--ai05-size)*.62);opacity:.13}
-.ai05-layer[data-state=recording] .ai05-path{opacity:calc(.66 + var(--ai05-volume)*.19)}
-.ai05-layer[data-state=locked] .ai05-path{height:calc(var(--ai05-size)*.35);opacity:.12}
-/* Prototype H1.38: understated legible white status rather than a dark green banner. */
-.ai05-hint{position:absolute;left:var(--cx);top:calc(var(--cy) - var(--ai05-hint-y));transform:translateX(-50%);margin:0;max-width:calc(100vw - 44px);width:max-content;white-space:normal;text-align:center;font-size:14px;line-height:1.42;font-weight:550;letter-spacing:0;color:#fffcf3;padding:0 4px;text-shadow:0 2px 8px rgba(10,38,25,.78);background:transparent}
+.ai05-layer[data-state=holding] .ai05-path{height:calc(var(--ai05-size)*.70);opacity:.34}
+.ai05-layer[data-state=recording] .ai05-path{opacity:calc(.85 + var(--ai05-volume)*.15)}
+.ai05-layer[data-state=locked] .ai05-path{height:calc(var(--ai05-size)*.62);opacity:.28}
+/* Original H1.38 compact white status with explicit state and muted secondary line. */
+.ai05-hint{position:absolute;left:var(--cx);top:calc(var(--cy) - var(--ai05-hint-y));transform:translateX(-50%);margin:0;
+ max-width:calc(100vw - 28px);width:max-content;white-space:normal;text-align:center;line-height:1.42;letter-spacing:0;
+ color:#fffdf3;padding:0 7px;text-shadow:0 2px 10px rgba(10,38,25,.88);background:transparent}
+.ai05-hint strong{display:block;font-size:clamp(15px,4.1vw,19px);font-weight:650;line-height:1.15}
+.ai05-hint small{display:block;font-size:clamp(11px,3vw,12px);font-weight:500;color:#f4faef;line-height:1.4;margin-top:4px}
+
 /* Physical 44px target, visually scaled down rounded 31px mark. */
 .ai05-lock,.ai05-stop{position:absolute;top:calc(var(--cy) - var(--ai05-control-y));height:44px;width:44px;display:grid;place-items:center;border:0;background:transparent;color:#34664b;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;filter:drop-shadow(0 2px 5px rgba(23,50,34,.35))}
 .ai05-lock::before,.ai05-stop::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,237,208,.7);background:rgba(254,247,227,.94);box-shadow:0 0 9px rgba(226,169,103,.3)}
@@ -75,7 +127,7 @@ body.ai05-focused .drugoy-fx-layer{display:none!important}
 .ai05-layer[data-state=locked] .ai05-lock{color:#2c694b}
 .ai05-layer[data-state=locked] .ai05-lock::before,.ai05-layer[data-state=locked] .ai05-stop::before{background:#e0eee0;border-color:#96b7a0;box-shadow:0 0 0 3px #a8d4b626,0 0 12px #93c2a24c}
 .ai05-actions .btn.ghost:not(:disabled){opacity:1;border-color:var(--edge);background:var(--glass2);color:var(--fg)}
-@keyframes ai05-hold-ring{from{transform:scale(1);filter:brightness(1.06)}to{transform:scale(1.065);filter:brightness(1.28) drop-shadow(0 0 3px rgba(255,169,67,.55))}}
+@keyframes ai05-hold-ring{0%{transform:rotate(0deg) scale(1);filter:brightness(1.08)}50%{transform:rotate(180deg) scale(1.025);filter:brightness(1.18) drop-shadow(0 0 4px rgba(255,169,67,.37))}100%{transform:rotate(360deg) scale(1);filter:brightness(1.08)}}
 @keyframes ai05-record-ring{0%,100%{transform:scale(1.006);filter:brightness(1.03)}55%{transform:scale(1.048);filter:brightness(1.17) drop-shadow(0 0 4px rgba(246,180,102,.38))}}
 @keyframes ai05-breathe{0%,100%{opacity:.73;transform:scale(.98)}50%{opacity:.96;transform:scale(1.018)}}
 @keyframes ai05-swirl{from{transform:rotate(-16deg) scale(1)}to{transform:rotate(28deg) scale(1.06)}}
@@ -86,7 +138,7 @@ body.ai05-focused .drugoy-fx-layer{display:none!important}
 @keyframes ai05-organic-c{from{transform:rotate(-7deg) translate(-3%,3%)}to{transform:rotate(12deg) translate(6%,-4%)}}
 @keyframes ai05-cloud-shape{from{border-radius:46% 54% 42% 58%/58% 51% 49% 42%}to{border-radius:56% 44% 52% 48%/48% 63% 37% 52%}}
 @keyframes ai05-rotate{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){body.ai05-focused #app,body.ai05-focused #tabs nav button:not(#hub){transition:none!important}body.ai05-focused #hub .drugoy-ring,.ai05-visual::before,.ai05-aura-mesh i,.ai05-core,.ai05-core::before,.ai05-core::after,.ai05-radar,.ai05-path,.ai05-path::before,.ai05-path::after{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){body.ai05-focused #app,body.ai05-focused #tabs nav button:not(#hub){transition:none!important}body.ai05-focused #hub .drugoy-ring,.ai05-halo,.ai05-halo-two,.ai05-ring-copy,.ai05-visual::before,.ai05-aura-mesh i,.ai05-core,.ai05-core::before,.ai05-core::after,.ai05-radar,.ai05-path,.ai05-path::before,.ai05-path::after{animation:none!important;transition:none!important}}
 `;
 document.head.append(style);
 const LOCK_OPEN='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4.5 4.5 0 0 1 8.7-1.5"/></svg>';
@@ -97,15 +149,26 @@ function updateGeometry(){const p=center();if(!p||!layer)return;
  const ratio=p.d/138; // Every optical measurement is scaled from the 138px H1.38 prototype.
  const props={'--cx':`${p.x}px`,'--cy':`${p.y}px`,'--ai05-size':`${p.d}px`,
  '--ai05-offset':`${106*ratio}px`,'--ai05-control-y':`${106*ratio}px`,
- '--ai05-hint-y':`${Math.max(101,244*ratio)}px`,'--ai05-trail-width':`${132*ratio}px`,
- '--ai05-blur':`${Math.max(3.1,9*ratio)}px`};
+ '--ai05-hint-y':`${Math.max(109,251*ratio)}px`,'--ai05-trail-width':`${132*ratio}px`,
+ '--ai05-blur':`${Math.max(3.5,9*ratio)}px`};
  for(const [k,v] of Object.entries(props))layer.style.setProperty(k,v);
 }
 function show(state,hint){
-  if(!layer){layer=document.createElement('div');layer.className='ai05-layer';layer.innerHTML=`<div class="ai05-backdrop" aria-hidden="true"></div><div class="ai05-path" aria-hidden="true"></div><div class="ai05-visual" aria-hidden="true"><div class="ai05-face"></div><div class="ai05-aura-mesh"><i></i><i></i><i></i></div><div class="ai05-core"></div><div class="ai05-radar"></div></div><p class="ai05-hint" role="status" aria-live="polite"></p><button type="button" class="ai05-lock" data-ai05="lock" hidden></button><button type="button" class="ai05-stop" data-ai05="stop" hidden aria-label="Завершить запись">${STOP}</button>`;document.body.appendChild(layer);
+  if(!layer){layer=document.createElement('div');layer.className='ai05-layer';layer.innerHTML=`<div class="ai05-backdrop" aria-hidden="true"></div><div class="ai05-path" aria-hidden="true"></div><div class="ai05-visual" aria-hidden="true"><span class="ai05-halo"></span><span class="ai05-halo-two"></span><div class="ai05-face"></div><div class="ai05-aura-mesh"><i></i><i></i><i></i></div><div class="ai05-core"></div><div class="ai05-radar"></div></div><p class="ai05-hint" role="status" aria-live="polite"></p><button type="button" class="ai05-lock" data-ai05="lock" hidden></button><button type="button" class="ai05-stop" data-ai05="stop" hidden aria-label="Завершить запись">${STOP}</button>`;document.body.appendChild(layer);
    const source=$('#hub .drugoy-ring');if(source){const copy=source.cloneNode(true);copy.className='ai05-ring-copy';copy.removeAttribute('id');copy.removeAttribute('style');layer.querySelector('.ai05-visual').appendChild(copy)}
   }
-  updateGeometry();layer.dataset.state=state;document.body.classList.remove('ai05-holding','ai05-recording','ai05-locked');document.body.classList.add('ai05-focused',`ai05-${state}`);layer.querySelector('.ai05-hint').textContent=hint||'';
+  updateGeometry();layer.dataset.state=state;document.body.classList.remove('ai05-holding','ai05-recording','ai05-locked');document.body.classList.add('ai05-focused',`ai05-${state}`);{
+    const h=layer.querySelector('.ai05-hint');
+    // The approved prototype separates the state from the short gesture cue.
+    const parts=state==='holding'?['Подумай…','Проведи вверх, чтобы говорить']:
+       state==='locked'?['Запись закреплена','Нажми «Стоп», когда закончишь']:
+       hint?.includes('Отпусти')?['Запись','Отпусти в центре для отмены']:
+       hint?.includes('Завершаю')?['Завершаю запись…','']:
+       hint?.includes('Нет аудио')?['Запись речи','Аудио недоступно']:
+       state==='recording'?['Говори…','Верни палец в центр, чтобы отменить']:[hint||'',''];
+    h.replaceChildren();const strong=document.createElement('strong');strong.textContent=parts[0];h.appendChild(strong);
+    if(parts[1]){const small=document.createElement('small');small.textContent=parts[1];h.appendChild(small)}
+  }
   const lock=layer.querySelector('.ai05-lock'),stop=layer.querySelector('.ai05-stop');
   lock.hidden=!['recording','locked'].includes(state);lock.innerHTML=state==='locked'?LOCK_CLOSED:LOCK_OPEN;
   lock.setAttribute('aria-label',state==='locked'?'Отменить запись':'Закрепить запись');stop.hidden=state!=='locked';
@@ -143,15 +206,15 @@ function makeSpeech(owner){let on=true,mode='',N=null,web=null,listeners=[],time
    listeners.push(await N.addListener('listeningState',st=>{if(st?.status==='stopped'&&alive()){
     commit();clearTimeout(retry);retry=setTimeout(()=>{if(alive()&&!busy)nativeGo()},360)
    }}));
-   const begin=()=>nativeGo();begin();
+   await Promise.race([nativeGo(),wait(1800)]);
    timer=setInterval(async()=>{if(!alive()||busy)return;try{const st=await N.isListening?.();if(st?.listening===false&&alive())nativeGo()}catch(_){ }},1100);
    return true;
   }catch(e){reason=String(e?.message||e||'Служба распознавания не запустилась');return false}}
- const nativeGo=()=>{if(!alive()||busy)return;busy=true;
+ const nativeGo=()=>{if(!alive()||busy)return Promise.resolve();busy=true;
   pending=Promise.resolve().then(()=>N.start({language:'ru-RU',maxResults:1,partialResults:true,popup:false})).then(d=>{
    if(d?.matches?.[0]&&(alive()||owner.finishing))notice(d.matches[0]);
   }).catch(e=>{if(alive())reason=String(e?.message||e||'Ошибка распознавания')}).finally(()=>{busy=false;
-   if(alive()&&partial){commit()} });
+   if(alive()&&partial){commit()} });return pending;
  };
  const startWeb=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;mode='web';
   const launch=()=>{if(!alive())return;try{web=new SR();web.lang='ru-RU';web.continuous=true;web.interimResults=true;
@@ -179,7 +242,7 @@ function invalidate(){clearHold();stopVolume();const previous=run;if(previous)pr
  asr?.cancel();asr=null;if(recorder&&recorder.state!=='inactive'){recorder.onstop=null;safe(()=>recorder.stop())}
  recorder=null;stopTracks();recordPending=null;recordChunks=[];recordBlob=null;spoken='';speechIssue='';run=null;gesture=null;hide()}
 function startCapture(owner){recordChunks=[];recordBlob=null;recordStarted=Date.now();recordDuration=0;
- recordPending=(async()=>{let requested=null;try{
+ return (async()=>{let requested=null;try{
   if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw new Error('Запись аудио не поддерживается');
   requested=navigator.mediaDevices.getUserMedia({audio:true});
   const captured=await Promise.race([requested,wait(25000).then(()=>{throw new Error('Микрофон не отвечает')})]);
@@ -190,12 +253,17 @@ function startCapture(owner){recordChunks=[];recordBlob=null;recordStarted=Date.
   recorder.start(250);volume(stream);
  }catch(e){if(run===owner&&!owner.done){owner.captureError=String(e?.message||e||'Микрофон недоступен');show(owner.state,'Нет аудио · можно попробовать диктовку')}}
  finally{if(requested)Promise.resolve(requested).then(s=>{if(owner.done||run!==owner)s?.getTracks?.().forEach(t=>safe(()=>t.stop()))},()=>{})}
- })();return recordPending;
+ })();
 }
 function begin(){if(run)return;run={state:'recording',done:false,finishing:false};const owner=run;
  spoken='';speechIssue='';show('recording','Записываю · отпусти, чтобы закончить');pulse(()=>run===owner&&owner.state==='recording'&&!owner.finishing);
- asr=makeSpeech(owner);Promise.resolve(asr.start()).catch(e=>{if(run===owner)speechIssue=String(e?.message||e)});
- startCapture(owner);
+ asr=makeSpeech(owner);
+ // On Android, obtaining MediaRecorder's WebView microphone BEFORE SpeechRecognizer
+ // attaches is a reproducible failure pattern. Try starting ASR first; never
+ // claim this makes simultaneous capture guaranteed on a real device.
+ recordPending=Promise.resolve(asr.start()).catch(e=>{if(run===owner)speechIssue=String(e?.message||e)})
+   .then(()=>{if(run===owner&&!owner.done&&!owner.finishing)return startCapture(owner)});
+
 }
 async function finish(){const owner=run;if(!owner||owner.done||owner.finishing)return;owner.finishing=true;clearHold();show('recording','Завершаю запись…');
  await Promise.race([Promise.resolve(recordPending).catch(()=>{}),wait(5000)]);
@@ -206,7 +274,7 @@ async function finish(){const owner=run;if(!owner||owner.done||owner.finishing)r
  const output=asr?await asr.stop():{text:'',issue:'Движок распознавания недоступен'};
  if(run!==owner||owner.done)return;
  spoken=output.text||'';speechIssue=output.issue||speechIssue||owner.captureError||'';
- if(!spoken&&!speechIssue)speechIssue='Распознавание не вернуло текст. Проверь доступ к микрофону и настройки службы речи.';
+ if(!spoken&&!speechIssue)speechIssue='Распознавание не вернуло текст. На Android запись аудио может конфликтовать с распознавателем. Попробуй повторную диктовку или ручной ввод.';
  owner.done=true;asr=null;run=null;gesture=null;hide();showActions();
 }
 function cancel(){invalidate()}
@@ -216,6 +284,7 @@ function showActions(){stagedMenu=true;
  openSheet(`<h3>Запись завершена</h3><p class="sub">${audio?'Выбери, что сделать с записью.':t?'Текст распознан, но аудио не сохранилось.':'Аудио не сохранилось, но можно ввести текст вручную.'}</p>
  ${warning}<label class="lb" for="ai05-transcript">Текст речи · можно исправить</label>
  <textarea id="ai05-transcript" rows="3" placeholder="Речь не распозналась? Введи текст здесь." style="width:100%;min-height:86px;resize:vertical;margin:4px 0 11px" aria-label="Распознанный текст"></textarea>
+ ${!t?'<button type="button" class="btn ghost w" data-ai05="retry-speech" style="margin:4px 0 11px">Надиктовать текст повторно</button><p class="small mut" id="ai05-repeat-info">Произнеси текст ещё раз. Записанное аудио останется без изменений.</p>':''}
  ${audio?'<label class="small mut" style="display:flex;align-items:center;gap:9px;margin:3px 0 12px"><input id="ai05-both" type="checkbox"> Сохранить аудио вместе с текстом</label>':''}
  <div class="stack ai05-actions"><button type="button" class="btn w" data-ai05="text">В дневник текст</button>
  <button type="button" class="btn ghost w" data-ai05="audio" ${audio?'':'disabled'}>В дневник аудио</button>
@@ -224,6 +293,30 @@ function showActions(){stagedMenu=true;
  const input=$('#ai05-transcript');if(input)input.value=t;
 }
 function stagedText(){return ($('#ai05-transcript')?.value||'').trim()}
+async function retrySpeech(){
+ const button=$('[data-ai05="retry-speech"]');if(button){button.disabled=true;button.textContent='Слушаю…'}
+ const done=(value,msg)=>{const box=$('#ai05-transcript');if(box&&value){box.value=String(value).trim();box.dispatchEvent(new Event('input',{bubbles:true}));$('#ai05-warning')?.remove()}
+  if(msg){const note=$('#ai05-repeat-info');if(note)note.textContent=msg}
+  if(button){button.disabled=false;button.textContent='Надиктовать текст повторно'} };
+ try{
+  const N=window.Capacitor?.Plugins?.SpeechRecognition||safe(()=>PLG('SpeechRecognition'));
+  if(N?.start){const perm=await N.requestPermissions?.();if(perm?.speechRecognition&&perm.speechRecognition!=='granted')throw Error('Нет разрешения на распознавание речи');
+   // Separate native session after the microphone recording has stopped.
+   const r=await N.start({language:'ru-RU',maxResults:1,partialResults:false,popup:true,prompt:'Повтори фразу для расшифровки'});
+   done(r?.matches?.[0]||'',r?.matches?.[0]?'Проверь текст и выбери действие.':'Слова не распознаны. Можно написать вручную.');return;
+  }
+  const C=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!C)throw Error('На устройстве нет доступного распознавания речи');
+  const recognized=await new Promise((resolve,reject)=>{const r=new C();r.lang='ru-RU';r.continuous=false;r.interimResults=false;
+   let value='';let settled=false;let timeout=0;
+   const finish=v=>{if(settled)return;settled=true;clearTimeout(timeout);resolve(v||'')};
+   r.onresult=e=>{for(const result of e.results){if(result.isFinal)value+=result[0]?.transcript||''}};
+   r.onerror=e=>{if(!settled){clearTimeout(timeout);settled=true;reject(Error(e.error||'Ошибка диктовки'))}};
+   r.onend=()=>finish(value);
+   timeout=setTimeout(()=>{safe(()=>r.stop());finish(value)},17000);r.start();});
+  done(recognized,recognized?'Проверь текст и выбери действие.':'Слова не распознаны. Можно написать вручную.');
+ }catch(e){done('','Повторная диктовка не удалась: '+String(e?.message||e))}
+}
 const dataUrl=blob=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob)});
 function clearStaged(st){if(!st?.ai05Blob)return;safe(()=>URL.revokeObjectURL(st.ai05PreviewUrl));st.ai05Blob=null;st.ai05PreviewUrl=null}
 const oldCloseSheet=closeSheet;
@@ -239,6 +332,7 @@ const oldNoteRemove=A.naudremove;
 A.naudremove=function(e){if(SH?.nst?.ai05Blob)clearStaged(SH.nst);return oldNoteRemove(e)};
 async function action(type){
  if(type==='discard'){recordBlob=null;spoken='';closeSheet();return}
+ if(type==='retry-speech'){await retrySpeech();return}
  if(type==='text'||type==='tasks'){
   const value=stagedText();
   if(!value){const t=$('#ai05-transcript');if(t){t.setAttribute('aria-invalid','true');t.placeholder='Сначала напиши текст или повтори запись';}toast('Текста пока нет. Введи его здесь или сохрани аудио.');return}
@@ -262,7 +356,7 @@ async function action(type){
  }
 }
 window.addEventListener('click',e=>{const b=e.target.closest?.('[data-ai05]');if(!b)return;
- const kind=b.dataset.ai05;if(!['lock','stop','cancel','text','audio','tasks','discard'].includes(kind))return;
+ const kind=b.dataset.ai05;if(!['lock','stop','cancel','text','audio','tasks','discard','retry-speech'].includes(kind))return;
  e.preventDefault();e.stopImmediatePropagation();
  if(kind==='lock'){if(run?.state==='recording'&&!run.finishing){run.state='locked';show('locked','Запись закреплена · нажми «Стоп»');pulse(()=>!!run&&run.state==='locked'&&!run.finishing)}else if(run?.state==='locked')cancel()}
  else if(kind==='stop')finish();else if(kind==='cancel')cancel();else Promise.resolve(action(kind)).catch(()=>toast('Не удалось выполнить действие'));
