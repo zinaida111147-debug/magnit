@@ -1,7 +1,8 @@
-/* AI-05 H1.48: one existing 12A-1 ring, gesture layer and isolated speech session.
- * Browser-tested with mocks; real Android recognition, offline ASR and competing
- * microphone capture still require device acceptance. Emergency opt-out:
- * localStorage.setItem('ai05_enabled','0'); location.reload();
+/* AI-05 H1.50: scaled H1.38 visual transfer and screen blur, correcting Android screenshots.
+ * Original 12A-1 stays as the only ring; visual layers, cloud, trail and
+ * lock/stop derive from the actual app button diameter. Background is softly blurred. The single-mic native Android
+ * transcription+audio conflict is NOT solved here; verify on device.
+ * Emergency opt-out: localStorage.setItem('ai05_enabled','0'); location.reload();
  */
 (()=>{
 'use strict';
@@ -16,54 +17,100 @@ let stream=null,recorder=null,recordPending=null,recordChunks=[],recordBlob=null
 let asr=null,spoken='',speechIssue='',audioContext=null,audioSource=null,analyser=null,raf=0;
 let stagedMenu=false;
 const style=document.createElement('style');
-style.id='ai05-h148-styles';
+style.id='ai05-h150-styles';
 style.textContent=`
+/* AI-05 H1.50 - approved H1.38 composition mapped at 58/138; preserve original app 12A-1 ring. */
 #hub.drugoy-hub-preview{touch-action:none;-webkit-user-select:none;user-select:none}
-.ai05-layer{position:fixed;inset:0;z-index:39;pointer-events:none;background:transparent;--ai05-volume:0;--ai05-rise:75px;--ai05-size:58px}
+body.ai05-focused #app{filter:blur(2.25px) saturate(.87);opacity:.53;transition:filter .28s ease,opacity .28s ease}
+/* The active layer is above the glass navigation. Hide the original face while its
+   exact 12A-1 artwork is displayed in the same position in the visual layer. */
+body.ai05-focused #tabs{opacity:.34;filter:blur(2px);transition:opacity .26s ease,filter .26s ease}
+body.ai05-focused #tabs nav button:not(#hub){pointer-events:none}
+body.ai05-focused #hub{opacity:0!important}
+body.ai05-focused .drugoy-fx-layer{display:none!important}
+.ai05-face{position:absolute;inset:0;border-radius:50%;background:linear-gradient(150deg,var(--acc2),var(--acc3));box-shadow:0 7px 18px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.22);overflow:hidden}
+.ai05-ring-copy{position:absolute;inset:0;margin:auto;display:block;width:82.7586%;height:82.7586%;object-fit:contain;z-index:5;filter:drop-shadow(0 1px 1px rgba(0,0,0,.22))}
+.ai05-layer[data-state=holding] .ai05-ring-copy{animation:ai05-hold-ring 1.05s ease-in-out infinite alternate}
+.ai05-layer[data-state=recording] .ai05-ring-copy{animation:ai05-record-ring 3.8s ease-in-out infinite}
+.ai05-layer[data-state=locked] .ai05-ring-copy{animation:ai05-record-ring 6.8s ease-in-out infinite}
+.ai05-layer{position:fixed;inset:0;z-index:39;pointer-events:none;overflow:hidden;--ai05-volume:0;--ai05-size:58px;--ai05-rise:64px;--ai05-focus:0;--ai05-move-x:0px;--ai05-blur:4px}
+.ai05-backdrop{position:absolute;inset:0;background:rgba(22,45,33,.26);-webkit-backdrop-filter:blur(1.4px) saturate(.83);backdrop-filter:blur(1.4px) saturate(.83);transition:background .28s ease}
+.ai05-layer[data-state=holding] .ai05-backdrop{background:rgba(22,45,33,.19)}
+.ai05-layer[data-state=locked] .ai05-backdrop{background:rgba(22,45,33,.22)}
+/* Outer living halo and three independent organic gradients. Original painted ring stays above these. */
 .ai05-visual{position:absolute;left:var(--cx);top:var(--cy);width:var(--ai05-size);height:var(--ai05-size);transform:translate(-50%,-50%);pointer-events:none;isolation:isolate}
-.ai05-visual::before{content:'';position:absolute;inset:-14%;border-radius:50%;background:radial-gradient(circle,#a4c8994d 4%,#c7dba137 45%,transparent 72%);filter:blur(7px);animation:ai05-aura 4.9s ease-in-out infinite}
-.ai05-core{position:absolute;inset:6%;border-radius:50%;overflow:hidden;clip-path:circle(49%);background:radial-gradient(ellipse at 41% 34%,#fbf3c1af 0%,#c3d8a58c 19%,#759f8480 44%,transparent 76%);mix-blend-mode:screen;animation:ai05-breathe 3.4s ease-in-out infinite}
-.ai05-core::before{content:'';position:absolute;inset:-13%;border-radius:46% 54% 47% 53% / 52% 43% 57% 48%;background:conic-gradient(from 65deg,transparent 0deg,#d3e4bc77 38deg,transparent 98deg,#f4c1896b 173deg,transparent 240deg,#8ab39d55 310deg,transparent 360deg);filter:blur(5px);animation:ai05-swirl 9.2s ease-in-out infinite alternate}
-.ai05-core::after{content:'';position:absolute;inset:21%;border-radius:57% 43% 55% 45%;background:radial-gradient(ellipse at 38% 30%,#fff4d6bf,transparent 65%);filter:blur(5px);animation:ai05-drift 5.8s ease-in-out infinite alternate}
-.ai05-radar{position:absolute;inset:6%;border-radius:50%;background:conic-gradient(from 20deg,transparent 0deg,transparent 285deg,#fef4d05e 332deg,transparent 355deg);mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);-webkit-mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);opacity:0}
+.ai05-visual::before{content:'';position:absolute;inset:-31%;border-radius:49% 51% 46% 54%;background:radial-gradient(ellipse at 50% 53%,rgba(233,183,115,.29) 3%,rgba(153,189,145,.27) 36%,rgba(101,144,111,.11) 58%,transparent 76%);filter:blur(calc(var(--ai05-blur)*1.8));opacity:.52;animation:ai05-aura 5.3s ease-in-out infinite}
+.ai05-aura-mesh{z-index:1;position:absolute;inset:-21%;filter:blur(var(--ai05-blur));opacity:.61;isolation:isolate;transform:scale(.94);transition:transform .34s ease,opacity .3s ease}
+.ai05-aura-mesh i{position:absolute;inset:0;border-radius:45% 55% 53% 47%/51% 43% 57% 49%;display:block;mix-blend-mode:screen}
+.ai05-aura-mesh i:nth-child(1){background:conic-gradient(from 34deg,transparent,#769c7a55 19%,#cbd4ad88 34%,transparent 53%,#e4ac7577 73%,transparent 91%);animation:ai05-organic-a 7.1s ease-in-out infinite alternate}
+.ai05-aura-mesh i:nth-child(2){inset:8%;background:conic-gradient(from -41deg,#729a8466,transparent 22%,#d3cc9e99 44%,transparent 64%,#7ca88b77 80%,transparent);animation:ai05-organic-b 9.4s ease-in-out infinite alternate-reverse}
+.ai05-aura-mesh i:nth-child(3){inset:14%;background:radial-gradient(ellipse at 60% 40%,rgba(160,194,147,.52),rgba(230,175,111,.28) 32%,transparent 70%);animation:ai05-organic-c 6.3s ease-in-out infinite alternate}
+.ai05-core{z-index:2;position:absolute;inset:10%;border-radius:50%;overflow:hidden;clip-path:circle(49%);background:radial-gradient(ellipse at 41% 34%,rgba(251,243,193,.60) 0%,rgba(195,216,165,.50) 19%,rgba(117,159,132,.30) 44%,transparent 76%);mix-blend-mode:screen;animation:ai05-breathe 4.4s ease-in-out infinite}
+.ai05-core::before{content:'';position:absolute;inset:-13%;border-radius:46% 54% 47% 53%/52% 43% 57% 48%;background:conic-gradient(from 65deg,transparent 0deg,#d3e4bc77 38deg,transparent 98deg,#f4c1896b 173deg,transparent 240deg,#8ab39d55 310deg,transparent 360deg);filter:blur(var(--ai05-blur));animation:ai05-swirl 9.2s ease-in-out infinite alternate}
+.ai05-core::after{content:'';position:absolute;inset:21%;border-radius:57% 43% 55% 45%;background:radial-gradient(ellipse at 38% 30%,#fff4d6bf,transparent 65%);filter:blur(var(--ai05-blur));animation:ai05-drift 5.8s ease-in-out infinite alternate}
+.ai05-radar{z-index:3;position:absolute;inset:5%;border-radius:50%;background:conic-gradient(from 20deg,transparent 0deg,transparent 285deg,#fef4d075 332deg,transparent 355deg);-webkit-mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);opacity:0}
 .ai05-layer[data-state=holding] .ai05-radar{opacity:.8;animation:ai05-rotate 4.6s linear infinite}
-.ai05-layer[data-state=recording] .ai05-core{filter:brightness(calc(1 + var(--ai05-volume)*.4));transform:scale(calc(1 + var(--ai05-volume)*.08));animation-duration:2.1s}
-.ai05-layer[data-state=locked] .ai05-core{animation-duration:4.7s;filter:brightness(calc(1 + var(--ai05-volume)*.3))}
-.ai05-layer[data-state=locked] .ai05-visual::before{animation-duration:6s}
-.ai05-path{position:absolute;left:var(--cx);bottom:calc(100% - var(--cy) + var(--ai05-size)*.18);width:66px;height:var(--ai05-rise);transform:translateX(-50%);transform-origin:bottom;opacity:0;pointer-events:none;filter:blur(3px);background:radial-gradient(ellipse at 50% 100%,#f7c88c9e,transparent 62%),linear-gradient(to top,#d5d7a06b 0%,#7dbe9c5a 47%,transparent 100%);clip-path:polygon(6% 100%,94% 100%,67% 51%,53% 0%,47% 0%,33% 51%);transition:height .12s ease,opacity .15s ease}
-.ai05-path::after{content:'';position:absolute;left:38%;right:38%;bottom:0;top:10%;border-radius:50%;background:linear-gradient(to top,#ffe2a58c,#d9ead07a,transparent);filter:blur(3px)}
-.ai05-layer[data-state=holding] .ai05-path{height:88px;opacity:.48}
-.ai05-layer[data-state=recording] .ai05-path,.ai05-layer[data-state=locked] .ai05-path{opacity:.82}
-.ai05-hint{position:absolute;left:var(--cx);top:calc(var(--cy) - 138px);transform:translateX(-50%);margin:0;max-width:calc(100vw - 24px);width:max-content;white-space:normal;text-align:center;font-size:12px;line-height:1.35;font-weight:600;letter-spacing:.005em;color:#fffdf3;padding:6px 12px;border-radius:30px;background:rgba(28,60,44,.87);box-shadow:0 3px 14px #102c1935}
-.ai05-lock,.ai05-stop{position:absolute;top:calc(var(--cy) - var(--ai05-offset));height:44px;width:44px;display:grid;place-items:center;border-radius:50%;border:1px solid #ffffff85;background:#dcebd9;color:#225040;box-shadow:0 2px 13px #142c2759;transform:translate(-50%,-50%);font-weight:700;cursor:pointer}
-.ai05-lock{left:calc(var(--cx) - var(--ai05-offset))}.ai05-stop{left:calc(var(--cx) + var(--ai05-offset))}
-.ai05-lock svg,.ai05-stop svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ai05-stop svg{fill:currentColor;stroke:none;width:13px;height:13px}
+.ai05-layer[data-state=recording] .ai05-core{filter:brightness(calc(1 + var(--ai05-volume)*.43));animation-duration:3.2s}
+.ai05-layer[data-state=recording] .ai05-aura-mesh{transform:scale(calc(1.02 + var(--ai05-volume)*.11));opacity:calc(.72 + var(--ai05-volume)*.18)}
+.ai05-layer[data-state=locked] .ai05-core{animation-duration:6.8s;filter:brightness(calc(1 + var(--ai05-volume)*.28))}
+.ai05-layer[data-state=locked] .ai05-visual::before{animation-duration:8.2s}
+/* No pointed triangle: translucent elliptical flow with moving focus and soft wide foot. */
+.ai05-path{position:absolute;left:calc(var(--cx) + var(--ai05-move-x)*.22);bottom:calc(100% - var(--cy) + var(--ai05-size)*.22);width:var(--ai05-trail-width);height:var(--ai05-rise);opacity:0;pointer-events:none;border-radius:46% 54% 42% 58%/58% 51% 49% 42%;filter:blur(calc(var(--ai05-blur)*2));background:radial-gradient(ellipse at 51% 94%,rgba(247,199,141,.76),rgba(181,208,167,.54) 29%,rgba(112,168,131,.30) 56%,transparent 78%);transform:translateX(-50%) scaleX(calc(1 - var(--ai05-focus)*.52));transform-origin:50% 100%;transition:height .18s ease,opacity .24s ease,transform .22s ease,left .19s ease;animation:ai05-cloud-shape 7.9s ease-in-out infinite alternate}
+.ai05-path::before{content:'';position:absolute;left:25%;right:25%;top:1%;height:48%;border-radius:58% 42% 55% 45%/43% 57% 46% 54%;background:radial-gradient(ellipse at 48% 44%,rgba(255,237,194,.75),rgba(255,192,118,.34) 29%,transparent 78%);filter:blur(calc(var(--ai05-blur)*.9));opacity:var(--ai05-focus);animation:ai05-organic-c 8.7s ease-in-out infinite alternate}
+.ai05-path::after{content:'';position:absolute;inset:21% 14% -8%;border-radius:48% 52% 56% 44%;background:radial-gradient(ellipse at 50% 85%,rgba(234,206,150,.39),rgba(170,209,172,.20) 46%,transparent 73%);filter:blur(calc(var(--ai05-blur)*1.5));animation:ai05-cloud-shape 9.4s ease-in-out -2s infinite alternate}
+.ai05-layer[data-state=holding] .ai05-path{height:calc(var(--ai05-size)*.62);opacity:.13}
+.ai05-layer[data-state=recording] .ai05-path{opacity:calc(.66 + var(--ai05-volume)*.19)}
+.ai05-layer[data-state=locked] .ai05-path{height:calc(var(--ai05-size)*.35);opacity:.12}
+/* Prototype H1.38: understated legible white status rather than a dark green banner. */
+.ai05-hint{position:absolute;left:var(--cx);top:calc(var(--cy) - var(--ai05-hint-y));transform:translateX(-50%);margin:0;max-width:calc(100vw - 44px);width:max-content;white-space:normal;text-align:center;font-size:14px;line-height:1.42;font-weight:550;letter-spacing:0;color:#fffcf3;padding:0 4px;text-shadow:0 2px 8px rgba(10,38,25,.78);background:transparent}
+/* Physical 44px target, visually scaled down rounded 31px mark. */
+.ai05-lock,.ai05-stop{position:absolute;top:calc(var(--cy) - var(--ai05-control-y));height:44px;width:44px;display:grid;place-items:center;border:0;background:transparent;color:#34664b;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;filter:drop-shadow(0 2px 5px rgba(23,50,34,.35))}
+.ai05-lock::before,.ai05-stop::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,237,208,.7);background:rgba(254,247,227,.94);box-shadow:0 0 9px rgba(226,169,103,.3)}
+.ai05-lock{left:calc(var(--cx) - var(--ai05-offset));color:#aa7447}
+.ai05-stop{left:calc(var(--cx) + var(--ai05-offset))}
+.ai05-lock svg,.ai05-stop svg{width:17px;height:17px;position:relative;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ai05-stop svg{fill:currentColor;stroke:none;width:11px;height:11px}
 .ai05-lock[hidden],.ai05-stop[hidden]{display:none!important}
-.ai05-actions .btn.ghost:not(:disabled){opacity:1;border-color:var(--edge);background:var(--glass2);color:var(--fg)}
 .ai05-layer[data-state=recording] .ai05-lock,.ai05-layer[data-state=locked] .ai05-lock,.ai05-layer[data-state=locked] .ai05-stop{pointer-events:auto}
-.ai05-layer[data-state=locked] .ai05-lock{background:#f4eee0;color:#486253}
-@keyframes ai05-breathe{0%,100%{opacity:.74;transform:scale(.98)}50%{opacity:.97;transform:scale(1.018)}}
+.ai05-layer[data-state=locked] .ai05-lock{color:#2c694b}
+.ai05-layer[data-state=locked] .ai05-lock::before,.ai05-layer[data-state=locked] .ai05-stop::before{background:#e0eee0;border-color:#96b7a0;box-shadow:0 0 0 3px #a8d4b626,0 0 12px #93c2a24c}
+.ai05-actions .btn.ghost:not(:disabled){opacity:1;border-color:var(--edge);background:var(--glass2);color:var(--fg)}
+@keyframes ai05-hold-ring{from{transform:scale(1);filter:brightness(1.06)}to{transform:scale(1.065);filter:brightness(1.28) drop-shadow(0 0 3px rgba(255,169,67,.55))}}
+@keyframes ai05-record-ring{0%,100%{transform:scale(1.006);filter:brightness(1.03)}55%{transform:scale(1.048);filter:brightness(1.17) drop-shadow(0 0 4px rgba(246,180,102,.38))}}
+@keyframes ai05-breathe{0%,100%{opacity:.73;transform:scale(.98)}50%{opacity:.96;transform:scale(1.018)}}
 @keyframes ai05-swirl{from{transform:rotate(-16deg) scale(1)}to{transform:rotate(28deg) scale(1.06)}}
 @keyframes ai05-drift{from{transform:translate(-9%,-4%) rotate(-8deg)}to{transform:translate(12%,6%) rotate(14deg)}}
-@keyframes ai05-aura{0%,100%{transform:scale(.96);opacity:.46}50%{transform:scale(1.1);opacity:.8}}
+@keyframes ai05-aura{0%,100%{transform:scale(.95);opacity:.43}50%{transform:scale(1.10);opacity:.76}}
+@keyframes ai05-organic-a{from{transform:rotate(-13deg) scale(.93);border-radius:45% 55% 53% 47%}to{transform:rotate(26deg) scale(1.05);border-radius:58% 42% 44% 56%}}
+@keyframes ai05-organic-b{from{transform:rotate(14deg) scale(1.01)}to{transform:rotate(-28deg) scale(.96)}}
+@keyframes ai05-organic-c{from{transform:rotate(-7deg) translate(-3%,3%)}to{transform:rotate(12deg) translate(6%,-4%)}}
+@keyframes ai05-cloud-shape{from{border-radius:46% 54% 42% 58%/58% 51% 49% 42%}to{border-radius:56% 44% 52% 48%/48% 63% 37% 52%}}
 @keyframes ai05-rotate{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.ai05-visual::before,.ai05-core,.ai05-core::before,.ai05-core::after,.ai05-radar{animation:none!important}.ai05-path{transition:none!important}}
+@media(prefers-reduced-motion:reduce){body.ai05-focused #app,body.ai05-focused #tabs nav button:not(#hub){transition:none!important}body.ai05-focused #hub .drugoy-ring,.ai05-visual::before,.ai05-aura-mesh i,.ai05-core,.ai05-core::before,.ai05-core::after,.ai05-radar,.ai05-path,.ai05-path::before,.ai05-path::after{animation:none!important;transition:none!important}}
 `;
 document.head.append(style);
 const LOCK_OPEN='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4.5 4.5 0 0 1 8.7-1.5"/></svg>';
 const LOCK_CLOSED='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
 const STOP='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
 function center(){const r=$('#hub')?.getBoundingClientRect();return r&&r.width&&r.height?{x:r.left+r.width/2,y:r.top+r.height/2,d:Math.min(r.width,r.height)}:null}
-function updateGeometry(){const p=center();if(!p||!layer)return;layer.style.setProperty('--cx',`${p.x}px`);layer.style.setProperty('--cy',`${p.y}px`);layer.style.setProperty('--ai05-size',`${p.d}px`);layer.style.setProperty('--ai05-offset',`${Math.max(49,p.d*.94)}px`)}
+function updateGeometry(){const p=center();if(!p||!layer)return;
+ const ratio=p.d/138; // Every optical measurement is scaled from the 138px H1.38 prototype.
+ const props={'--cx':`${p.x}px`,'--cy':`${p.y}px`,'--ai05-size':`${p.d}px`,
+ '--ai05-offset':`${106*ratio}px`,'--ai05-control-y':`${106*ratio}px`,
+ '--ai05-hint-y':`${Math.max(101,244*ratio)}px`,'--ai05-trail-width':`${132*ratio}px`,
+ '--ai05-blur':`${Math.max(3.1,9*ratio)}px`};
+ for(const [k,v] of Object.entries(props))layer.style.setProperty(k,v);
+}
 function show(state,hint){
-  if(!layer){layer=document.createElement('div');layer.className='ai05-layer';layer.innerHTML=`<div class="ai05-path" aria-hidden="true"></div><div class="ai05-visual" aria-hidden="true"><div class="ai05-core"></div><div class="ai05-radar"></div></div><p class="ai05-hint" role="status" aria-live="polite"></p><button type="button" class="ai05-lock" data-ai05="lock" hidden></button><button type="button" class="ai05-stop" data-ai05="stop" hidden aria-label="Завершить запись">${STOP}</button>`;document.body.appendChild(layer)}
-  updateGeometry();layer.dataset.state=state;layer.querySelector('.ai05-hint').textContent=hint||'';
+  if(!layer){layer=document.createElement('div');layer.className='ai05-layer';layer.innerHTML=`<div class="ai05-backdrop" aria-hidden="true"></div><div class="ai05-path" aria-hidden="true"></div><div class="ai05-visual" aria-hidden="true"><div class="ai05-face"></div><div class="ai05-aura-mesh"><i></i><i></i><i></i></div><div class="ai05-core"></div><div class="ai05-radar"></div></div><p class="ai05-hint" role="status" aria-live="polite"></p><button type="button" class="ai05-lock" data-ai05="lock" hidden></button><button type="button" class="ai05-stop" data-ai05="stop" hidden aria-label="Завершить запись">${STOP}</button>`;document.body.appendChild(layer);
+   const source=$('#hub .drugoy-ring');if(source){const copy=source.cloneNode(true);copy.className='ai05-ring-copy';copy.removeAttribute('id');copy.removeAttribute('style');layer.querySelector('.ai05-visual').appendChild(copy)}
+  }
+  updateGeometry();layer.dataset.state=state;document.body.classList.remove('ai05-holding','ai05-recording','ai05-locked');document.body.classList.add('ai05-focused',`ai05-${state}`);layer.querySelector('.ai05-hint').textContent=hint||'';
   const lock=layer.querySelector('.ai05-lock'),stop=layer.querySelector('.ai05-stop');
   lock.hidden=!['recording','locked'].includes(state);lock.innerHTML=state==='locked'?LOCK_CLOSED:LOCK_OPEN;
   lock.setAttribute('aria-label',state==='locked'?'Отменить запись':'Закрепить запись');stop.hidden=state!=='locked';
 }
-function hide(){layer?.remove();layer=null}
+function hide(){layer?.remove();layer=null;document.body.classList.remove('ai05-focused','ai05-holding','ai05-recording','ai05-locked')}
 window.addEventListener('resize',updateGeometry,{passive:true});window.addEventListener('scroll',updateGeometry,{passive:true});
 const vibrateOn=()=>get('ai05_haptic','on')!=='off';
 function haptic(){if(!vibrateOn())return;const strength=get('ai05_strength','gentle');const ms=strength==='strong'?36:strength==='medium'?24:12;
@@ -165,7 +212,7 @@ async function finish(){const owner=run;if(!owner||owner.done||owner.finishing)r
 function cancel(){invalidate()}
 function showActions(){stagedMenu=true;
  const audio=!!recordBlob;const t=spoken;
- const warning=audio&&!t&&speechIssue?`<p class="small mut" id="ai05-warning" style="margin:0 0 10px">${esc(speechIssue)}</p>`:'';
+ const warning=!t&&speechIssue?`<p class="small mut" id="ai05-warning" style="margin:0 0 10px">${esc(speechIssue)}</p>`:'';
  openSheet(`<h3>Запись завершена</h3><p class="sub">${audio?'Выбери, что сделать с записью.':t?'Текст распознан, но аудио не сохранилось.':'Аудио не сохранилось, но можно ввести текст вручную.'}</p>
  ${warning}<label class="lb" for="ai05-transcript">Текст речи · можно исправить</label>
  <textarea id="ai05-transcript" rows="3" placeholder="Речь не распозналась? Введи текст здесь." style="width:100%;min-height:86px;resize:vertical;margin:4px 0 11px" aria-label="Распознанный текст"></textarea>
@@ -193,10 +240,15 @@ A.naudremove=function(e){if(SH?.nst?.ai05Blob)clearStaged(SH.nst);return oldNote
 async function action(type){
  if(type==='discard'){recordBlob=null;spoken='';closeSheet();return}
  if(type==='text'||type==='tasks'){
-  const value=stagedText();stagedMenu=false;recordBlob=null;
+  const value=stagedText();
+  if(!value){const t=$('#ai05-transcript');if(t){t.setAttribute('aria-invalid','true');t.placeholder='Сначала напиши текст или повтори запись';}toast('Текста пока нет. Введи его здесь или сохрани аудио.');return}
+  stagedMenu=false;recordBlob=null;
   if(type==='text'){sheetNote(TODAY(),null);const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
-  else {sheetQuick(false);const box=$('#qq');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
-  if(!value)toast('Речь не распозналась. Текст можно ввести вручную.');return;
+  else { // Task parsing must not inherit the active evening/diary context.
+    sheetQuick(true);if(SH?.st){SH.st.ctx='today';SH.st.force=null}
+    const box=$('#qq');if(box){box.placeholder='Проверь, что нужно сделать';box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}
+  }
+  return;
  }
  if(type==='audio'){
   const blob=recordBlob;if(!blob)return;const both=$('#ai05-both')?.checked;const value=stagedText();
@@ -226,7 +278,7 @@ function moved(e){if(!gesture||gesture.id!==e.pointerId)return;
  if(gesture.lock)show(run.state,'Отпусти у замочка, чтобы закрепить');
  else if(gesture.cancel)show(run.state,'Отпусти в центре для отмены');
  else if(run.state==='recording')show('recording','Записываю · отпусти, чтобы закончить');
- layer?.style.setProperty('--ai05-rise',`${Math.min(156,Math.max(60,-dy*1.35))}px`);
+ {const c=center();const ratio=(c?.d||58)/138;const focus=Math.max(0,Math.min(1,-dy/(64*ratio/0.42)));layer?.style.setProperty('--ai05-rise',`${Math.min(145*ratio,Math.max(55*ratio,-dy*.75))}px`);layer?.style.setProperty('--ai05-focus',String(focus));layer?.style.setProperty('--ai05-move-x',`${Math.max(-20*ratio,Math.min(20*ratio,(e.clientX-gesture.x)*.18))}px`)}
 }
 window.addEventListener('pointerdown',e=>{
  if(!e.isPrimary||gesture||run||!e.target.closest?.('#hub'))return;
