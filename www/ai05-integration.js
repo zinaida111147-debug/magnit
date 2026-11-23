@@ -1,4 +1,4 @@
-/* AI-05 H1.51: restore approved H1.38 visual geometry / living ring and Android speech recovery.
+/* AI-05 H1.52: focused foreground, reduced background blur, magnetic lock zone / H1.38.
  * Original 12A-1 stays as the only ring; visual layers, cloud, trail and
  * lock/stop derive from the actual app button diameter. Background is softly blurred. The single-mic native Android
  * transcription+audio conflict is NOT solved here; verify on device.
@@ -17,9 +17,9 @@ let stream=null,recorder=null,recordPending=null,recordChunks=[],recordBlob=null
 let asr=null,spoken='',speechIssue='',audioContext=null,audioSource=null,analyser=null,raf=0;
 let stagedMenu=false;
 const style=document.createElement('style');
-style.id='ai05-h151-styles';
+style.id='ai05-h152-styles';
 style.textContent=`
-/* AI-05 H1.51 - original H1.38 ring geometry, 138px reference -> real measured #hub. */
+/* AI-05 H1.52 - original H1.38 geometry; foreground is never covered by backdrop blur. */
 /* The app's existing preview uses a theme gradient, which made the original
    dark-green 12A-1 object purple or grey on device. Restore the accepted
    deep-green object and retain a slight tint from the active theme. */
@@ -42,10 +42,10 @@ style.textContent=`
 }
 @keyframes ai05-idle-brush{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.018);filter:brightness(1.085)}}
 #hub.drugoy-hub-preview{touch-action:none;-webkit-user-select:none;user-select:none}
-body.ai05-focused #app{filter:blur(2.1px) saturate(.91);opacity:.67;transition:filter .28s ease,opacity .28s ease}
+body.ai05-focused #app{filter:blur(1.25px) saturate(.96);opacity:.88;transition:filter .28s ease,opacity .28s ease}
 /* The active layer is above the glass navigation. Hide the original face while its
    exact 12A-1 artwork is displayed in the same position in the visual layer. */
-body.ai05-focused #tabs{opacity:.54;filter:blur(2.15px);transition:opacity .26s ease,filter .26s ease}
+body.ai05-focused #tabs{opacity:.88;filter:blur(.8px);transition:opacity .26s ease,filter .26s ease}
 body.ai05-focused #tabs nav button:not(#hub){pointer-events:none}
 body.ai05-focused #hub{opacity:0!important}
 body.ai05-focused .drugoy-fx-layer{display:none!important}
@@ -61,15 +61,15 @@ body.ai05-focused .drugoy-fx-layer{display:none!important}
 .ai05-layer[data-state=recording] .ai05-ring-copy{animation:ai05-record-ring 3.8s ease-in-out infinite}
 .ai05-layer[data-state=locked] .ai05-ring-copy{animation:ai05-record-ring 6.8s ease-in-out infinite}
 .ai05-layer{position:fixed;inset:0;z-index:39;pointer-events:none;overflow:hidden;--ai05-volume:0;--ai05-size:58px;--ai05-rise:64px;--ai05-focus:0;--ai05-move-x:0px;--ai05-blur:4px}
-.ai05-backdrop{position:absolute;inset:0;background:rgba(17,42,31,.20);-webkit-backdrop-filter:blur(1.3px) saturate(.9);backdrop-filter:blur(1.3px) saturate(.9);transition:background .28s ease}
-.ai05-layer[data-state=holding] .ai05-backdrop{background:rgba(17,42,31,.14)}
-.ai05-layer[data-state=locked] .ai05-backdrop{background:rgba(17,42,31,.18)}
+.ai05-backdrop{position:absolute;inset:0;background:rgba(17,42,31,.065);-webkit-backdrop-filter:none;backdrop-filter:none;transition:background .28s ease}
+.ai05-layer[data-state=holding] .ai05-backdrop{background:rgba(17,42,31,.045)}
+.ai05-layer[data-state=locked] .ai05-backdrop{background:rgba(17,42,31,.055)}
 /* Outer living halo and three independent organic gradients. Original painted ring stays above these. */
 .ai05-visual{position:absolute;left:var(--cx);top:var(--cy);width:var(--ai05-size);height:var(--ai05-size);transform:translate(-50%,-50%);pointer-events:none;isolation:isolate}
 /* These two thin irregular H1.38 waves were missing from the integrated app. */
 .ai05-halo,.ai05-halo-two{position:absolute;inset:-18%;z-index:0;pointer-events:none;
  border:1px solid rgba(181,216,172,.33);border-radius:48% 52% 55% 45%/43% 57% 46% 54%;opacity:0;
- filter:blur(1.2px)}
+ filter:blur(.45px)}
 .ai05-layer[data-state=holding] .ai05-halo,.ai05-layer[data-state=recording] .ai05-halo{animation:ai05-fluid-halo-a 6.8s ease-out infinite}
 .ai05-layer[data-state=holding] .ai05-halo-two,.ai05-layer[data-state=recording] .ai05-halo-two{animation:ai05-fluid-halo-b 9.4s ease-out -3.2s infinite}
 .ai05-layer[data-state=locked] .ai05-halo{animation:ai05-fluid-halo-a 11.6s ease-out infinite}
@@ -79,8 +79,8 @@ body.ai05-focused .drugoy-fx-layer{display:none!important}
 .ai05-visual::before{content:'';position:absolute;inset:-70%;z-index:-1;
  border-radius:49% 51% 46% 54%;background:radial-gradient(ellipse at 50% 53%,
  rgba(237,186,108,.34) 4%,rgba(153,197,148,.31) 34%,rgba(101,144,111,.15) 57%,transparent 75%);
- filter:blur(calc(var(--ai05-blur)*2.1));opacity:.77;animation:ai05-aura 5.3s ease-in-out infinite}
-.ai05-aura-mesh{z-index:1;position:absolute;inset:-30%;filter:blur(var(--ai05-blur));opacity:.72;isolation:isolate;transform:scale(.94);transition:transform .34s ease,opacity .3s ease}
+ filter:blur(calc(var(--ai05-blur)*1.28));opacity:.92;animation:ai05-aura 5.3s ease-in-out infinite}
+.ai05-aura-mesh{z-index:1;position:absolute;inset:-30%;filter:blur(calc(var(--ai05-blur)*.65));opacity:.91;isolation:isolate;transform:scale(.94);transition:transform .34s ease,opacity .3s ease}
 .ai05-aura-mesh i{position:absolute;inset:0;border-radius:45% 55% 53% 47%/51% 43% 57% 49%;display:block;mix-blend-mode:screen}
 .ai05-aura-mesh i:nth-child(1){background:conic-gradient(from 34deg,transparent,#769c7a55 19%,#cbd4ad88 34%,transparent 53%,#e4ac7577 73%,transparent 91%);animation:ai05-organic-a 7.1s ease-in-out infinite alternate}
 .ai05-aura-mesh i:nth-child(2){inset:8%;background:conic-gradient(from -41deg,#729a8466,transparent 22%,#d3cc9e99 44%,transparent 64%,#7ca88b77 80%,transparent);animation:ai05-organic-b 9.4s ease-in-out infinite alternate-reverse}
@@ -91,37 +91,40 @@ body.ai05-focused .drugoy-fx-layer{display:none!important}
 .ai05-radar{z-index:3;position:absolute;inset:5%;border-radius:50%;background:conic-gradient(from 20deg,transparent 0deg,transparent 285deg,#fef4d075 332deg,transparent 355deg);-webkit-mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);mask:radial-gradient(circle,transparent 20%,#000 42% 76%,transparent 88%);opacity:0}
 .ai05-layer[data-state=holding] .ai05-radar{opacity:.8;animation:ai05-rotate 4.6s linear infinite}
 .ai05-layer[data-state=recording] .ai05-core{filter:brightness(calc(1 + var(--ai05-volume)*.43));animation-duration:3.2s}
-.ai05-layer[data-state=recording] .ai05-aura-mesh{transform:scale(calc(1.02 + var(--ai05-volume)*.11));opacity:calc(.72 + var(--ai05-volume)*.18)}
+.ai05-layer[data-state=recording] .ai05-aura-mesh{transform:scale(calc(1.02 + var(--ai05-volume)*.11));opacity:calc(.90 + var(--ai05-volume)*.10)}
 .ai05-layer[data-state=locked] .ai05-core{animation-duration:6.8s;filter:brightness(calc(1 + var(--ai05-volume)*.28))}
 .ai05-layer[data-state=locked] .ai05-visual::before{animation-duration:8.2s}
 /* No pointed triangle: translucent elliptical flow with moving focus and soft wide foot. */
 .ai05-path{position:absolute;left:calc(var(--cx) + var(--ai05-move-x)*.22);
  bottom:calc(100% - var(--cy) + var(--ai05-size)*.14);width:var(--ai05-trail-width);height:var(--ai05-rise);
  opacity:0;pointer-events:none;border-radius:46% 54% 42% 58%/58% 51% 49% 42%;
- filter:blur(calc(var(--ai05-blur)*1.3));
- background:radial-gradient(ellipse at 51% 92%,rgba(247,199,141,.79),rgba(181,208,167,.67) 28%,rgba(112,168,131,.40) 53%,transparent 82%);
+ filter:blur(calc(var(--ai05-blur)*.68));
+ background:radial-gradient(ellipse at 51% 94%,rgba(255,215,157,.94),rgba(198,217,160,.79) 29%,rgba(98,156,121,.50) 55%,transparent 83%);
  transform:translateX(-50%) scaleX(calc(1 - var(--ai05-focus)*.48));transform-origin:50% 100%;
  transition:height .18s ease,opacity .24s ease,transform .22s ease,left .19s ease;
  animation:ai05-cloud-shape 7.9s ease-in-out infinite alternate}
-.ai05-path::before{content:'';position:absolute;left:25%;right:25%;top:1%;height:48%;border-radius:58% 42% 55% 45%/43% 57% 46% 54%;background:radial-gradient(ellipse at 48% 44%,rgba(255,237,194,.75),rgba(255,192,118,.34) 29%,transparent 78%);filter:blur(calc(var(--ai05-blur)*.9));opacity:var(--ai05-focus);animation:ai05-organic-c 8.7s ease-in-out infinite alternate}
-.ai05-path::after{content:'';position:absolute;inset:21% 14% -8%;border-radius:48% 52% 56% 44%;background:radial-gradient(ellipse at 50% 85%,rgba(234,206,150,.39),rgba(170,209,172,.20) 46%,transparent 73%);filter:blur(calc(var(--ai05-blur)*1.5));animation:ai05-cloud-shape 9.4s ease-in-out -2s infinite alternate}
-.ai05-layer[data-state=holding] .ai05-path{height:calc(var(--ai05-size)*.70);opacity:.34}
+.ai05-path::before{content:'';position:absolute;left:25%;right:25%;top:1%;height:48%;border-radius:58% 42% 55% 45%/43% 57% 46% 54%;background:radial-gradient(ellipse at 48% 44%,rgba(255,237,194,.75),rgba(255,192,118,.34) 29%,transparent 78%);filter:blur(calc(var(--ai05-blur)*.5));opacity:calc(.40 + var(--ai05-focus)*.6);animation:ai05-organic-c 8.7s ease-in-out infinite alternate}
+.ai05-path::after{content:'';position:absolute;inset:21% 14% -8%;border-radius:48% 52% 56% 44%;background:radial-gradient(ellipse at 50% 85%,rgba(234,206,150,.39),rgba(170,209,172,.20) 46%,transparent 73%);filter:blur(calc(var(--ai05-blur)*.85));animation:ai05-cloud-shape 9.4s ease-in-out -2s infinite alternate}
+.ai05-layer[data-state=holding] .ai05-path{height:calc(var(--ai05-size)*.75);opacity:.56}
 .ai05-layer[data-state=recording] .ai05-path{opacity:calc(.85 + var(--ai05-volume)*.15)}
-.ai05-layer[data-state=locked] .ai05-path{height:calc(var(--ai05-size)*.62);opacity:.28}
+.ai05-layer[data-state=locked] .ai05-path{height:calc(var(--ai05-size)*.78);opacity:.55}
 /* Original H1.38 compact white status with explicit state and muted secondary line. */
 .ai05-hint{position:absolute;left:var(--cx);top:calc(var(--cy) - var(--ai05-hint-y));transform:translateX(-50%);margin:0;
  max-width:calc(100vw - 28px);width:max-content;white-space:normal;text-align:center;line-height:1.42;letter-spacing:0;
- color:#fffdf3;padding:0 7px;text-shadow:0 2px 10px rgba(10,38,25,.88);background:transparent}
+ color:#fffdf3;padding:8px 13px;border-radius:16px;box-shadow:0 4px 18px rgba(25,50,38,.16);text-shadow:0 1px 3px rgba(10,38,25,.35);background:rgba(22,67,47,.90);z-index:7}
 .ai05-hint strong{display:block;font-size:clamp(15px,4.1vw,19px);font-weight:650;line-height:1.15}
 .ai05-hint small{display:block;font-size:clamp(11px,3vw,12px);font-weight:500;color:#f4faef;line-height:1.4;margin-top:4px}
 
-/* Physical 44px target, visually scaled down rounded 31px mark. */
-.ai05-lock,.ai05-stop{position:absolute;top:calc(var(--cy) - var(--ai05-control-y));height:44px;width:44px;display:grid;place-items:center;border:0;background:transparent;color:#34664b;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;filter:drop-shadow(0 2px 5px rgba(23,50,34,.35))}
-.ai05-lock::before,.ai05-stop::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,237,208,.7);background:rgba(254,247,227,.94);box-shadow:0 0 9px rgba(226,169,103,.3)}
-.ai05-lock{left:calc(var(--cx) - var(--ai05-offset));color:#aa7447}
-.ai05-stop{left:calc(var(--cx) + var(--ai05-offset))}
-.ai05-lock svg,.ai05-stop svg{width:17px;height:17px;position:relative;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ai05-stop svg{fill:currentColor;stroke:none;width:11px;height:11px}
+/* Lock: 58px real hit area, visible 42px circle, and enlarged drag magnet. */
+.ai05-lock,.ai05-stop{position:absolute;top:calc(var(--cy) - var(--ai05-control-y));height:58px;width:58px;display:grid;place-items:center;border:0;background:transparent;color:#34664b;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;filter:drop-shadow(0 2px 5px rgba(23,50,34,.35))}
+.ai05-lock::before,.ai05-stop::before{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,237,208,.7);background:rgba(230,245,224,.98);box-shadow:0 2px 13px rgba(23,50,34,.22),0 0 0 1px rgba(255,255,255,.35)}
+.ai05-lock{left:calc(var(--cx) - var(--ai05-offset));color:#276444}
+.ai05-stop{left:calc(var(--cx) + var(--ai05-offset));color:#aa7447}
+.ai05-stop::before{background:rgba(255,241,225,.98)}
+.ai05-lock svg,.ai05-stop svg{width:22px;height:22px;position:relative;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ai05-stop svg{fill:currentColor;stroke:none;width:14px;height:14px}
+.ai05-lock.is-armed::before{background:#e6f8df;border-color:#276443;box-shadow:0 0 0 5px rgba(103,191,131,.22),0 0 24px rgba(87,171,104,.53);transform:scale(1.07)}
+.ai05-lock.is-armed{color:#185735}
 .ai05-lock[hidden],.ai05-stop[hidden]{display:none!important}
 .ai05-layer[data-state=recording] .ai05-lock,.ai05-layer[data-state=locked] .ai05-lock,.ai05-layer[data-state=locked] .ai05-stop{pointer-events:auto}
 .ai05-layer[data-state=locked] .ai05-lock{color:#2c694b}
@@ -148,9 +151,9 @@ function center(){const r=$('#hub')?.getBoundingClientRect();return r&&r.width&&
 function updateGeometry(){const p=center();if(!p||!layer)return;
  const ratio=p.d/138; // Every optical measurement is scaled from the 138px H1.38 prototype.
  const props={'--cx':`${p.x}px`,'--cy':`${p.y}px`,'--ai05-size':`${p.d}px`,
- '--ai05-offset':`${106*ratio}px`,'--ai05-control-y':`${106*ratio}px`,
- '--ai05-hint-y':`${Math.max(109,251*ratio)}px`,'--ai05-trail-width':`${132*ratio}px`,
- '--ai05-blur':`${Math.max(3.5,9*ratio)}px`};
+ '--ai05-offset':`${Math.max(49,112*ratio)}px`,'--ai05-control-y':`${Math.max(60,133*ratio)}px`,
+ '--ai05-hint-y':`${Math.max(154,290*ratio)}px`,'--ai05-trail-width':`${132*ratio}px`,
+ '--ai05-blur':`${Math.max(2.15,5*ratio)}px`};
  for(const [k,v] of Object.entries(props))layer.style.setProperty(k,v);
 }
 function show(state,hint){
@@ -162,10 +165,11 @@ function show(state,hint){
     // The approved prototype separates the state from the short gesture cue.
     const parts=state==='holding'?['Подумай…','Проведи вверх, чтобы говорить']:
        state==='locked'?['Запись закреплена','Нажми «Стоп», когда закончишь']:
+       hint?.includes('закрепить')?['Отпусти – закрепить','Замочек пойман']:
        hint?.includes('Отпусти')?['Запись','Отпусти в центре для отмены']:
        hint?.includes('Завершаю')?['Завершаю запись…','']:
        hint?.includes('Нет аудио')?['Запись речи','Аудио недоступно']:
-       state==='recording'?['Говори…','Верни палец в центр, чтобы отменить']:[hint||'',''];
+       state==='recording'?['Говори…','К замку – закрепить · отпустить – закончить']:[hint||'',''];
     h.replaceChildren();const strong=document.createElement('strong');strong.textContent=parts[0];h.appendChild(strong);
     if(parts[1]){const small=document.createElement('small');small.textContent=parts[1];h.appendChild(small)}
   }
@@ -361,17 +365,25 @@ window.addEventListener('click',e=>{const b=e.target.closest?.('[data-ai05]');if
  if(kind==='lock'){if(run?.state==='recording'&&!run.finishing){run.state='locked';show('locked','Запись закреплена · нажми «Стоп»');pulse(()=>!!run&&run.state==='locked'&&!run.finishing)}else if(run?.state==='locked')cancel()}
  else if(kind==='stop')finish();else if(kind==='cancel')cancel();else Promise.resolve(action(kind)).catch(()=>toast('Не удалось выполнить действие'));
 },true);
-function lockZone(x,y){if(!layer)return false;const box=layer.querySelector('.ai05-lock')?.getBoundingClientRect();return !!box&&Math.hypot(x-(box.left+box.width/2),y-(box.top+box.height/2))<=30}
+function lockZone(x,y){if(!layer||run?.state!=='recording')return false;
+ const box=layer.querySelector('.ai05-lock')?.getBoundingClientRect();if(!box)return false;
+ // Thumb magnet: 48px around the lock instead of a precise 30px circle.
+ // It does not overlap the central cancel region or the right-side stop control.
+ const centerX=box.left+box.width/2,centerY=box.top+box.height/2;
+ const hub=center();return !!hub && x<=hub.x-18 && Math.hypot(x-centerX,y-centerY)<=48;
+}
 function nearHub(x,y){const c=center();return !!c&&Math.hypot(x-c.x,y-c.y)<c.d*.49}
 function moved(e){if(!gesture||gesture.id!==e.pointerId)return;
  const dy=e.clientY-gesture.y;
  if(!run&&dy< -24){gesture.used=true;begin()}
  if(!run||run.finishing)return;
- gesture.lock=lockZone(e.clientX,e.clientY);
+ const armed=lockZone(e.clientX,e.clientY);if(armed&&!gesture.lock)haptic();
+ gesture.lock=armed;
  gesture.cancel=nearHub(e.clientX,e.clientY)&&dy>-14;
- if(gesture.lock)show(run.state,'Отпусти у замочка, чтобы закрепить');
+ if(gesture.lock)show(run.state,'Отпусти – закрепить');
  else if(gesture.cancel)show(run.state,'Отпусти в центре для отмены');
  else if(run.state==='recording')show('recording','Записываю · отпусти, чтобы закончить');
+ layer?.querySelector('.ai05-lock')?.classList.toggle('is-armed',Boolean(gesture.lock));
  {const c=center();const ratio=(c?.d||58)/138;const focus=Math.max(0,Math.min(1,-dy/(64*ratio/0.42)));layer?.style.setProperty('--ai05-rise',`${Math.min(145*ratio,Math.max(55*ratio,-dy*.75))}px`);layer?.style.setProperty('--ai05-focus',String(focus));layer?.style.setProperty('--ai05-move-x',`${Math.max(-20*ratio,Math.min(20*ratio,(e.clientX-gesture.x)*.18))}px`)}
 }
 window.addEventListener('pointerdown',e=>{
@@ -390,7 +402,7 @@ window.addEventListener('pointerup',e=>{
  // Some Android WebViews deliver a fast swipe only as down/up (no move).
  if(!run&&e.clientY-g.y< -24){g.used=true;begin()}
  const used=g.used;
- if(run&&g.cancel)cancel();else if(run&&g.lock&&!run.finishing){run.state='locked';show('locked','Запись закреплена · нажми «Стоп»');pulse(()=>!!run&&run.state==='locked'&&!run.finishing)}
+ if(run&&g.cancel)cancel();else if(run&&(g.lock||lockZone(e.clientX,e.clientY))&&!run.finishing){run.state='locked';show('locked','Запись закреплена · нажми «Стоп»');pulse(()=>!!run&&run.state==='locked'&&!run.finishing)}
  else if(run)finish();else hide();
  gesture=null;if(used){lastGesture=Date.now();e.preventDefault();e.stopPropagation()}
 },true);
