@@ -285,6 +285,7 @@ async function transcribeLocal(blob,owner,allowDownload=false){
  const encoded=(await dataUrl(new Blob([bytes]))).split(',')[1];if(owner.done)return {text:'',issue:'Отменено',...status};
  const result=await N.transcribe({pcm:encoded});return {text:result.text||'',issue:result.text?'':'Слова не распознаны. Можно исправить текст вручную.',...status};
 }
+if(window.Commands56)window.Commands56.transcribe=async(blob,active)=>{const N=gigaPlugin();if(!N)throw Error('Расшифровка доступна в Android APK');const status=await N.status();if(!status.supported)throw Error('Модель недоступна на устройстве');if(!status.ready&&!confirm('Скачать модель русского языка (около 226 МБ)?'))return '';if(!active())return '';const owner={get done(){return !active()}};const out=await transcribeLocal(blob,owner,true);if(out.issue&&!out.text)throw Error(out.issue);return out.text};
 function invalidate(){clearHold();stopVolume();const previous=run;if(previous)previous.done=true;
  if(previous?.finishing)Promise.resolve(gigaPlugin()?.cancel?.()).catch(()=>{});asr=null;if(recorder&&recorder.state!=='inactive'){recorder.onstop=null;safe(()=>recorder.stop())}
  recorder=null;stopTracks();recordPending=null;recordChunks=[];recordBlob=null;spoken='';speechIssue='';run=null;gesture=null;hide()}
@@ -306,7 +307,7 @@ function begin(){if(run)return;clearHold();run={state:'recording',done:false,fin
  spoken='';speechIssue='';recordChunks=[];recordBlob=null;recordStarted=0;recordDuration=0;show('recording','Записываю · отпусти, чтобы закончить');haptic(owner);
  localState=null;recordPending=startCapture(owner);
 }
-let resultUrl=null;
+let resultUrl=null, resultCommands56=null;
 function releaseResultUrl(){if(resultUrl){safe(()=>URL.revokeObjectURL(resultUrl));resultUrl=null}}
 async function finish(){const owner=run;if(!owner||owner.done||owner.finishing)return;owner.finishing=true;clearHold();hide();
  // UI opens immediately; neither recorder stop nor recognition can delay it.
@@ -331,16 +332,16 @@ function resultChoice(type,title,sub){return `<button type="button" class="ai05-
 function showActions(pending=false){stagedMenu=true;releaseResultUrl();
  openSheet(`<section id="ai05-result"><h3 class="ai05-result-title">Запись завершена</h3><p class="ai05-result-meta" id="ai05-result-meta">${pending?'Завершаю запись…':'Выбери, что сохранить'}</p>
  <div class="ai05-result-card"><audio id="ai05-player" controls preload="metadata" hidden></audio><label for="ai05-transcript">Текст записи</label><textarea id="ai05-transcript" class="field" rows="2" placeholder="${pending?'Распознаю речь…':'Здесь можно исправить текст'}" aria-label="Распознанный текст"></textarea>
- <p class="ai05-status" id="ai05-warning" role="status">${pending?'Обрабатываю запись. Можно ввести текст вручную.':''}</p>
+ <div id="ai05-command56" hidden></div><p class="ai05-status" id="ai05-warning" role="status">${pending?'Обрабатываю запись. Можно ввести текст вручную.':''}</p>
  <button type="button" class="lnk ai05-retry" data-ai05="retry-speech" hidden>Расшифровать запись</button><p class="ai05-status" id="ai05-repeat-info" hidden>Распознавание на телефоне. Аудио никуда не отправляется.</p></div>
  <label class="ai05-both-row" id="ai05-both-row" hidden><input id="ai05-both" type="checkbox"> Сохранить аудио вместе с текстом</label>
- <div class="ai05-result-options">${resultChoice('text','В дневник текст','Сохранить мысль')}${resultChoice('audio','В дневник аудио','Оставить голосовую запись')}${resultChoice('tasks','Распознать задачи','Проверить перед добавлением')}${resultChoice('ai','Обсудить с ИИ','Будущая функция · подписка')}</div>
+ <div class="ai05-result-options">${resultChoice('text','В дневник текст','Сохранить мысль')}${resultChoice('audio','В дневник аудио','Оставить голосовую запись')}${resultChoice('ai','Обсудить с ИИ','Будущая функция · подписка')}</div>
  <button type="button" class="lnk ai05-discard" data-ai05="discard">Удалить запись</button></section>`);
- const input=$('#ai05-transcript');if(input){input.value=spoken;input.addEventListener('input',()=>{input.dataset.edited='1';if(!run?.finishing)syncResultButtons()})}if(!pending)updateActions();
+ const input=$('#ai05-transcript');if(input){input.value=spoken;resultCommands56=window.Commands56?.mount(input,$('#ai05-command56'));input.addEventListener('input',()=>{input.dataset.edited='1';if(!run?.finishing)syncResultButtons()})}if(!pending)updateActions();
 }
-function syncResultButtons(){if(!stagedMenu||!$('#ai05-result'))return;const text=!!stagedText();for(const k of ['text','tasks','audio']){const b=$(`[data-ai05="${k}"]`);if(b)b.disabled=k==='audio'?!recordBlob:!text}}
+function syncResultButtons(){if(!stagedMenu||!$('#ai05-result'))return;const text=!!stagedText();for(const k of ['text','audio']){const b=$(`[data-ai05="${k}"]`);if(b)b.disabled=k==='audio'?!recordBlob:!text}}
 function updateActions(){if(!stagedMenu||!$('#ai05-result'))return;const input=$('#ai05-transcript'),audio=!!recordBlob;
- if(input&&!input.dataset.edited)input.value=spoken;if(input)input.placeholder='Можно ввести или исправить текст';
+ if(input&&!input.dataset.edited){input.value=spoken;input.dispatchEvent(new Event('input',{bubbles:true}));delete input.dataset.edited}if(input)input.placeholder='Можно ввести или исправить текст';
  const meta=$('#ai05-result-meta');if(meta)meta.textContent=audio?'Аудиозапись · выбери, что сохранить': 'Аудио не сохранилось';
  const status=$('#ai05-warning');if(status){status.textContent=spoken?'Проверь текст перед сохранением.':audio?(speechIssue||'Текст не получен. Аудио можно сохранить.'):'Не удалось получить текст. Можно ввести его вручную.';if(speechIssue)status.title=speechIssue;}
  const player=$('#ai05-player');if(audio&&player){releaseResultUrl();resultUrl=URL.createObjectURL(recordBlob);player.src=resultUrl;player.hidden=false}
@@ -384,23 +385,20 @@ async function action(type){
  if(type==='discard'){closeSheet();return}
  if(run?.finishing)return;
  if(type==='retry-speech'){await retrySpeech();return}
- if(type==='text'||type==='tasks'){
+ if(type==='text'){
   const value=stagedText();
   if(!value){const t=$('#ai05-transcript');if(t){t.setAttribute('aria-invalid','true');t.placeholder='Сначала напиши текст или расшифруй запись';}toast('Текста пока нет. Введи его здесь или сохрани аудио.');return}
   if(type==='text'&&recordBlob&&$('#ai05-both')?.checked)return action('audio');
   cancelRetry();stagedMenu=false;releaseResultUrl();recordBlob=null;
-  if(type==='text'){sheetNote(TODAY(),null);const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
-  else { // Task parsing must not inherit the active evening/diary context.
-    sheetQuick(true);if(SH?.st){SH.st.ctx='today';SH.st.force=null}
-    const box=$('#qq');if(box){box.placeholder='Проверь, что нужно сделать';box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}
-  }
+  if(type==='text'){sheetNote(TODAY(),null);if(SH?.nst)SH.nst.command56=[...(resultCommands56?.seen||[])];const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
+
   return;
  }
  if(type==='audio'){
   const blob=recordBlob;if(!blob)return;const both=$('#ai05-both')?.checked;const value=stagedText();
   cancelRetry();stagedMenu=false;releaseResultUrl();sheetNote(TODAY(),null);const st=SH?.nst;
   if(!st){toast('Дневник не открылся');return}
-  st.ai05Blob=blob;st.ai05PreviewUrl=URL.createObjectURL(blob);
+  st.command56=[...(resultCommands56?.seen||[])];st.ai05Blob=blob;st.ai05PreviewUrl=URL.createObjectURL(blob);
   if(both&&value){const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
   const box=$('#naudioprev');if(box){const player=document.createElement('audio');player.controls=true;player.preload='metadata';player.src=st.ai05PreviewUrl;
    const remove=document.createElement('button');remove.type='button';remove.className='lnk';remove.dataset.a='naudremove';remove.textContent='Убрать аудио';box.replaceChildren(player,remove)}
@@ -408,7 +406,7 @@ async function action(type){
  }
 }
 window.addEventListener('click',e=>{const b=e.target.closest?.('[data-ai05]');if(!b)return;
- const kind=b.dataset.ai05;if(!['text','audio','tasks','discard','retry-speech'].includes(kind))return;
+ const kind=b.dataset.ai05;if(!['text','audio','discard','retry-speech'].includes(kind))return;
  e.preventDefault();e.stopImmediatePropagation();
  Promise.resolve(action(kind)).catch(()=>toast('Не удалось выполнить действие'));
 },true);
