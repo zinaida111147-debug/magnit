@@ -1,4 +1,4 @@
-/* AI-05 H1.54: simplified gesture; frozen H1.53f visual, no legacy renderer. */
+/* AI-05 H1.54a: simplified gesture; frozen H1.53f visual, no legacy renderer. */
 (()=>{
 'use strict';
 const get=(k,d)=>{try{return localStorage.getItem(k)??d}catch(_){return d}};
@@ -54,7 +54,7 @@ queueGeometry();
 function putVisual(s,hint=''){
  visualState=s;const active=['recording','lock-aim','cancel'].includes(s);sceneApp.classList.toggle('active',active);sceneApp.classList.toggle('recording',s==='recording'||s==='lock-aim');sceneApp.classList.toggle('lock-aim',s==='lock-aim');sceneApp.classList.toggle('cancel',s==='cancel');sceneApp.classList.toggle('done',false);sceneApp.classList.toggle('locked',s==='locked');sceneApp.classList.toggle('motion-off',reduced.matches);
  document.body.classList.toggle('ai05-focused',active||s==='locked');host.dataset.state=s;
- const lines={recording:['Говори…','Вверх — закрепить · в сторону — отменить'],'lock-aim':['Отпусти у замочка','Вниз по диагонали — отмена'],locked:['Запись закреплена','Нажми «Стоп», чтобы завершить'],cancel:['Отмена','Отпусти, чтобы отменить']};
+ const lines={recording:['Говори…','Вверх — закрепить · в сторону — отменить'],'lock-aim':['Отпусти для закрепления','Вниз по диагонали — отмена'],locked:['Запись закреплена','Нажми «Стоп», чтобы завершить'],cancel:['Отмена','Отпусти, чтобы отменить']};
  const line=lines[s];if(line){root.getElementById('headline').textContent=line[0];root.getElementById('explain').textContent=line[1]}
  // Real capture failure is surfaced without changing the agreed gesture or moving the scene.
  if(hint.startsWith('Нет аудио'))root.getElementById('status').textContent=hint;
@@ -65,14 +65,14 @@ function hide(){resetFlow();putVisual('idle')}
 function writeFlow(dx,dy){const dist=Math.hypot(dx,dy);stage.style.setProperty('--gesture-progress',String(Math.max(0,Math.min(1,-dy/110))));stage.style.setProperty('--cloud-x',Math.max(-50,Math.min(50,dx*.28)).toFixed(1)+'px');stage.style.setProperty('--cloud-y',Math.max(-83,Math.min(42,dy*.40)).toFixed(1)+'px');stage.style.setProperty('--cloud-intensity',Math.min(1,Math.max(0,(dist-6)/70)).toFixed(3));stage.style.setProperty('--cloud-focus',Math.min(1,Math.max(0,(dist-7)/57)).toFixed(3));stage.style.setProperty('--flow-dx',dx.toFixed(1));stage.style.setProperty('--flow-dy',dy.toFixed(1));}
 function offsets(e,g){return {dx:(e.clientX-g.x)/g.scale,dy:(e.clientY-g.y)/g.scale}}
 function lockGeometry(g,dx,dy){const r=root.getElementById('lockTarget').getBoundingClientRect();return {px:g.x/g.scale+dx,py:g.y/g.scale+dy,cx:(r.left+r.width/2)/g.scale,cy:(r.top+r.height/2)/g.scale,w:r.width/g.scale,h:r.height/g.scale}}
-// H1.54: hold starts recording; up aims at lock; lateral cancel is symmetrical.
+// H1.54a: hold starts recording; up aims at lock; lateral cancel is symmetrical.
 const HOLD_MS=285,SIDE_CANCEL=48,LOCK_SIDE=48,LOCK_ENTRY_MARGIN=44,LOCK_EXIT_DROP=42;
 function classify(g,dx,dy){
  const b=lockGeometry(g,dx,dy),rise=g.y/g.scale-b.cy;
  // Once acquired, ordinary sideways movement cannot accidentally cancel the lock.
  // A downward diagonal from the highest acquired point can cancel, on either side.
  if(g.lock){g.highest=Math.min(g.highest,dy);if(dy-g.highest>=LOCK_EXIT_DROP&&Math.abs(dx)>=SIDE_CANCEL){g.lock=false;g.cancel=true;return 'cancel'}return 'lock-aim'}
- if(Math.abs(dx)<=LOCK_SIDE&&dy<=-Math.max(45,rise-LOCK_ENTRY_MARGIN)){g.lock=true;g.highest=dy;g.cancel=false;return 'lock-aim'}
+ if(Math.abs(dx)<=LOCK_SIDE&&dy<=-Math.max(45,rise-LOCK_ENTRY_MARGIN)/2){g.lock=true;g.highest=dy;g.cancel=false;return 'lock-aim'}
  if(g.cancel|| (Math.abs(dx)>=SIDE_CANCEL&&Math.abs(dx)>=Math.abs(dy)*.85)){g.cancel=true;return 'cancel'}
  return 'recording';
 }
