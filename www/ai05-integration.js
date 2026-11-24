@@ -376,11 +376,12 @@ closeSheet=function(...args){if(SH?.nst?.ai05Blob)clearStaged(SH.nst);
  return oldCloseSheet(...args)};
 const oldNoteSave=A.nsave;
 A.nsave=async function(e){const st=SH?.nst;if(!st?.ai05Blob)return oldNoteSave(e);
- const blob=st.ai05Blob;const id=phNew();
- try{await PH.put(id,await dataUrl(blob))}catch(_){toast('Аудио не удалось сохранить. Попробуй ещё раз');return}
- st.audio={id,mime:blob.type,ms:recordDuration};clearStaged(st);return oldNoteSave(e)};
+ if(NOTE_AUDIO||NOTE_AUDIO_PENDING||NOTE_AUDIO_SAVING||st.ai05Saving){toast('Сначала закончи запись аудио');return}
+ const blob=st.ai05Blob;const id=phNew();st.ai05Saving=true;
+ try{await PH.put(id,await dataUrl(blob))}catch(_){toast('Аудио не удалось сохранить. Попробуй ещё раз');return}finally{st.ai05Saving=false}
+ if(SH?.nst!==st||st.ai05Blob!==blob)return;setNoteAudios(st,[{id,mime:blob.type,ms:recordDuration},...noteAudios(st)]);clearStaged(st);return oldNoteSave(e)};
 const oldNoteRemove=A.naudremove;
-A.naudremove=function(e){if(SH?.nst?.ai05Blob)clearStaged(SH.nst);return oldNoteRemove(e)};
+A.naudremove=function(e){const st=SH?.nst;if(st?.ai05Blob&&e?.dataset.staged==='1'){clearStaged(st);refreshNoteAudio(st);return}return oldNoteRemove(e)};
 async function action(type){
  if(type==='discard'){closeSheet();return}
  if(run?.finishing)return;
@@ -400,8 +401,7 @@ async function action(type){
   if(!st){toast('Дневник не открылся');return}
   st.command56=[...(resultCommands56?.seen||[])];st.ai05Blob=blob;st.ai05PreviewUrl=URL.createObjectURL(blob);
   if(both&&value){const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
-  const box=$('#naudioprev');if(box){const player=document.createElement('audio');player.controls=true;player.preload='metadata';player.src=st.ai05PreviewUrl;
-   const remove=document.createElement('button');remove.type='button';remove.className='lnk';remove.dataset.a='naudremove';remove.textContent='Убрать аудио';box.replaceChildren(player,remove)}
+  refreshNoteAudio(st);
   recordBlob=null;toast('Аудио подготовлено. Сохранится, когда нажмёшь «Сохранить».');
  }
 }
