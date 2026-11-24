@@ -1,3 +1,4 @@
+/* AI-05 H1.55: GigaAM local ASR; H1.54a gestures retained. */
 /* AI-05 H1.54a: simplified gesture; frozen H1.53f visual, no legacy renderer. */
 (()=>{
 'use strict';
@@ -264,56 +265,28 @@ function volume(sourceStream){try{const C=window.AudioContext||window.webkitAudi
  const values=new Uint8Array(512);let filtered=0;const frame=()=>{if(!analyser||!run||run.done)return;analyser.getByteTimeDomainData(values);let energy=0;for(const x of values){const a=(x-128)/128;energy+=a*a}const v=Math.min(1,Math.sqrt(energy/512)*6);filtered=filtered*.8+v*.2;stage.style.setProperty('--voice-level',filtered.toFixed(3));sceneApp.classList.add('voice-live');raf=requestAnimationFrame(frame)};raf=requestAnimationFrame(frame)
  }catch(_){stopVolume()}}
 /* This speech session never replaces VOX methods. Other app microphone fields keep their own engine. */
-function makeSpeech(owner){let on=true,mode='',N=null,web=null,listeners=[],timer=0,retry=0,busy=false,partial='',segments=[],reason='',pending=null;
- const alive=()=>on&&run===owner&&!owner.done&&!owner.finishing;
- const notice=t=>{const value=String(t||'').trim();if(value)partial=value};
- const commit=()=>{if(partial){if(segments[segments.length-1]!==partial)segments.push(partial);partial=''}};
- const result=()=>[...segments,partial].filter(Boolean).join(' ').trim();
- const startNative=async()=>{N=window.Capacitor?.Plugins?.SpeechRecognition||safe(()=>PLG('SpeechRecognition'));
-  if(!N?.start||!N?.addListener)return false;
-  mode='native';try{
-   const available=await N.available?.();if(!alive())return false;
-   if(available?.available===false)throw new Error('На телефоне недоступна служба распознавания речи');
-   const permission=await N.requestPermissions?.();if(!alive())return false;
-   if(permission?.speechRecognition&&permission.speechRecognition!=='granted')throw new Error('Нет разрешения на распознавание речи');
-   listeners.push(await N.addListener('partialResults',d=>{if(run===owner&&!owner.done&&(alive()||owner.finishing))notice(d?.matches?.[0])}));
-   listeners.push(await N.addListener('listeningState',st=>{if(st?.status==='stopped'&&alive()){
-    commit();clearTimeout(retry);retry=setTimeout(()=>{if(alive()&&!busy)nativeGo()},360)
-   }}));
-   if(!alive())return false;await Promise.race([nativeGo(),wait(1800)]);
-   if(!alive())return false;timer=setInterval(async()=>{if(!alive()||busy)return;try{const st=await N.isListening?.();if(st?.listening===false&&alive())nativeGo()}catch(_){ }},1100);
-   return true;
-  }catch(e){reason=String(e?.message||e||'Служба распознавания не запустилась');return false}}
- const nativeGo=()=>{if(!alive()||busy)return Promise.resolve();busy=true;
-  pending=Promise.resolve().then(()=>N.start({language:'ru-RU',maxResults:1,partialResults:true,popup:false})).then(d=>{
-   if(d?.matches?.[0]&&run===owner&&!owner.done&&(alive()||owner.finishing))notice(d.matches[0]);
-  }).catch(e=>{if(alive())reason=String(e?.message||e||'Ошибка распознавания')}).finally(()=>{busy=false;
-   if(alive()&&partial){commit()} });return pending;
- };
- const startWeb=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;mode='web';
-  const launch=()=>{if(!alive())return;try{web=new SR();web.lang='ru-RU';web.continuous=true;web.interimResults=true;
-    web.onresult=e=>{if(run!==owner||owner.done||(!alive()&&!owner.finishing))return;for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];notice(r[0]?.transcript);if(r.isFinal)commit()}};
-    web.onerror=e=>{if(['not-allowed','service-not-allowed','network'].includes(e.error)){reason=e.error==='network'?'Распознавание в браузере может требовать интернет':'Нет разрешения на распознавание речи';on=false}};
-    web.onend=()=>{if(alive())retry=setTimeout(launch,320)};web.start();
-   }catch(e){reason=String(e?.message||e||'Распознавание в браузере не запустилось')}};
-  launch();return true};
- const start=async()=>{if(!alive())return false;
-  if(window.Capacitor?.Plugins?.SpeechRecognition||safe(()=>PLG('SpeechRecognition'))){const ok=await startNative();if(!ok&&alive()&&startWeb())return true;return ok}
-  if(startWeb())return true;
-  reason='На этом устройстве нет доступного распознавания речи';return false};
- const stop=async()=>{on=false;clearInterval(timer);clearTimeout(retry);
-  try{if(mode==='native'&&N?.stop)await Promise.race([Promise.resolve(N.stop()),wait(1250)]);else if(web)web.stop()}catch(e){if(!reason)reason=String(e?.message||e)}
-  // Android may deliver the last partialResults only after stop() resolves.
-  await Promise.race([Promise.resolve(pending).catch(()=>{}),wait(500)]);
-  await wait(mode==='native'?520:300);commit();
-  for(const h of listeners){try{await h.remove?.()}catch(_){}}listeners=[];
-  return {text:result(),issue:reason};
- };
- const cancel=()=>{on=false;clearInterval(timer);clearTimeout(retry);safe(()=>N?.stop?.());safe(()=>web?.abort?.());for(const h of listeners)safe(()=>h.remove?.());listeners=[]};
- return {start,stop,cancel,result,get issue(){return reason}};
+function gigaPlugin(){return window.Capacitor?.Plugins?.GigaSpeech||null}
+let localState=null;
+async function transcribeLocal(blob,owner,allowDownload=false){
+ const N=gigaPlugin();if(!N)return {text:'',issue:'Локальное распознавание доступно в Android APK.',ready:false,supported:false};
+ if(!blob)return {text:'',issue:'Аудиозапись не получена.',ready:false,supported:true};
+ let status=await N.status();localState=status;
+ if(!status.supported)return {text:'',issue:'На этом устройстве локальная модель недоступна.',...status};
+ if(!status.ready){if(!allowDownload)return {text:'',issue:'Для расшифровки скачай локальную модель один раз.',...status};await N.prepare();status=await N.status();localState=status;}
+ if(owner.done)return {text:'',issue:'Отменено',...status};
+ const C=window.AudioContext||window.webkitAudioContext;const O=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+ if(!C||!O)throw Error('Декодирование аудио недоступно');
+ const ctx=new C();let decoded;try{decoded=await ctx.decodeAudioData(await blob.arrayBuffer())}finally{await ctx.close().catch(()=>{})}
+ if(decoded.duration>300)throw Error('Запись длиннее 5 минут. Аудио можно сохранить без текста.');
+ const render=new O(1,Math.max(1,Math.ceil(decoded.duration*16000)),16000),src=render.createBufferSource();src.buffer=decoded;src.connect(render.destination);src.start();
+ const buf=await render.startRendering();const pcm=buf.getChannelData(0),bytes=new Uint8Array(pcm.length*2),dv=new DataView(bytes.buffer);
+ for(let i=0;i<pcm.length;i++){const x=Math.max(-1,Math.min(1,pcm[i]));dv.setInt16(i*2,x<0?x*32768:x*32767,true)}
+ if(owner.done)return {text:'',issue:'Отменено',...status};
+ const encoded=(await dataUrl(new Blob([bytes]))).split(',')[1];if(owner.done)return {text:'',issue:'Отменено',...status};
+ const result=await N.transcribe({pcm:encoded});return {text:result.text||'',issue:result.text?'':'Слова не распознаны. Можно исправить текст вручную.',...status};
 }
 function invalidate(){clearHold();stopVolume();const previous=run;if(previous)previous.done=true;
- asr?.cancel();asr=null;if(recorder&&recorder.state!=='inactive'){recorder.onstop=null;safe(()=>recorder.stop())}
+ if(previous?.finishing)Promise.resolve(gigaPlugin()?.cancel?.()).catch(()=>{});asr=null;if(recorder&&recorder.state!=='inactive'){recorder.onstop=null;safe(()=>recorder.stop())}
  recorder=null;stopTracks();recordPending=null;recordChunks=[];recordBlob=null;spoken='';speechIssue='';run=null;gesture=null;hide()}
 function startCapture(owner){recordChunks=[];recordBlob=null;recordStarted=Date.now();recordDuration=0;
  return (async()=>{let requested=null;try{
@@ -325,35 +298,31 @@ function startCapture(owner){recordChunks=[];recordBlob=null;recordStarted=Date.
   recorder=new MediaRecorder(stream,format?{mimeType:format}:{});
   recorder.ondataavailable=e=>{if(run===owner&&!owner.done&&e.data?.size)recordChunks.push(e.data)};
   recorder.start(250);volume(stream);
- }catch(e){if(run===owner&&!owner.done){owner.captureError=String(e?.message||e||'Микрофон недоступен');if(owner.state==='locked'||visualState==='recording')show(owner.state,'Нет аудио · можно попробовать диктовку')}}
+ }catch(e){if(run===owner&&!owner.done){owner.captureError=String(e?.message||e||'Микрофон недоступен');if(owner.state==='locked'||visualState==='recording')show(owner.state,'Нет аудио · проверь доступ к микрофону')}}
  finally{if(requested)Promise.resolve(requested).then(s=>{if(owner.done||owner.finishing||run!==owner)s?.getTracks?.().forEach(t=>safe(()=>t.stop()))},()=>{})}
  })();
 }
 function begin(){if(run)return;clearHold();run={state:'recording',done:false,finishing:false};const owner=run;
  spoken='';speechIssue='';recordChunks=[];recordBlob=null;recordStarted=0;recordDuration=0;show('recording','Записываю · отпусти, чтобы закончить');haptic(owner);
- asr=makeSpeech(owner);
- // On Android, obtaining MediaRecorder's WebView microphone BEFORE SpeechRecognizer
- // attaches is a reproducible failure pattern. Try starting ASR first; never
- // claim this makes simultaneous capture guaranteed on a real device.
- recordPending=Promise.resolve(asr.start()).catch(e=>{if(run===owner)speechIssue=String(e?.message||e)})
-   .then(()=>{if(run===owner&&!owner.done&&!owner.finishing)return startCapture(owner)});
-
+ localState=null;recordPending=startCapture(owner);
 }
 let resultUrl=null;
 function releaseResultUrl(){if(resultUrl){safe(()=>URL.revokeObjectURL(resultUrl));resultUrl=null}}
 async function finish(){const owner=run;if(!owner||owner.done||owner.finishing)return;owner.finishing=true;clearHold();hide();
  // UI opens immediately; neither recorder stop nor recognition can delay it.
- const engine=asr,rec=recorder;
- spoken=engine?.result()||'';speechIssue='';showActions(true);
+ const rec=recorder;
+ spoken='';speechIssue='';showActions(true);
  const audioJob=(async()=>{if(rec&&rec.state!=='inactive')await new Promise(resolve=>{let settled=false;const complete=()=>{if(settled)return;settled=true;clearTimeout(fallback);resolve()};const fallback=setTimeout(complete,1750);rec.onstop=complete;try{rec.stop()}catch(_){complete()}});
  if(run!==owner||owner.done)return;
  recordBlob=recordChunks.length?new Blob(recordChunks,{type:rec?.mimeType||'audio/webm'}):null;
  recordDuration=recordStarted?Math.max(0,Date.now()-recordStarted):0;recorder=null;stopVolume();stopTracks();
  })();
- const speechJob=engine?Promise.race([engine.stop().catch(e=>({text:engine.result(),issue:String(e?.message||e)})),wait(2600).then(()=>({text:engine.result(),issue:'Распознавание не завершилось вовремя'}))]):Promise.resolve({text:'',issue:'Движок распознавания недоступен'});
- const [,output]=await Promise.all([audioJob,speechJob]);
+ await audioJob;
  if(run!==owner||owner.done)return;
- spoken=output.text||spoken||'';speechIssue=output.issue||owner.captureError||'';
+ // First-run model download is opt-in, never automatic. Audio stays available even on ASR failure.
+ let output;try{output=await transcribeLocal(recordBlob,owner)}catch(e){output={text:'',issue:String(e?.message||e)}}
+ if(run!==owner||owner.done)return;
+ spoken=output.text||'';speechIssue=output.issue||owner.captureError||'';
  owner.done=true;asr=null;run=null;gesture=null;updateActions();
 }
 function cancel(){invalidate()}
@@ -363,7 +332,7 @@ function showActions(pending=false){stagedMenu=true;releaseResultUrl();
  openSheet(`<section id="ai05-result"><h3 class="ai05-result-title">Запись завершена</h3><p class="ai05-result-meta" id="ai05-result-meta">${pending?'Завершаю запись…':'Выбери, что сохранить'}</p>
  <div class="ai05-result-card"><audio id="ai05-player" controls preload="metadata" hidden></audio><label for="ai05-transcript">Текст записи</label><textarea id="ai05-transcript" class="field" rows="2" placeholder="${pending?'Распознаю речь…':'Здесь можно исправить текст'}" aria-label="Распознанный текст"></textarea>
  <p class="ai05-status" id="ai05-warning" role="status">${pending?'Обрабатываю запись. Можно ввести текст вручную.':''}</p>
- <button type="button" class="lnk ai05-retry" data-ai05="retry-speech" hidden>Надиктовать текст повторно</button><p class="ai05-status" id="ai05-repeat-info" hidden>Это новая диктовка, не расшифровка аудиофайла. Запись не изменится.</p></div>
+ <button type="button" class="lnk ai05-retry" data-ai05="retry-speech" hidden>Расшифровать запись</button><p class="ai05-status" id="ai05-repeat-info" hidden>Распознавание на телефоне. Аудио никуда не отправляется.</p></div>
  <label class="ai05-both-row" id="ai05-both-row" hidden><input id="ai05-both" type="checkbox"> Сохранить аудио вместе с текстом</label>
  <div class="ai05-result-options">${resultChoice('text','В дневник текст','Сохранить мысль')}${resultChoice('audio','В дневник аудио','Оставить голосовую запись')}${resultChoice('tasks','Распознать задачи','Проверить перед добавлением')}${resultChoice('ai','Обсудить с ИИ','Будущая функция · подписка')}</div>
  <button type="button" class="lnk ai05-discard" data-ai05="discard">Удалить запись</button></section>`);
@@ -373,41 +342,36 @@ function syncResultButtons(){if(!stagedMenu||!$('#ai05-result'))return;const tex
 function updateActions(){if(!stagedMenu||!$('#ai05-result'))return;const input=$('#ai05-transcript'),audio=!!recordBlob;
  if(input&&!input.dataset.edited)input.value=spoken;if(input)input.placeholder='Можно ввести или исправить текст';
  const meta=$('#ai05-result-meta');if(meta)meta.textContent=audio?'Аудиозапись · выбери, что сохранить': 'Аудио не сохранилось';
- const status=$('#ai05-warning');if(status){status.textContent=spoken?'Проверь текст перед сохранением.':audio?'Текст не получен. Аудио доступно для прослушивания и сохранения.':'Не удалось получить текст. Можно ввести его вручную.';if(speechIssue)status.title=speechIssue;}
+ const status=$('#ai05-warning');if(status){status.textContent=spoken?'Проверь текст перед сохранением.':audio?(speechIssue||'Текст не получен. Аудио можно сохранить.'):'Не удалось получить текст. Можно ввести его вручную.';if(speechIssue)status.title=speechIssue;}
  const player=$('#ai05-player');if(audio&&player){releaseResultUrl();resultUrl=URL.createObjectURL(recordBlob);player.src=resultUrl;player.hidden=false}
- const both=$('#ai05-both-row');if(both)both.hidden=!audio;const retry=$('[data-ai05="retry-speech"]'),info=$('#ai05-repeat-info');if(retry)retry.hidden=!!spoken;if(info)info.hidden=!!spoken;
+ const both=$('#ai05-both-row');if(both)both.hidden=!audio;const retry=$('[data-ai05="retry-speech"]'),info=$('#ai05-repeat-info');if(retry){retry.hidden=!!spoken||!audio||!gigaPlugin()||localState?.supported===false;retry.textContent=localState?.ready===false?'Скачать модель (≈226 МБ)':'Расшифровать запись'}if(info)info.hidden=!retry||retry.hidden;
  syncResultButtons();
 }
 function stagedText(){return ($('#ai05-transcript')?.value||'').trim()}
+let retryOwner=null;
 async function retrySpeech(){
- const session=$('#ai05-result');const button=$('[data-ai05="retry-speech"]');if(button){button.disabled=true;button.textContent='Слушаю…'}
- const done=(value,msg)=>{if(!stagedMenu||$('#ai05-result')!==session)return;const box=$('#ai05-transcript');if(box&&value){box.value=String(value).trim();box.dispatchEvent(new Event('input',{bubbles:true}));$('#ai05-warning')?.remove()}
-  if(msg){const note=$('#ai05-repeat-info');if(note)note.textContent=msg}
-  if(button){button.disabled=false;button.textContent='Надиктовать текст повторно'}syncResultButtons(); };
+ const session=$('#ai05-result'),button=$('[data-ai05="retry-speech"]'),N=gigaPlugin(),blob=recordBlob;
+ if(!session||!N||!blob||retryOwner)return;
+ const owner={done:false};retryOwner=owner;const note=$('#ai05-repeat-info');let poll=0;
  try{
-  const N=window.Capacitor?.Plugins?.SpeechRecognition||safe(()=>PLG('SpeechRecognition'));
-  if(N?.start){const perm=await N.requestPermissions?.();if(perm?.speechRecognition&&perm.speechRecognition!=='granted')throw Error('Нет разрешения на распознавание речи');
-   // Separate native session after the microphone recording has stopped.
-   const r=await N.start({language:'ru-RU',maxResults:1,partialResults:false,popup:true,prompt:'Повтори фразу для расшифровки'});
-   done(r?.matches?.[0]||'',r?.matches?.[0]?'Проверь текст и выбери действие.':'Слова не распознаны. Можно написать вручную.');return;
-  }
-  const C=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!C)throw Error('На устройстве нет доступного распознавания речи');
-  const recognized=await new Promise((resolve,reject)=>{const r=new C();r.lang='ru-RU';r.continuous=false;r.interimResults=false;
-   let value='';let settled=false;let timeout=0;
-   const finish=v=>{if(settled)return;settled=true;clearTimeout(timeout);resolve(v||'')};
-   r.onresult=e=>{for(const result of e.results){if(result.isFinal)value+=result[0]?.transcript||''}};
-   r.onerror=e=>{if(!settled){clearTimeout(timeout);settled=true;reject(Error(e.error||'Ошибка диктовки'))}};
-   r.onend=()=>finish(value);
-   timeout=setTimeout(()=>{safe(()=>r.stop());finish(value)},17000);r.start();});
-  done(recognized,recognized?'Проверь текст и выбери действие.':'Слова не распознаны. Можно написать вручную.');
- }catch(e){done('','Повторная диктовка не удалась: '+String(e?.message||e))}
+  button.disabled=true;const status=await N.status();localState=status;
+  if(!status.ready&&!window.confirm('Скачать модель русского языка (около 226 МБ)? Лучше через Wi-Fi. Запись не отправляется в интернет.'))return;
+  button.textContent=status.ready?'Распознаю…':'Загружаю модель…';
+  poll=setInterval(async()=>{try{const p=await N.status();if(!owner.done&&note&&p.progress>=0&&p.progress<100)note.textContent='Загрузка модели: '+p.progress+'%'}catch(_){}},500);
+  const out=await transcribeLocal(blob,owner,true);
+  if(owner.done||!stagedMenu||$('#ai05-result')!==session)return;
+  const box=$('#ai05-transcript');spoken=out.text||'';speechIssue=out.issue||'';
+  if(box&&!box.dataset.edited)box.value=spoken;
+  updateActions();if(note)note.textContent=out.issue||'Проверь текст перед сохранением.';
+ }catch(e){if(!owner.done&&note)note.textContent='Не удалось распознать: '+String(e?.message||e)}
+ finally{clearInterval(poll);if(retryOwner===owner)retryOwner=null;if(!owner.done&&button){button.disabled=false;button.textContent=localState?.ready?'Расшифровать запись':'Скачать модель (≈226 МБ)';syncResultButtons()}}
 }
+function cancelRetry(){if(retryOwner){retryOwner.done=true;retryOwner=null;Promise.resolve(gigaPlugin()?.cancel?.()).catch(()=>{})}}
 const dataUrl=blob=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob)});
 function clearStaged(st){if(!st?.ai05Blob)return;safe(()=>URL.revokeObjectURL(st.ai05PreviewUrl));st.ai05Blob=null;st.ai05PreviewUrl=null}
 const oldCloseSheet=closeSheet;
 closeSheet=function(...args){if(SH?.nst?.ai05Blob)clearStaged(SH.nst);
- if(stagedMenu){stagedMenu=false;releaseResultUrl();if(run?.finishing)invalidate();recordBlob=null;spoken=''}
+ if(stagedMenu){cancelRetry();stagedMenu=false;releaseResultUrl();if(run?.finishing)invalidate();recordBlob=null;spoken=''}
  return oldCloseSheet(...args)};
 const oldNoteSave=A.nsave;
 A.nsave=async function(e){const st=SH?.nst;if(!st?.ai05Blob)return oldNoteSave(e);
@@ -422,9 +386,9 @@ async function action(type){
  if(type==='retry-speech'){await retrySpeech();return}
  if(type==='text'||type==='tasks'){
   const value=stagedText();
-  if(!value){const t=$('#ai05-transcript');if(t){t.setAttribute('aria-invalid','true');t.placeholder='Сначала напиши текст или повтори запись';}toast('Текста пока нет. Введи его здесь или сохрани аудио.');return}
+  if(!value){const t=$('#ai05-transcript');if(t){t.setAttribute('aria-invalid','true');t.placeholder='Сначала напиши текст или расшифруй запись';}toast('Текста пока нет. Введи его здесь или сохрани аудио.');return}
   if(type==='text'&&recordBlob&&$('#ai05-both')?.checked)return action('audio');
-  stagedMenu=false;releaseResultUrl();recordBlob=null;
+  cancelRetry();stagedMenu=false;releaseResultUrl();recordBlob=null;
   if(type==='text'){sheetNote(TODAY(),null);const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}
   else { // Task parsing must not inherit the active evening/diary context.
     sheetQuick(true);if(SH?.st){SH.st.ctx='today';SH.st.force=null}
@@ -434,7 +398,7 @@ async function action(type){
  }
  if(type==='audio'){
   const blob=recordBlob;if(!blob)return;const both=$('#ai05-both')?.checked;const value=stagedText();
-  stagedMenu=false;releaseResultUrl();sheetNote(TODAY(),null);const st=SH?.nst;
+  cancelRetry();stagedMenu=false;releaseResultUrl();sheetNote(TODAY(),null);const st=SH?.nst;
   if(!st){toast('Дневник не открылся');return}
   st.ai05Blob=blob;st.ai05PreviewUrl=URL.createObjectURL(blob);
   if(both&&value){const box=$('#ntx');if(box){box.value=value;box.dispatchEvent(new Event('input',{bubbles:true}))}}

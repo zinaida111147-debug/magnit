@@ -170,7 +170,7 @@ input,textarea{font:inherit;color:var(--fg)}
 .row>.field,.qadd>.field{flex:1;width:auto}
 .field:focus{border-color:var(--vio)}
 textarea.field{height:auto;min-height:88px;padding:12px 14px;resize:vertical}
-.mic{display:none}
+.mic{display:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .has-mic .mic{display:grid}
 .mic.live{background:var(--hot);color:#fff}
 .habs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
@@ -1918,7 +1918,7 @@ let DICT=null,micFor=null;
 (async()=>{try{if(window.claude&&typeof window.claude.use==="function"){DICT=await window.claude.use("dictation");if(DICT){document.body.classList.add("has-mic");
   DICT.onFinal(({text})=>{const el=micFor&&document.getElementById(micFor);if(el&&text){el.value=(el.value?el.value.trim()+" ":"")+text.trim();el.dispatchEvent(new Event("input",{bubbles:true}))}});
   DICT.onState(({state})=>{document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",state==="listening"))})}}}catch(e){}})();
-const micBtn=f=>`<button type="button" class="ib mic" data-a="mic" data-for="${f}" aria-label="Надиктовать"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`;
+const micBtn=f=>`<button type="button" class="ib mic" data-a="mic" data-for="${f}" aria-label="Удерживай, чтобы надиктовать" title="Удерживай, чтобы говорить" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`;
 
 /* ---------- goal themes / cover guess ---------- */
 const COVERS=["mount","beach","plane","globe","tent","car","house","plant","key","pig","money","bank","muscle","run","bike","medal","books","grad","abc","laptop","guitar","paint","camera","heart","dog","yoga","flower","rocket","target","star","gift","music"];
@@ -4555,45 +4555,46 @@ A.qdest=e=>{const r=SH&&SH.st&&SH.st.items[+e.dataset.n];if(!r)return;const card
 A.qlater2=e=>{const r=SH.st.items[+e.dataset.n];if(!r)return;if(r.kind!=="task"){setKind(r,"task")}r.later=r.later?0:1;if(r.later){r.d=null;delete r.size}drawPrev()};
 A.qkind=(function(prev){return function(e){const r=SH&&SH.st&&SH.st.items[+e.dataset.n];if(r&&e.dataset.v==="task")r.later=0;return prev(e)}})(A.qkind);
 
-/* ---------- 9. голос: запись не обрывается на паузе ----------
-   Android сам останавливает распознавание после паузы и при тишине не присылает никакого события.
-   Поэтому смотрим за ним каждые полсекунды и тихо запускаем снова, пока держишь магнит или пока микрофон включён. */
-const VOX={on:false,mode:null,tgt:null,base:"",fin:"",cur:"",L:[],wd:null,busy:false,web:null,
+/* H1.55a — системная диктовка только пока удерживается маленький микрофон.
+   Каждый сеанс привязан к конкретному полю; поздние события не переходят в другой сеанс. */
+const VOX={session:null,get on(){return !!this.session?.held},
   can(){return!!(PLG("SpeechRecognition")||window.SpeechRecognition||window.webkitSpeechRecognition)},
-  put(){const el=this.tgt&&document.getElementById(this.tgt);if(!el)return;const txt=[this.base,this.fin,this.cur].map(x=>(x||"").trim()).filter(Boolean).join(" ");el.value=txt;el.dispatchEvent(new Event("input",{bubbles:true}))},
-  commit(){if(this.cur){this.fin=(this.fin?this.fin+" ":"")+this.cur.trim();this.cur=""}},
-  bar(on){const q=this.tgt&&document.getElementById(this.tgt);let b=$("#holdbar");if(!on){if(b)b.remove();return}if(!q)return;
-    if(!b){q.parentElement.insertAdjacentHTML("beforebegin",`<div id="holdbar" class="holdbar" role="status"><i></i><span></span></div>`);b=$("#holdbar")}
-    b.querySelector("span").textContent=this.mode==="hold"?"Слушаю — отпусти, когда закончишь":"Слушаю — нажми на микрофон, чтобы закончить"},
-  live(on){micLive(on);document.querySelectorAll(".mic").forEach(b=>b.setAttribute("aria-pressed",on?"true":"false"))},
-  async start(id,mode){if(this.on)this.stop(true);const el=document.getElementById(id);if(!el)return false;
-    this.on=true;this.mode=mode;this.tgt=id;this.base=el.value.trim();this.fin="";this.cur="";this.bar(true);this.live(true);
-    const N=PLG("SpeechRecognition");if(N&&N.addListener)return this.native(N);return this.webStart()},
-  async native(N){try{const p=await N.requestPermissions();if(p&&p.speechRecognition&&p.speechRecognition!=="granted"){this.off();permHint("mic");return false}
-      this.L.push(await N.addListener("partialResults",d=>{const m=d&&d.matches&&d.matches[0];if(m&&this.on){this.cur=m;this.put()}}));
-      this.L.push(await N.addListener("listeningState",s=>{if(s&&s.status==="stopped"&&this.on)setTimeout(()=>this.again(N),450)}));
-      await this.go(N);
-      this.wd=setInterval(async()=>{if(!this.on||this.busy)return;try{const r=await N.isListening();if(r&&r.listening===false)this.again(N)}catch(x){}},600);return true}
-    catch(x){this.off();toast("Голос не запустился — можно надиктовать микрофоном на клавиатуре");return false}},
-  async go(N){this.busy=true;try{await N.start({language:"ru-RU",maxResults:1,partialResults:true,popup:false})}catch(x){}setTimeout(()=>{this.busy=false},700)},
-  again(N){if(!this.on||this.busy)return;this.commit();this.go(N)},
-  webStart(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){this.off();return false}
-    const go=()=>{const rec=new SR();this.web=rec;rec.lang="ru-RU";rec.interimResults=true;rec.continuous=true;
-      rec.onresult=e=>{let it="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)this.fin=(this.fin?this.fin+" ":"")+r[0].transcript.trim();else it+=r[0].transcript}this.cur=it;this.put()};
-      rec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){this.off();permHint("mic")}else if(e.error==="network"){this.off();toast("Для голоса в браузере нужен интернет")}};
-      rec.onend=()=>{if(this.on){this.cur="";try{go()}catch(x){}}};try{rec.start()}catch(x){}};
-    go();return true},
-  stop(quick){if(!this.on)return;this.on=false;clearInterval(this.wd);this.wd=null;const N=PLG("SpeechRecognition");
-    try{if(N)N.stop();else if(this.web)this.web.stop()}catch(x){}
-    const fin=()=>{this.commit();this.put();this.L.forEach(h=>{try{h.remove()}catch(x){}});this.L=[];this.web=null;this.bar(false);this.live(false)};
-    if(quick)fin();else setTimeout(fin,N?900:600)},
-  off(){this.on=false;clearInterval(this.wd);this.wd=null;this.L.forEach(h=>{try{h.remove()}catch(x){}});this.L=[];this.bar(false);this.live(false)}};
-/* удержание магнита: старый перехват из 0.9.13 вызывает holdNative()/holdWeb() — отдаём их новому движку */
-holdNative=function(){if(!VOX.can())return null;VOX.start("qq","hold");return{release(){VOX.stop()}}};
-holdWeb=function(){return null};
-/* микрофон в окнах: тап — слушаю, ещё тап — стоп */
-A.mic=(function(prev){return function(e){const id=e.dataset.for;if(VOX.on){VOX.stop();return}if(VOX.can()){VOX.start(id,"toggle");return}return prev(e)}})(A.mic);
-closeSheet=(function(prev){return function(){if(VOX.on)VOX.off();return prev()}})(closeSheet);
+  valid(s){return this.session===s&&s.el.isConnected&&s.btn.isConnected},
+  put(s){if(!this.valid(s))return;const v=[s.base,...s.fin,s.cur].filter(Boolean).join(" ");s.el.value=v;s.el.dispatchEvent(new Event("input",{bubbles:true}))},
+  commit(s){if(s.cur.trim())s.fin.push(s.cur.trim());s.cur=""},
+  ui(s,on){s.btn.classList.toggle("live",on);s.btn.setAttribute("aria-pressed",String(on));s.btn.setAttribute("aria-label",on?"Слушаю — отпусти, чтобы закончить":"Удерживай, чтобы надиктовать");if(!on){s.bar?.remove();return}
+    const b=document.createElement("div");b.className="holdbar";b.setAttribute("role","status");b.innerHTML="<i></i><span>Слушаю — отпусти, когда закончишь</span>";s.el.parentElement.before(b);s.bar=b},
+  async start(btn){if(this.session)return false;const el=document.getElementById(btn.dataset.for);if(!el||!this.can()){toast("Голос здесь недоступен — воспользуйся микрофоном на клавиатуре");return false}
+    const s={btn,el,base:el.value.trim(),fin:[],cur:"",held:true,L:[],native:PLG("SpeechRecognition"),rec:null,starting:false,started:false,closed:false};this.session=s;this.ui(s,true);
+    s.watch=setInterval(()=>{if(!this.valid(s)){this.stop(true);return}if(s.held&&s.started&&s.native&&!s.starting&&!s.polling){s.polling=true;Promise.resolve().then(()=>s.native.isListening()).then(r=>{if(r?.listening===false)this.again(s)}).catch(()=>{}).finally(()=>s.polling=false)}},600);
+    try{if(s.native){const p=await s.native.requestPermissions();if(!this.valid(s)||!s.held)return false;if(p?.speechRecognition!=="granted"){this.stop(true);permHint("mic");return false}
+        for(const [n,fn] of [["partialResults",d=>{if(this.valid(s)&&!s.closed&&s.started){const m=d?.matches?.[0];if(m){s.cur=m.trim();this.put(s)}}}],["listeningState",d=>{if(d?.status==="stopped"&&s.held)this.again(s)}]]){const h=await s.native.addListener(n,fn);if(!this.valid(s)||!s.held){await h.remove();return false}s.L.push(h)}
+        if(this.valid(s)&&s.held)await this.go(s);
+      }else this.webStart(s);return true;
+    }catch(e){if(this.valid(s)&&s.held){this.stop(true);toast("Голос не запустился — попробуй микрофон на клавиатуре")}return false}},
+  async go(s){if(!this.valid(s)||!s.held||s.starting)return;s.starting=true;s.started=true;s.lastStart=Date.now();try{const r=await s.native.start({language:"ru-RU",maxResults:1,partialResults:true,popup:false});if(this.valid(s)&&!s.closed&&r?.matches?.[0]){s.cur=r.matches[0].trim();this.put(s)}}catch(e){if(this.valid(s)&&s.held){this.stop(true);toast("Голос не запустился — попробуй ещё раз")}}finally{s.starting=false;if(!s.held){try{await s.native.stop()}catch(e){}if(s.closed)this.dispose(s)}}},
+  again(s){if(!this.valid(s)||!s.held||s.starting||s.restart)return;s.restart=setTimeout(()=>{s.restart=null;if(!this.valid(s)||!s.held||s.starting)return;this.commit(s);this.go(s)},Math.max(450,900-(Date.now()-(s.lastStart||0))))},
+  webStart(s){if(!this.valid(s)||!s.held)return;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){this.stop(true);return}const rec=new SR();s.rec=rec;s.started=true;rec.lang="ru-RU";rec.interimResults=true;rec.continuous=true;rec.maxAlternatives=1;let committed=0;
+    rec.onresult=e=>{if(!this.valid(s)||s.closed||s.rec!==rec)return;let cur=[];for(let i=committed;i<e.results.length;i++){const r=e.results[i];if(r.isFinal){s.fin.push(r[0].transcript.trim());committed=i+1}else cur.push(r[0].transcript.trim())}s.cur=cur.join(" ");this.put(s)};
+    rec.onerror=e=>{if(!this.valid(s)||!s.held)return;if(["not-allowed","service-not-allowed","network","audio-capture"].includes(e.error)){this.stop(true);toast("Микрофон или распознавание недоступны — попробуй клавиатуру")}};
+    rec.onend=()=>{if(!this.valid(s)||s.closed||s.rec!==rec)return;this.commit(s);this.put(s);if(s.held){s.restart=setTimeout(()=>{s.restart=null;this.webStart(s)},450)}else this.finish(s)};try{rec.start()}catch(e){this.stop(true)}},
+  dispose(s){if(this.session!==s||s.starting)return;this.session=null},
+  finish(s){if(this.session!==s||s.closed)return;s.closed=true;clearTimeout(s.end);clearTimeout(s.restart);clearInterval(s.watch);this.commit(s);this.put(s);for(const h of s.L.splice(0)){try{Promise.resolve(h.remove()).catch(()=>{})}catch(e){}}this.dispose(s)},
+  stop(quick=false){const s=this.session;if(!s||s.closed)return;s.held=false;this.ui(s,false);clearTimeout(s.restart);clearInterval(s.watch);if(s.started){try{if(s.native)Promise.resolve(s.native.stop()).catch(()=>{});else s.rec?.stop()}catch(e){}}if(quick||!s.started)this.finish(s);else if(!s.end)s.end=setTimeout(()=>this.finish(s),900)},
+  off(){this.stop(true)}};
+/* Центральная кнопка не использует системную диктовку. */
+A.mic=()=>{};
+(function(){let pointer=null,key=null;const sel='button.mic[data-a="mic"]';const mic=e=>e.target?.closest?.(sel);
+  document.addEventListener("pointerdown",e=>{const b=mic(e);if(!b||b.disabled||e.button!==0||e.isPrimary===false)return;e.preventDefault();e.stopPropagation();if(pointer!==null||key!==null||VOX.session)return;pointer=e.pointerId;try{b.setPointerCapture(pointer)}catch(x){}VOX.start(b)},true);
+  const end=e=>{if(pointer!==null&&pointer===e.pointerId){pointer=null;VOX.stop()}};
+  window.addEventListener("pointerup",end,true);window.addEventListener("pointercancel",end,true);document.addEventListener("lostpointercapture",end,true);
+  document.addEventListener("contextmenu",e=>{if(mic(e))e.preventDefault()},true);
+  document.addEventListener("click",e=>{if(mic(e)){e.preventDefault();e.stopImmediatePropagation()}},true);
+  document.addEventListener("keydown",e=>{const b=mic(e);if(!b||![" ","Enter"].includes(e.key))return;e.preventDefault();if(e.repeat||key!==null||pointer!==null||VOX.session)return;key=e.key;VOX.start(b)},true);
+  window.addEventListener("keyup",e=>{if(key!==null&&e.key===key){key=null;e.preventDefault();VOX.stop()}},true);
+  const reset=()=>{pointer=null;key=null;VOX.stop(true)};window.addEventListener("blur",reset);window.addEventListener("pagehide",reset);document.addEventListener("visibilitychange",()=>{if(document.hidden)reset()});
+  const oldOpen=openSheet;openSheet=function(...args){reset();return oldOpen.apply(this,args)};const oldClose=closeSheet;closeSheet=function(...args){reset();return oldClose.apply(this,args)};
+})();
 /* подсказка, когда телефон не дал разрешение */
 function permHint(kind){const T={mic:"Микрофон выключен для Магнита. Включи его в настройках телефона — и магнит снова будет слушать.",notif:"Уведомления для Магнита выключены. Включи их в настройках телефона, чтобы напоминания приходили."};
   const NS=PLG("NativeSettings");if(NS){openSheet(`<h3>${kind==="mic"?"Нужен микрофон":"Нужны уведомления"}</h3><p class="sub">${T[kind]}</p><div class="stack"><button type="button" class="btn w" data-a="opensets" data-v="${kind}">Открыть настройки</button><button type="button" class="lnk" data-a="close">Позже</button></div>`)}else toast(T[kind])}
@@ -5407,17 +5408,6 @@ A.nremove=e=>{const k=e.dataset.d,i=+e.dataset.i,n=noteOf(k,i);if(!n)return;
   if(!window.confirm('Удалить эту запись из дневника? Это действие нельзя отменить.'))return;
   const dy=day(k);dy.notes.splice(i,1);save();render();toast('Запись удалена');
 };
-
-/* №18: отображаем запуск голосового ввода без искусственной блокировки на 900 мс.
-   Повторный тап штатно останавливает VOX; скорость нативного движка зависит от Android. */
-A.mic=(function(prev){return function(e){
-  const b=e;if(!b)return;
-  const wasOn=!!(typeof VOX!=="undefined"&&VOX.on);
-  b.setAttribute("aria-label",wasOn?"Останавливаем надиктовку":"Подключаем микрофон");
-  const result=prev(e);
-  setTimeout(()=>{if(b.isConnected)b.setAttribute("aria-label",typeof VOX!=="undefined"&&VOX.on?"Остановить надиктовку":"Надиктовать")},250);
-  return result;
-}})(A.mic);
 
 /* 0.9.15 stage 07 #1/#18: резервная копия с вложениями без глобальной
    подмены JSON.stringify. Сначала проверяем файлы, потом сохраняем копию. */
