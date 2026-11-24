@@ -1,71 +1,7 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#F3E6EC"><style>:root{color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}
-/* DRUGOY 12A-1 experimental button, 2026-11-22. Theme-aware, not a public rebrand. */
-.tabs .hub.drugoy-hub-preview{
-  position:relative;overflow:visible;background:linear-gradient(150deg,var(--acc2),var(--acc3))!important;
-  box-shadow:0 7px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.22)!important;
-  isolation:isolate;transition:background-color .25s ease,box-shadow .25s ease;
-}
-.tabs .hub.drugoy-hub-preview::before{
-  content:"";position:absolute;inset:3px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle at 28% 20%,rgba(255,255,255,.16),transparent 62%);
-}
-.tabs .hub.drugoy-hub-preview .drugoy-ring{
-  width:48px;height:48px;display:block;object-fit:contain;pointer-events:none;
-  filter:drop-shadow(0 1px 1px rgba(0,0,0,.22));
-}
-.tabs .hub.drugoy-hub-preview.drugoy-tapped .drugoy-ring{animation:drugoy-brush-pulse .55s cubic-bezier(.22,1,.36,1) 1}
-@keyframes drugoy-brush-pulse{
-  0%{transform:scale(.94) rotate(-7deg);filter:brightness(1)}
-  40%{transform:scale(1.09) rotate(3deg);filter:brightness(1.27) drop-shadow(0 0 5px rgba(255,145,30,.65))}
-  100%{transform:scale(1) rotate(0);filter:brightness(1)}
-}
-@media(prefers-reduced-motion:reduce){
-  .tabs .hub.drugoy-hub-preview,.tabs .hub.drugoy-hub-preview .drugoy-ring{transition:none!important;animation:none!important}
-}
-
-/* DRUGOY preview 12A-1 v2: independent animation above re-rendered navigation. */
-@keyframes drugoy-fx-stroke{
-  0%{transform:scale(.84) rotate(-14deg);opacity:.82;filter:brightness(1)}
-  45%{transform:scale(1.22) rotate(7deg);opacity:1;filter:brightness(1.45) drop-shadow(0 0 7px rgba(255,153,35,.9))}
-  100%{transform:scale(1.06) rotate(0deg);opacity:1;filter:brightness(1.16)}
-}
-@keyframes drugoy-fx-halo{
-  0%{transform:scale(.70);opacity:0}
-  35%{transform:scale(1.12);opacity:.95}
-  100%{transform:scale(1.5);opacity:.18}
-}
-@keyframes drugoy-fx-hold{
-  0%{transform:scale(1.07) rotate(-4deg);filter:brightness(1.2)}
-  100%{transform:scale(1.2) rotate(5deg);filter:brightness(1.55) drop-shadow(0 0 10px rgba(255,159,40,.85))}
-}
-@keyframes drugoy-fx-hold-halo{
-  from{opacity:.35;transform:scale(1.25)}to{opacity:.8;transform:scale(1.48)}
-}
-@keyframes drugoy-fx-release{
-  from{transform:scale(1.12);opacity:1}to{transform:scale(1);opacity:0}
-}
-@keyframes drugoy-fx-release-halo{
-  from{opacity:.65;transform:scale(1.35)}to{opacity:0;transform:scale(1.65)}
-}
-@media(prefers-reduced-motion:reduce){.drugoy-fx-layer{display:none!important}}
-
-/* 12A-1 v4: detail stays inside the hub and below all sheets (z=40/41). */
-.drugoy-fx-layer{position:fixed;z-index:21;pointer-events:none;overflow:hidden;isolation:isolate;clip-path:circle(49% at 50% 50%);border-radius:50%;display:grid;place-items:center;contain:paint}
-.drugoy-fx-ring{width:48px;height:48px;object-fit:contain;transform-origin:center;animation:drugoy-v4-tap .64s cubic-bezier(.2,.8,.25,1) both}
-.drugoy-fx-glint{position:absolute;inset:13%;border-radius:50%;background:conic-gradient(from 230deg,transparent 0deg,transparent 100deg,rgba(255,248,218,.07) 135deg,rgba(255,244,197,.35) 151deg,transparent 175deg,transparent 360deg);mix-blend-mode:screen;opacity:0;animation:drugoy-v4-glint .64s ease-out both}
-.drugoy-fx-speck{position:absolute;width:2px;height:2px;border-radius:50%;background:#ffdc89;box-shadow:0 0 4px #ffad48;opacity:0;animation:drugoy-v4-speck .64s ease-out both}
-.drugoy-fx-speck.a{left:75%;top:26%}.drugoy-fx-speck.b{left:81%;top:48%;animation-delay:.07s}.drugoy-fx-speck.c{left:60%;top:77%;animation-delay:.11s}
-@keyframes drugoy-v4-tap{0%{transform:scale(.96) rotate(-4deg);filter:brightness(1)}35%{transform:scale(1.10) rotate(2deg);filter:brightness(1.35) drop-shadow(0 0 4px rgba(255,155,42,.55))}100%{transform:scale(1) rotate(0deg);filter:brightness(1)}}
-@keyframes drugoy-v4-glint{0%,12%{opacity:0;transform:rotate(-45deg)}45%{opacity:1}100%{opacity:0;transform:rotate(65deg)}}
-@keyframes drugoy-v4-speck{0%,20%{opacity:0;transform:scale(.5)}48%{opacity:.9;transform:scale(1.3)}100%{opacity:0;transform:scale(.4)}}
-.drugoy-fx-holding .drugoy-fx-ring{animation:drugoy-v4-hold 1.05s ease-in-out infinite alternate!important}
-.drugoy-fx-holding .drugoy-fx-glint{animation:drugoy-v4-hold-glint 1.05s ease-in-out infinite alternate!important}
-.drugoy-fx-holding .drugoy-fx-speck{animation:none;opacity:0}
-@keyframes drugoy-v4-hold{from{transform:scale(1);filter:brightness(1.06)}to{transform:scale(1.065);filter:brightness(1.28) drop-shadow(0 0 3px rgba(255,169,67,.55))}}
-@keyframes drugoy-v4-hold-glint{from{opacity:.1}to{opacity:.58}}
-.drugoy-fx-releasing{animation:drugoy-v4-out .22s ease-out forwards}
-@keyframes drugoy-v4-out{from{opacity:1}to{opacity:0}}
-@media(prefers-reduced-motion:reduce){.drugoy-fx-layer{display:none!important}}
+/* Single static fallback hub. The approved scene owns all live effects when installed. */
+.tabs .hub.drugoy-hub-preview{position:relative;overflow:hidden;display:grid;place-items:center;border-radius:50%!important;transform:none!important;margin:0 4px;touch-action:none}
+.tabs .hub.drugoy-hub-preview .drugoy-ring{width:48px;height:48px;display:block;object-fit:contain;pointer-events:none}
 /* DRUGOY H1.3 — Деньги: только согласованный экран и фильтры */
 .dm-balance{position:relative;min-height:176px;justify-content:center}
 .dm-balance .dm-amount{font-size:clamp(39px,10.8vw,54px);letter-spacing:-.038em;color:var(--hot);font-variant-numeric:tabular-nums;line-height:1.08;overflow-wrap:anywhere}
@@ -384,8 +320,8 @@ textarea.field{height:auto;min-height:88px;padding:12px 14px;resize:vertical}
 .covers.mags{grid-template-columns:repeat(4,minmax(0,1fr))}
 .covers.mags button{aspect-ratio:auto;height:62px;padding:6px}
 .tabs nav{align-items:center}
-.tabs .hub{flex:none;width:58px;height:58px;margin:-20px 4px 0;border-radius:50%;border:0;padding:0;display:grid;place-items:center;color:#fff;background:linear-gradient(160deg,#FF6B7D,#D7334C 60%,#A92139);box-shadow:0 10px 22px rgba(200,40,70,.35),inset 0 2px 0 rgba(255,255,255,.35);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.tabs .hub:active{transform:scale(.94)}
+.tabs .hub{flex:none;width:58px;height:58px;margin:0 4px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;color:#fff;background:linear-gradient(160deg,#FF6B7D,#D7334C 60%,#A92139);box-shadow:0 10px 22px rgba(200,40,70,.35),inset 0 2px 0 rgba(255,255,255,.35);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
 .tabs button .ic{opacity:.8}
 .tabs button.on .ic{opacity:1;color:var(--acc)}
 
@@ -890,15 +826,11 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .qd .qa{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
 .qd .qa .qic{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--hair);color:var(--acc)}
 .qd .qa b{color:var(--acc);font-weight:700}
-@keyframes hubpulse{0%{box-shadow:0 0 0 0 rgba(44,140,107,.45)}70%{box-shadow:0 0 0 16px rgba(44,140,107,0)}100%{box-shadow:0 0 0 0 rgba(44,140,107,0)}}
-#hub.pulse{animation:hubpulse 1.8s ease-out infinite}
-@media (prefers-reduced-motion:reduce){#hub.pulse{animation:none;outline:3px solid var(--accl);outline-offset:3px}}
 /* шапка на узком экране: кнопки переносятся под заголовок, а не наезжают */
 .hd{flex-wrap:wrap;row-gap:10px}
 .hd>.grow{flex:1 0 auto;min-width:0}
 .hd h1{white-space:nowrap}
 @media (max-width:420px){.hd .tools{margin-left:auto}}
-#hub.listening{background:var(--hot)}
 /* компактная шапка на телефоне: у кнопок только значки, заголовок чуть меньше */
 @media (max-width:440px){
  .hd .tools{gap:6px}
@@ -1388,7 +1320,7 @@ body::after{animation:iris 26s ease-in-out infinite alternate}
 :root[data-skin="diary"] .sheet.night .ncard .nt{font-family:Caveat,var(--font);font-size:25px;font-weight:700;color:#C0577A}
 :root[data-skin="diary"] .sheet.night .nf{font-family:Caveat,var(--font);font-size:23px}
 :root[data-skin="diary"] h3.hand{font-family:Caveat,var(--font);font-size:38px;font-weight:700}
-:root[data-skin="diary"] .tabbar .hub,:root[data-skin="diary"] .hub{border-radius:22px!important;transform:rotate(-4deg)}
+
 .kcombo.hang{padding-top:34px}
 .kcombo.hang::before{content:"";position:absolute;top:0;left:50%;width:2.5px;height:36px;margin-left:-1.25px;background:#9C7A3C}
 .kcombo.hang .combo{width:130px;height:130px}
@@ -2481,10 +2413,6 @@ function quickSave(){const v=$("#qq").value.trim();if(!v)return $("#qq").focus()
   else if(k==="wish"){const t=v.replace(/^(хочу|мечтаю)\s*/i,"");D.goals.push({id:"g"+uid(),n:D.nN++,t:t.charAt(0).toUpperCase()+t.slice(1),cover:guessCover(t),st:"wish",steps:[],next:"",created:Date.now()});save();closeSheet();snd("tick");render();toast("Записано "+esc(wn(2)))}
   else if(k==="spend"){if(!amt){toast("Не вижу сумму");return}D.money.sp.push({id:"s"+uid(),d:TODAY(),amt,t:txt||"Трата",b:WANT.test(norm(txt))?"want":"need",ts:Date.now()});save();closeSheet();snd("tick");render();toast("Трата "+rub(amt)+" записана")}
   else{if(!amt){toast("Не вижу сумму");return}closeSheet();sheetIncome();setTimeout(()=>{const a=$("#ia"),t=$("#it");if(a){a.value=amt;a.dispatchEvent(new Event("input"))}if(t)t.value=txt},320)}}
-/* удержание кнопки-магнита — сразу диктовка */
-let hubT=null,hubHeld=false;
-document.addEventListener("pointerdown",e=>{const b=e.target.closest("#hub");if(!b)return;hubHeld=false;clearTimeout(hubT);hubT=setTimeout(()=>{hubHeld=true;try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}sheetQuick(true);if(DICT){micFor="qq";try{DICT.start().catch(()=>{})}catch(x){}}else toast("Голосовой ввод здесь недоступен — пиши текстом")},450)});
-["pointerup","pointercancel","pointerleave"].forEach(t=>document.addEventListener(t,()=>clearTimeout(hubT)));
 /* ---------- sheet engine ---------- */
 let SH=null;
 function openSheet(html,ctx){const was=!!SH;SH=ctx||{};const s=$("#sheet");s.innerHTML=`<button type="button" class="x" data-a="close" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="grab"></div>`+html;
@@ -2572,7 +2500,7 @@ const A={
  askdemo:()=>{$("#danger").innerHTML=`<div class="hint"><div class="grow"><p>Пример заменит все текущие данные. Продолжить?</p><div class="acts"><button type="button" class="chip on" data-a="demo">Да, заполнить</button><button type="button" class="chip" data-a="settings">Отмена</button></div></div></div>`},
  askreset:()=>{$("#danger").innerHTML=`<div class="hint"><div class="grow"><p>Удалить все данные на этом устройстве и начать заново?</p><div class="acts"><button type="button" class="chip" data-a="reset" style="color:var(--hot)">Да, удалить</button><button type="button" class="chip" data-a="settings">Отмена</button></div></div></div>`},
  reset:()=>{const s=D.set.sound;D=blank();D.set.sound=s;save();closeSheet();UI.tab="today";render()},
- quick:()=>{if(hubHeld){hubHeld=false;return}sheetQuick()},qsave:()=>quickSave(),qk:e=>{SH.st.k=e.dataset.v;SH.st.auto=false;pickOn(".chip",e)},
+ quick:()=>sheetQuick(),qsave:()=>quickSave(),qk:e=>{SH.st.k=e.dataset.v;SH.st.auto=false;pickOn(".chip",e)},
  mic:e=>{if(!DICT)return;micFor=e.dataset.for;try{DICT.start().catch(()=>{})}catch(x){}}
 };
 function fallbackCopy(txt){openSheet(`<h3>Данные</h3><p class="sub">Выдели всё и скопируй вручную</p><textarea class="field" style="min-height:240px;font-size:11px;font-family:ui-monospace,Menlo,monospace" readonly>${esc(txt)}</textarea>`)}
@@ -3636,12 +3564,12 @@ setTimeout(()=>{const s=INTRO[1];if(s){s.p="Одно главное дело, д
   const ex=[["завтра в 10 позвонить маме","Дело","завтра · 10:00","clock"],["350 кофе","Трата","350 ₽","card"],["бегаю по вторникам","Привычка","по вт · в трекер","cal"],["мысль: утром работается лучше","Дневник","сегодня","note"]];
   INTRO.splice(2,0,{h:"Кнопка-магнит — записать что угодно",p:"Пиши как думаешь, можно несколько через запятую. Магнит сам поймёт, что это: дело, привычка, трата или мысль — и перед сохранением покажет, как понял. Не так — поправишь одним тапом. Удержи кнопку, чтобы надиктовать голосом.",
    art:()=>`<div class="iart plain"><div class="qdemo">${ex.map(e=>`<div class="qd"><span class="qq">«${e[0]}»</span><span class="qa"><span class="qic">${IC(e[3],14)}</span><b>${e[1]}</b><small>${e[2]}</small></span></div>`).join("")}</div><div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="hubmini">${IC("magnet",20)}</span><span class="small mut">тап — написать · удержать — сказать</span></div></div>`})},0);
-const _render13b=render;render=function(){_render13b();const h=$("#hub");if(h)h.classList.toggle("pulse",!!(D.started&&!D.demo&&!D.hint.hub))};
-const _quick13=A.quick;A.quick=e=>{if(!D.hint.hub){D.hint.hub=1;save();const h=$("#hub");if(h)h.classList.remove("pulse")}return _quick13(e)};
+const _render13b=render;render=function(){_render13b();};
+const _quick13=A.quick;A.quick=e=>{if(!D.hint.hub){D.hint.hub=1;save();}return _quick13(e)};
 
 /* ---------- голосовой ввод вне Claude: приложение Android (нативно), Chrome/Safari (Web Speech) ---------- */
 function dictPut(text){const el=micFor&&document.getElementById(micFor);if(el&&text){el.value=(el.value?el.value.trim()+" ":"")+text.trim();el.dispatchEvent(new Event("input",{bubbles:true}));el.focus()}}
-function micLive(on){document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",on));const h=$("#hub");if(h)h.classList.toggle("listening",on)}
+function micLive(on){document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",on));}
 function makeDict(){const CP=window.Capacitor,NSR=CP&&CP.isNativePlatform&&CP.isNativePlatform()&&CP.Plugins&&CP.Plugins.SpeechRecognition;
   if(NSR)return{kind:"native",async start(){try{const p=await NSR.requestPermissions();if(p&&p.speechRecognition&&p.speechRecognition!=="granted"){toast("Разреши Магниту микрофон в настройках телефона");return}
       micLive(true);const r=await NSR.start({language:"ru-RU",maxResults:1,prompt:"Говори — я запишу",popup:true,partialResults:false});micLive(false);dictPut(r&&r.matches&&r.matches[0])}catch(e){micLive(false);if(!/cancel|no match|0|7/i.test(String(e&&e.message||e)))toast("Голос не распознался — попробуй ещё раз или микрофон на клавиатуре")}},stop(){try{NSR.stop()}catch(e){}}};
@@ -4457,37 +4385,6 @@ const _po24=parseOne;parseOne=function(v,ctx){let s=String(v).trim();
   if(r.kind==="wish"&&r.text)r.text=r.text.replace(/^(наконец|себе)\s+/i,"").replace(/^./,c=>c.toUpperCase());
   return r};
 
-/* ---------- микрофон: пишет, пока держишь кнопку-магнит ---------- */
-let HOLD=false,HREC=null;
-document.addEventListener("pointerdown",e=>{if(e.target.closest("#hub"))HOLD=true},true);
-const relHold=()=>{if(!HOLD)return;HOLD=false;if(HREC)HREC.release()};
-["pointerup","touchend","touchcancel","mouseup"].forEach(t=>window.addEventListener(t,relHold,true));
-function holdBar(on,txt){const q=$("#qq");if(!q)return;let b=$("#holdbar");
-  if(!on){if(b)b.remove();return}
-  if(!b){q.insertAdjacentHTML("beforebegin",`<div id="holdbar" class="holdbar" role="status"><i></i><span></span></div>`);b=$("#holdbar")}
-  b.querySelector("span").textContent=txt||"Слушаю. Говори, пока держишь, — отпусти, и я разложу по полочкам"}
-function holdPut(base,text){const q=$("#qq");if(!q)return;q.value=(base?base+" ":"")+text;q.dispatchEvent(new Event("input",{bubbles:true}))}
-function holdWeb(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;const q=$("#qq"),base=q?q.value.trim():"";let fin="",live=true,rec=null;
-  const go=()=>{rec=new SR();rec.lang="ru-RU";rec.interimResults=true;rec.continuous=true;
-    rec.onresult=e=>{let it="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=(fin?" ":"")+r[0].transcript.trim();else it+=r[0].transcript}holdPut(base,(fin+" "+it).trim())};
-    rec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){live=false;holdBar(false);toast("Браузер не дал микрофон")}};
-    rec.onend=()=>{if(live&&HOLD){try{go()}catch(x){}}else done()};try{rec.start();micLive(true)}catch(x){}};
-  const done=()=>{micLive(false);holdBar(false);holdPut(base,fin.trim())};
-  go();holdBar(true);return{release(){live=false;try{rec&&rec.stop()}catch(x){}setTimeout(()=>{if($("#holdbar"))done()},1500)}}}
-function holdNative(){const CP=window.Capacitor,NSR=CP&&CP.isNativePlatform&&CP.isNativePlatform()&&CP.Plugins&&CP.Plugins.SpeechRecognition;if(!NSR||!NSR.addListener)return null;
-  const q=$("#qq"),base=q?q.value.trim():"";let fin="",cur="",live=true,ended=false;const L=[];
-  const commit=()=>{if(cur){fin+=(fin?" ":"")+cur.trim();cur=""}};
-  const done=()=>{if(ended)return;ended=true;commit();L.forEach(h=>{try{h.remove()}catch(x){}});micLive(false);holdBar(false);holdPut(base,fin.trim())};
-  const go=()=>NSR.start({language:"ru-RU",maxResults:1,partialResults:true,popup:false}).catch(()=>{if(!live)done()});
-  (async()=>{try{const p=await NSR.requestPermissions();if(p&&p.speechRecognition&&p.speechRecognition!=="granted"){toast("Разреши Магниту микрофон в настройках телефона");live=false;holdBar(false);return}
-    L.push(await NSR.addListener("partialResults",d=>{const m=d&&d.matches&&d.matches[0];if(m){cur=m;holdPut(base,(fin+" "+cur).trim())}}));
-    L.push(await NSR.addListener("listeningState",s=>{if(s&&s.status==="stopped"){commit();if(live&&HOLD)go();else done()}}));
-    micLive(true);go()}catch(x){done()}})();
-  holdBar(true);return{release(){live=false;try{NSR.stop()}catch(x){}setTimeout(done,1200)}}}
-/* старт по удержанию: перехватываем DICT.start, если палец ещё на кнопке */
-setTimeout(()=>{if(!DICT||DICT.__hold)return;const st=DICT.start.bind(DICT);DICT.__hold=1;
-  DICT.start=function(){if(HOLD&&micFor==="qq"){HREC=holdNative()||holdWeb();if(HREC)return Promise.resolve()}return st()}},1600);
-
 /* ---------- уведомления: сводка дня и «Пора» тоже входят в лимит 5 в день и тихие часы ---------- */
 const _lnPlan24=lnPlan;lnPlan=function(){const L=_lnPlan24(),R=D.set.rem||{},q1=R.quietFrom||"22:30",q2=R.quietTo||"07:30";const hhmm=d=>pad(d.getHours())+":"+pad(d.getMinutes());
   const quiet=d=>{const x=hhmm(d);return q1>q2?(x>=q1||x<q2):(x>=q1&&x<q2)};
@@ -4566,7 +4463,7 @@ const PLG=n=>{const CP=window.Capacitor;return NATIVE()&&CP.Plugins&&CP.Plugins[
    На телефоне «click» после долгого нажатия прилетает в то, что оказалось под пальцем, — в подложку
    открывшегося окна, и окно сразу закрывалось. Отсюда «минимум не ставится». */
 (()=>{let t0=0,hub=false;
-  document.addEventListener("pointerdown",e=>{const el=e.target.closest("[data-hold],#hub");t0=el?performance.now():0;hub=!!(el&&el.id==="hub")},true);
+  document.addEventListener("pointerdown",e=>{const el=e.target.closest("[data-hold]");t0=el?performance.now():0;hub=!!(el&&el.id==="hub")},true);
   document.addEventListener("click",e=>{if(!t0)return;const dt=performance.now()-t0;t0=0;
     if(dt<450)return;if(hub&&e.target.closest("#hub"))return;e.stopPropagation();e.preventDefault()},true)})();
 
@@ -5894,40 +5791,6 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
 }})(sheetQuick);
 </script>
 <script>if("serviceWorker"in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
-<script>/* DRUGOY 12A-1 v4: scoped visual effect, no changes to actual quick/hold actions. */
-(function(){
- let layer=null,holdTimer=null,closeTimer=null,activePointer=null,lastPointerAt=0;
- const prefersLess=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
- const modalVisible=()=>!!document.querySelector('.sheet.open, .scrim.show, [role="dialog"][open], dialog[open]');
- function stop(){clearTimeout(holdTimer);clearTimeout(closeTimer);holdTimer=null;closeTimer=null;if(layer)layer.remove();layer=null;activePointer=null;}
- function launch(button,pointer){
-   if(prefersLess()||modalVisible())return;
-   stop();const r=button.getBoundingClientRect();if(!r.width||!r.height)return;
-   const img=button.querySelector('.drugoy-ring');if(!img)return;
-   const host=document.createElement('div');host.className='drugoy-fx-layer';
-   host.style.left=r.left+'px';host.style.top=r.top+'px';host.style.width=r.width+'px';host.style.height=r.height+'px';
-   const ring=img.cloneNode(true);ring.className='drugoy-fx-ring';ring.alt='';ring.setAttribute('aria-hidden','true');
-   const glint=document.createElement('span');glint.className='drugoy-fx-glint';
-   host.append(ring,glint);
-   for(const x of ['a','b','c']){const p=document.createElement('span');p.className='drugoy-fx-speck '+x;host.append(p);}
-   document.body.append(host);layer=host;activePointer=pointer;
-   holdTimer=setTimeout(()=>{if(layer&&!modalVisible())layer.classList.add('drugoy-fx-holding');},470);
-   closeTimer=setTimeout(stop,4000); // lost pointer protection
- }
- function release(e){if(!layer)return;if(e&&activePointer!==null&&e.pointerId!==undefined&&e.pointerId!==activePointer)return;
-   clearTimeout(holdTimer);holdTimer=null;
-   if(layer.classList.contains('drugoy-fx-holding')){layer.classList.remove('drugoy-fx-holding');layer.classList.add('drugoy-fx-releasing');}
-   clearTimeout(closeTimer);closeTimer=setTimeout(stop,230);
- }
- document.addEventListener('pointerdown',e=>{const b=e.target.closest?.('#hub.drugoy-hub-preview');if(!b)return;lastPointerAt=Date.now();launch(b,e.pointerId);},{capture:true,passive:true});
- for(const name of ['pointerup','pointercancel'])document.addEventListener(name,release,{capture:true,passive:true});
- document.addEventListener('click',e=>{const b=e.target.closest?.('#hub.drugoy-hub-preview');if(!b||Date.now()-lastPointerAt<800)return;launch(b,null);setTimeout(()=>release(),340);},true);
- // Hide as soon as a modal appears; scrim/sheet always sit above the nav.
- const observer=new MutationObserver(()=>{if(layer&&modalVisible())stop();});
- observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
- window.addEventListener('blur',stop);
- document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
-})();</script>
 <script>
 /* DRUGOY H1.3 — одобренный экран денег. Не менять схему D.money. */
 (function(){
