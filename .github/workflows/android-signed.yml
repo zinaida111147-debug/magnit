@@ -50,8 +50,9 @@ jobs:
           open(p,'w').write(s)
           PY
           grep -n "uses-permission\|SendIntentActivity" android/app/src/main/AndroidManifest.xml || true
-          npx capacitor-assets generate --android --iconBackgroundColor '#1C4F3C' --splashBackgroundColor '#F3E6EC' || true
+          npx capacitor-assets generate --android --iconBackgroundColor '#063E31' --splashBackgroundColor '#F3E6EC'
           npx cap sync android
+          python3 native-asr/install.py
           # White monochrome magnet for Android's notification status bar.
           mkdir -p android/app/src/main/res/drawable
           cp assets/android/ic_stat_magnit.xml android/app/src/main/res/drawable/ic_stat_magnit.xml
