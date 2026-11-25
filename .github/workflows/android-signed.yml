@@ -53,9 +53,9 @@ jobs:
           npx capacitor-assets generate --android --iconBackgroundColor '#063E31' --splashBackgroundColor '#F3E6EC'
           npx cap sync android
           python3 native-asr/install.py
-          # White monochrome magnet for Android's notification status bar.
+          # White monochrome approved ring for Android's notification status bar.
           mkdir -p android/app/src/main/res/drawable
-          cp assets/android/ic_stat_magnit.xml android/app/src/main/res/drawable/ic_stat_magnit.xml
+          cp assets/android/ic_stat_ring.png android/app/src/main/res/drawable/ic_stat_ring.png
       - name: Configure release signing (secrets required)
         env:
           MAGNIT_KEYSTORE_BASE64: ${{ secrets.MAGNIT_KEYSTORE_BASE64 }}
