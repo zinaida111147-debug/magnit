@@ -79,14 +79,32 @@ jobs:
               f'{si}        clipData.addItem(new ClipData.Item(fileUris.get(i)));\n'
               f'{si}    }}\n'
               f'{si}    intent.setClipData(clipData);\n'
-              f'{si}    intent.putExtra(Intent.EXTRA_STREAM, fileUris);\n'
+              f'{si}    intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, fileUris);\n'
               f'{si}}}'
           )
           s = s[:stream.start()] + stream_replacement + s[stream.end():]
+          # Re-apply the caption after shareFiles sets the attachment MIME type.
+          # Some Android receivers inspect the final Intent extras together with ClipData.
+          text_block = re.search(
+              r'(?m)^([ \t]*)if \(files != null && files\.length\(\) != 0\) \{\n'
+              r'\1[ \t]+shareFiles\(files, intent, call\);\n'
+              r'\1\}',
+              s
+          )
+          if not text_block:
+              raise SystemExit('Capacitor Share file dispatch block changed: refusing to patch caption handling')
+          ti = text_block.group(1)
+          text_replacement = (
+              text_block.group(0) + '\n' +
+              f'{ti}if (text != null && !text.isEmpty()) {{\n'
+              f'{ti}    intent.putExtra(Intent.EXTRA_TEXT, text);\n'
+              f'{ti}}}'
+          )
+          s = s[:text_block.start()] + text_replacement + s[text_block.end():]
           if 'import android.content.ClipData;' not in s and 'import android.content.*;' not in s:
               s = s.replace('import android.content.Intent;', 'import android.content.ClipData;\nimport android.content.Intent;', 1)
           p.write_text(s)
-          print('Patched Capacitor Share multi-file MIME and ClipData handling.')
+          print('Patched Capacitor Share multi-file MIME, ClipData and final caption handling.')
           PY
           npx cap add android
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
