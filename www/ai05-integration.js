@@ -55,7 +55,7 @@ queueGeometry();
 function putVisual(s,hint=''){
  visualState=s;const active=['recording','lock-aim','cancel'].includes(s);sceneApp.classList.toggle('active',active);sceneApp.classList.toggle('recording',s==='recording'||s==='lock-aim');sceneApp.classList.toggle('lock-aim',s==='lock-aim');sceneApp.classList.toggle('cancel',s==='cancel');sceneApp.classList.toggle('done',false);sceneApp.classList.toggle('locked',s==='locked');sceneApp.classList.toggle('motion-off',reduced.matches);
  document.body.classList.toggle('ai05-focused',active||s==='locked');host.dataset.state=s;
- const lines={recording:['Говори…','Вверх — закрепить · в сторону — отменить'],'lock-aim':['Отпусти для закрепления','Вниз по диагонали — отмена'],locked:['Запись закреплена','Нажми «Стоп», чтобы завершить'],cancel:['Отмена','Отпусти, чтобы отменить']};
+ const lines={recording:['Говори…','Вверх — закрепить · в сторону — отменить'],'lock-aim':['Отпусти для закрепления','Вниз – вернуться · по диагонали – отмена'],locked:['Запись закреплена','Нажми «Стоп», чтобы завершить'],cancel:['Отмена','Отпусти, чтобы отменить']};
  const line=lines[s];if(line){root.getElementById('headline').textContent=line[0];root.getElementById('explain').textContent=line[1]}
  // Real capture failure is surfaced without changing the agreed gesture or moving the scene.
  if(hint.startsWith('Нет аудио'))root.getElementById('status').textContent=hint;
@@ -72,8 +72,10 @@ function classify(g,dx,dy){
  const b=lockGeometry(g,dx,dy),rise=g.y/g.scale-b.cy;
  // Once acquired, ordinary sideways movement cannot accidentally cancel the lock.
  // A downward diagonal from the highest acquired point can cancel, on either side.
- if(g.lock){g.highest=Math.min(g.highest,dy);if(dy-g.highest>=LOCK_EXIT_DROP&&Math.abs(dx)>=SIDE_CANCEL){g.lock=false;g.cancel=true;return 'cancel'}return 'lock-aim'}
- if(Math.abs(dx)<=LOCK_SIDE&&dy<=-Math.max(45,rise-LOCK_ENTRY_MARGIN)/2){g.lock=true;g.highest=dy;g.cancel=false;return 'lock-aim'}
+ const entry=-Math.max(45,rise-LOCK_ENTRY_MARGIN)/2;
+ if(g.lock){g.highest=Math.min(g.highest,dy);if(dy-g.highest>=LOCK_EXIT_DROP){g.lock=false;if(Math.abs(dx)>=SIDE_CANCEL){g.cancel=true;return 'cancel'}g.unlockAt=dy;return 'recording'}return 'lock-aim'}
+ if(g.unlockAt!=null&&(dy>entry||dy<=g.unlockAt-12))g.unlockAt=null;
+ if(g.unlockAt==null&&Math.abs(dx)<=LOCK_SIDE&&dy<=entry){g.lock=true;g.highest=dy;g.cancel=false;return 'lock-aim'}
  if(g.cancel|| (Math.abs(dx)>=SIDE_CANCEL&&Math.abs(dx)>=Math.abs(dy)*.85)){g.cancel=true;return 'cancel'}
  return 'recording';
 }
