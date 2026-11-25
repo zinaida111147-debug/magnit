@@ -1982,7 +1982,7 @@ const gear=`<button type="button" class="ib" data-a="settings" aria-label="На�
 const sparkPill=()=>`<button type="button" class="pill" data-a="kitchen" aria-label="Искры: ${D.sparks}">${SP(18)}${D.sparks}</button>`;
 const hd=(k,h,tools)=>`<div class="glow" aria-hidden="true"></div><header class="hd"><div class="grow"><div class="k">${k}</div><h1>${h}</h1></div><div class="tools">${tools||""}</div></header>`;
 
-function welcome(){return`<div class="glow" aria-hidden="true"></div><div class="welcome">${BIGMAG(110)}<h1>Магнит</h1><p>Твои цели — магниты. Минута утром, минута вечером — и дни начинают к ним притягиваться.</p>
+function welcome(){return`<div class="glow" aria-hidden="true"></div><div class="welcome">${BIGMAG(110)}<h1>Твой день</h1><p>Дела, цели, привычки и мысли в одном месте.</p>
 <button type="button" class="btn w" data-a="start">Начать с чистого листа</button>
 <button type="button" class="btn ghost w" data-a="demo">Посмотреть на примере</button>
 <button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button></div>`}
@@ -2020,7 +2020,7 @@ function taskRow(t){const g=t.goal&&goal(t.goal),sg=!t.goal&&t.sug&&goal(t.sug);
 
 /* Магнитик: одна подсказка за заход, только по поводу */
 function magnitik(){const k=TODAY(),y=addDays(k,-1),dy=day(k);if(D.hint[k]==="x")return"";
-  const box=(ico,txt,btn)=>`<div class="hint"><div class="grow"><div class="k12" style="color:var(--vio);margin-bottom:4px">Магнитик</div><p>${txt}</p><div class="acts">${btn||""}<button type="button" class="chip" data-a="hintx">Понятно</button></div></div></div>`;
+  const box=(ico,txt,btn)=>`<div class="hint"><div class="grow"><p>${txt}</p><div class="acts">${btn||""}<button type="button" class="chip" data-a="hintx">Понятно</button></div></div></div>`;
   const miss=D.habits.find(h=>h.start&&h.start<y&&!hm(h,y)&&hm(h,addDays(y,-1))&&!hm(h,k));
   if(miss)return box(miss.ico,`Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума: ${esc(miss.min||"совсем чуть-чуть")}.`,`<button type="button" class="chip on" data-a="hmark" data-h="${miss.id}" data-d="${k}" data-v="2">Отметить минимум</button>`);
   const mv=D.tasks.find(t=>t.d===k&&!t.done&&t.moves>=3);
@@ -2042,7 +2042,7 @@ function addTask(t,opt){opt=opt||{};const k=opt.d===undefined?(typeof viewDay===
 function sheetTask(id,size){const t=id?D.tasks.find(x=>x.id===id):null;const st={goal:t?t.goal:null,size:t?t.size:(size||"mid"),est:t?t.est||null:null};
   openSheet(`<h3>${t?"Дело":"Новое дело"}</h3><p class="sub">${t?(t.moves?`Переносилось ${t.moves} ${plural(t.moves,"раз","раза","раз")}`:"Можно уточнить, привязать к цели или перенести"):"Одно действие, которое можно сделать за раз"}</p>
   <div class="row"><input id="tt" class="field" value="${t?esc(t.t):""}" placeholder="Что сделать?" autocomplete="off">${micBtn("tt")}</div>
-  <label class="lb">Размер</label><div class="chips" id="sz">${[["big","Главное"],["mid","Среднее"],["small","Мелочь"]].map(s=>`<button type="button" class="chip${st.size===s[0]?" on":""}" data-a="pick" data-k="size" data-v="${s[0]}">${s[1]}</button>`).join("")}</div>
+  <label class="lb">Размер</label><div class="chips" id="sz">${[["big","Главное"],["mid","Важное"],["small","Мелочь"]].map(s=>`<button type="button" class="chip${st.size===s[0]?" on":""}" data-a="pick" data-k="size" data-v="${s[0]}">${s[1]}</button>`).join("")}</div>
   <label class="lb">Сколько займёт</label><div class="chips">${[10,20,40,60,90,120].map(m=>`<button type="button" class="chip${st.est==m?" on":""}" data-a="pick" data-k="est" data-v="${m}">${m<60?m+" мин":m/60+" ч"}</button>`).join("")}</div>
   <label class="lb" for="ttm">Время · по желанию</label><input id="ttm" class="field" type="time" value="${t&&t.time?t.time:""}" style="max-width:160px">
   ${work().length?`<label class="lb">Шаг к цели?</label><div id="gc">${goalChips(st.goal,"pickg")}</div>`:""}
@@ -2180,10 +2180,10 @@ function vGoals(){const W=work(),wishes=D.goals.filter(g=>g.st==="wish"||g.st===
     o+=`<div class="card goal tap" data-a="goal" data-id="${g.id}"><div class="tint" style="background:${TINT[themeOf(g.cover)]}"></div><div class="row" style="align-items:flex-start"><div class="grow"><div class="num">№${g.n}</div><div class="gt">${esc(g.t)}</div><div class="small mut">${st?`${st} ${plural(st,"шаг","шага","шагов")} · последний ${ago(g.last||g.steps[st-1].d)}`:"Шагов пока нет — самое время для первого"}</div></div>${MGg(g,62,"","transform:rotate(6deg);margin:-2px -2px 0 0;flex:none")}</div>
     ${jar?`<div style="margin-top:12px"><div class="row small mut" style="justify-content:space-between;margin-bottom:4px"><span class="row" style="gap:6px">Копилка</span><span style="font-variant-numeric:tabular-nums">${rub(jarSum(jar))}${jar.target?" из "+rub(jar.target):""}</span></div>${jar.target?`<div class="prog"><i style="width:${Math.min(100,jarSum(jar)/jar.target*100)}%"></i></div>`:""}</div>`:""}
     <div class="next">${g.next?`<span class="grow small"><span class="mut">Дальше:</span> <b>${esc(g.next)}</b></span><button type="button" class="chip on" data-a="gtoday" data-id="${g.id}">в сегодня</button>`:`<span class="grow small mut">Нет следующего шага</span><span class="chip">добавить</span>`}</div></div>`});
-  for(let i=W.length;i<3;i++)o+=`<div class="slot">${i===W.length?`Свободное место для магнита. Выбери желание ниже и нажми «Сделать магнитом»`:"Свободное место"}</div>`;
+  for(let i=W.length;i<3;i++)o+=`<div class="slot">${i===W.length?`Выбери желание и возьми его в работу`:"Свободное место"}</div>`;
   o+=`</div><div class="sec"><h2>${esc(wn(0))}</h2><span class="c">${wishes.length}</span></div><div class="card" style="padding:8px 14px;margin-top:6px">`;
   o+=`<form class="qadd" data-f="wadd" style="margin:0 0 4px"><label for="wa" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Новое желание</label><input id="wa" class="field" placeholder="Записать желание…" autocomplete="off">${micBtn("wa")}<button type="submit" class="btn sm" aria-label="Записать">+</button></form>`;
-  o+=wishes.length?wishes.map(g=>`<div class="wish"><span class="n">№${g.n}</span><button type="button" class="grow tt" data-a="goal" data-id="${g.id}" style="background:none;border:0;text-align:left;padding:0;font-size:15px;overflow-wrap:anywhere">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">${IC("magnet",16)}Магнитом</button></div>`).join(""):`<div class="empty">Сюда можно складывать всё, чего хочется. Без лимита и без спешки.</div>`;
+  o+=wishes.length?wishes.map(g=>`<div class="wish"><span class="n">№${g.n}</span><button type="button" class="grow tt" data-a="goal" data-id="${g.id}" style="background:none;border:0;text-align:left;padding:0;font-size:15px;overflow-wrap:anywhere">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">В работу</button></div>`).join(""):`<div class="empty">Сюда можно складывать всё, чего хочется. Без лимита и без спешки.</div>`;
   o+=`</div>`;
   if(done.length)o+=`<div class="sec"><h2>Достигнуто</h2><span class="c">${done.length}</span></div><div class="card" style="padding:6px 14px;margin-top:6px">${done.sort((a,b)=>(b.doneAt||"").localeCompare(a.doneAt||"")).map(g=>`<button type="button" class="wish" data-a="goal" data-id="${g.id}" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;font:inherit;color:inherit"><span class="n">№${g.n}</span><span class="grow" style="font-size:15px">${esc(g.t)}</span><span class="small mut" style="flex:none">${g.doneAt?dshort(g.doneAt):""}${(g.steps||[]).length?" · "+g.steps.length+" "+plural(g.steps.length,"шаг","шага","шагов"):""}</span></button>`).join("")}</div>`;
   return o}
@@ -2193,20 +2193,20 @@ function sheetGoal(id){const g=goal(id);if(!g)return;const steps=(g.steps||[]).s
 
   <div class="sec" style="padding:0"><h2>История</h2><span class="c">${steps.length} ${plural(steps.length,"шаг","шага","шагов")}</span></div>
   <div class="card hist" style="margin-top:6px">${steps.length?steps.slice(0,30).map(s=>`<div class="it"><span class="dt">${dshort(s.d)}</span><span class="grow">${esc(s.t)}</span></div>`).join(""):`<div class="empty">Здесь появятся шаги: дела с этой целью, отмеченные «готово»</div>`}</div>
-  <label class="lb">Магнит</label><div class="covers mags">${MTYPES.map(c=>`<button type="button" class="${mt(g.cover)===c[0]?"on":""}" data-a="gcover" data-id="${g.id}" data-v="${c[0]}" aria-label="${c[1]}">${MG(c[0],34,"","",g.t)}</button>`).join("")}</div>
+  <label class="lb">Оформление цели</label><div class="covers mags">${MTYPES.map(c=>`<button type="button" class="${mt(g.cover)===c[0]?"on":""}" data-a="gcover" data-id="${g.id}" data-v="${c[0]}" aria-label="${c[1]}">${MG(c[0],34,"","",g.t)}</button>`).join("")}</div>
   <div class="stack">${g.st==="work"?`<button type="button" class="btn w" data-a="gdone" data-id="${g.id}">${IC("trophy",20)} Цель достигнута!</button><div class="row" style="justify-content:center;gap:4px;flex-wrap:wrap"><button type="button" class="lnk" data-a="gpause" data-id="${g.id}">Пауза</button><button type="button" class="lnk" data-a="gwish" data-id="${g.id}">Вернуть ${esc(wn(2))}</button><button type="button" class="lnk" data-a="gdel" data-id="${g.id}" style="color:var(--hot)">Удалить</button></div>`
    :g.st==="done"?`<button type="button" class="lnk" data-a="gundo" data-id="${g.id}">Вернуть в работу</button>`
-   :`<button type="button" class="btn w" data-a="woop" data-id="${g.id}">${IC("magnet",20)} Сделать магнитом</button><button type="button" class="lnk" data-a="gdel" data-id="${g.id}" style="color:var(--hot)">Удалить</button>`}</div>`)}
+   :`<button type="button" class="btn w" data-a="woop" data-id="${g.id}">Взять в работу</button><button type="button" class="lnk" data-a="gdel" data-id="${g.id}" style="color:var(--hot)">Удалить</button>`}</div>`)}
 /* WOOP-мастер */
 function sheetWoop(id,step,st){const g=goal(id);if(!g)return;step=step||0;st=st||{t:g.t,cover:g.cover,outcome:(g.woop||{}).outcome||"",obstacle:(g.woop||{}).obstacle||"",plan:(g.woop||{}).plan||"",first:g.next||"",swap:null};
   const full=work().filter(x=>x.id!==g.id);const bar=`<div class="steps">${[0,1,2,3].map(i=>`<i class="${i<=step?"on":""}"></i>`).join("")}</div>`;
   let body="";
-  if(step===0)body=`<div class="small mut">Шаг 1 из 4 · Желание</div><h3>Чего хочется?</h3><p class="sub">Сформулируй так, чтобы было понятно, когда получилось</p><input id="w0" class="field" value="${esc(st.t)}"><label class="lb">Какой это магнит</label><div class="covers mags">${MTYPES.map(c=>`<button type="button" class="${mt(st.cover)===c[0]?"on":""}" data-a="wcov" data-v="${c[0]}" aria-label="${c[1]}">${MG(c[0],34,"","",st.t)}</button>`).join("")}</div>
-   ${full.length>=3?`<div class="hint" style="margin-top:14px"><div class="grow"><p>В работе уже три магнита — так фокус не распыляется. Какой отложить ${esc(wn(2))}? Его номер сохранится.</p><div class="chips" style="margin-top:8px">${full.map(x=>`<button type="button" class="chip${st.swap===x.id?" on":""}" data-a="wswap" data-g="${x.id}">${esc(x.t)}</button>`).join("")}</div></div></div>`:""}`;
+  if(step===0)body=`<div class="small mut">Шаг 1 из 4 · Желание</div><h3>Чего хочется?</h3><p class="sub">Сформулируй так, чтобы было понятно, когда получилось</p><input id="w0" class="field" value="${esc(st.t)}"><label class="lb">Оформление цели</label><div class="covers mags">${MTYPES.map(c=>`<button type="button" class="${mt(st.cover)===c[0]?"on":""}" data-a="wcov" data-v="${c[0]}" aria-label="${c[1]}">${MG(c[0],34,"","",st.t)}</button>`).join("")}</div>
+   ${full.length>=3?`<div class="hint" style="margin-top:14px"><div class="grow"><p>В работе уже три цели — так фокус не распыляется. Какой отложить ${esc(wn(2))}? Его номер сохранится.</p><div class="chips" style="margin-top:8px">${full.map(x=>`<button type="button" class="chip${st.swap===x.id?" on":""}" data-a="wswap" data-g="${x.id}">${esc(x.t)}</button>`).join("")}</div></div></div>`:""}`;
   if(step===1)body=`<div class="small mut">Шаг 2 из 4 · Лучший результат</div><h3>Что будет, когда получится?</h3><p class="sub">Представь одну яркую картинку. Это даёт энергию начать</p><textarea id="w1" class="field" placeholder="Например: стою на берегу на закате, тишина">${esc(st.outcome)}</textarea>`;
   if(step===2)body=`<div class="small mut">Шаг 3 из 4 · Препятствие</div><h3>Что внутри тебя может помешать?</h3><p class="sub">Не обстоятельства, а то, что зависит от тебя</p><textarea id="w2" class="field" placeholder="Например: вечером устаю и откладываю">${esc(st.obstacle)}</textarea><div class="chips" style="margin-top:8px">${["Устаю вечером","Отвлекаюсь на телефон","Жалко денег","Страшно начать","Забываю"].map(x=>`<button type="button" class="chip" data-a="wfill" data-f="w2" data-v="${x}">${x}</button>`).join("")}</div>`;
   if(step===3)body=`<div class="small mut">Шаг 4 из 4 · План</div><h3>Если — то</h3><p class="sub">Если ${esc(st.obstacle?st.obstacle.toLowerCase():"появится препятствие")}, то я…</p><textarea id="w3" class="field" placeholder="…делаю один 10-минутный шаг">${esc(st.plan)}</textarea><label class="lb" for="w4">Первый шаг — сразу в сегодня</label><div class="row"><input id="w4" class="field" value="${esc(st.first)}" placeholder="Самое маленькое действие">${micBtn("w4")}</div>`;
-  openSheet(bar+body+`<div class="stack"><button type="button" class="btn w ${step===3?"":"vio"}" data-a="wnext">${step===3?IC("magnet",20)+" Повесить магнит":"Дальше"}</button>${step?`<button type="button" class="lnk" data-a="wback">Назад</button>`:""}</div>`,
+  openSheet(bar+body+`<div class="stack"><button type="button" class="btn w ${step===3?"":"vio"}" data-a="wnext">${step===3?"Взять в работу":"Дальше"}</button>${step?`<button type="button" class="lnk" data-a="wback">Назад</button>`:""}</div>`,
    {st,step,id,woop:true})}
 function woopCollect(s){const v=id=>{const e=document.getElementById(id);return e?e.value.trim():null};const st=s.st;
   if(s.step===0&&v("w0")!=null)st.t=v("w0")||st.t;if(s.step===1)st.outcome=v("w1");if(s.step===2)st.obstacle=v("w2");if(s.step===3){st.plan=v("w3");st.first=v("w4")}}
@@ -2214,7 +2214,7 @@ function woopFinish(s){const g=goal(s.id),st=s.st;
   if(work().filter(x=>x.id!==g.id).length>=3){const sw=goal(st.swap)||work().find(x=>x.id!==g.id);if(sw)sw.st="wish"}
   g.t=st.t;g.cover=st.cover;g.woop={outcome:st.outcome,obstacle:st.obstacle,plan:st.plan};g.st="work";g.next=st.first||g.next||"";g.since=g.since||TODAY();
   if(st.first)addTask(st.first,{size:"mid",goal:g.id});
-  const n=award("g:"+g.id,3,"новый магнит");save();closeSheet();snd("chord");sparkToast(n,"магнит повешен");go("goals")}
+  const n=award("g:"+g.id,3,"новая цель");save();closeSheet();snd("chord");sparkToast(n,"цель в работе");go("goals")}
 
 /* ---------- TRACKER ---------- */
 function vTracker(){const k=TODAY(),W=addDays(monday(k),UI.wkOff*7),E=addDays(W,6);
@@ -2310,11 +2310,11 @@ function sheetSettings(){const presets=Object.keys(WISHN);
   <label class="lb">Как называть список желаний</label><div class="chips">${presets.map(p=>`<button type="button" class="chip${D.set.wish===p?" on":""}" data-a="wishname" data-v="${p}">${p}</button>`).join("")}</div>
   <div class="row" style="margin-top:8px"><input id="wcus" class="field" placeholder="Своё название" value="${presets.includes(D.set.wish)?"":esc(D.set.wish)}"><button type="button" class="btn ghost sm" data-a="wishcustom">ОК</button></div>
   <label class="lb">Звуки</label><div class="chips"><button type="button" class="chip${D.set.sound?" on":""}" data-a="sound" data-v="1">Тихие щелчки</button><button type="button" class="chip${!D.set.sound?" on":""}" data-a="sound" data-v="0">Без звука</button></div>
-  <label class="lb">Данные</label><div class="stack" style="margin-top:0"><button type="button" class="btn ghost w" data-a="import">${IC("magnet",18)} Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="copyall">Скопировать все данные</button>
+  <label class="lb">Данные</label><div class="stack" style="margin-top:0"><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="copyall">Скопировать все данные</button>
   <div id="danger"><button type="button" class="btn ghost w" data-a="askdemo">Заполнить примером</button><button type="button" class="lnk" data-a="askreset" style="width:100%;color:var(--hot)">Начать заново</button></div></div>
   <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><div class="t17">Pro — позже</div><div class="small mut" style="line-height:1.4">Аналитика «как ты работаешь», деньги на автомате и программы на 30 дней. Основной круг бесплатный навсегда.${D.set.legacy?" Ты со старого Магнита: всё, что там было бесплатным, остаётся бесплатным.":""}</div></div></div></div>
   <p class="small mut" style="margin-top:14px;line-height:1.4">Стикеры: Microsoft Fluent Emoji 3D, лицензия MIT. Данные хранятся только на этом устройстве, в этом браузере.</p>`)}
-function sheetImport(){openSheet(`<div class="row">${BADGE("magnet")}<div><h3>Переезд</h3><p class="sub" style="margin:0">Из старого Магнита в новый</p></div></div>
+function sheetImport(){openSheet(`<div class="row"><div><h3>Переезд</h3><p class="sub" style="margin:0">Из старого Магнита в новый</p></div></div>
   <div class="card" style="margin-top:12px"><div class="small" style="line-height:1.5"><b>1.</b> В старом Магните открой настройки ⚙ → «Переезд в новый Магнит» → «Скопировать».<br><b>2.</b> Вставь сюда или выбери сохранённый файл.</div></div>
   <label class="lb" for="imp">Данные из старого Магнита</label><textarea id="imp" class="field" placeholder="Вставь сюда…" style="min-height:110px;font-size:12px;font-family:ui-monospace,Menlo,monospace"></textarea>
   <label class="lb" for="impf">или файл</label><input id="impf" type="file" accept=".json,.txt,application/json,text/plain" class="field" style="padding:10px">
@@ -2357,7 +2357,7 @@ function impGo(){if(!IMP)return;const fresh=!D.started||D.demo;if(fresh){const s
   const used=new Set(D.goals.map(g=>g.n));IMP.goals.forEach(g=>{if(used.has(g.n))g.n=Math.max(D.nN,...D.goals.map(x=>x.n+1));used.add(g.n)});
   if(work().length+IMP.goals.filter(g=>g.st==="work").length>3)IMP.goals.forEach(g=>{if(g.st==="work"&&work().length>=3)g.st="wish"});
   D.goals.push(...IMP.goals);D.tasks.push(...IMP.tasks);D.habits.push(...IMP.habits);D.money.inc.push(...IMP.inc);D.money.sp.push(...IMP.sp);D.money.jars.push(...IMP.jars);
-  D.nN=Math.max(D.nN,...D.goals.map(g=>g.n+1),1);D.set.legacy=true;D.started=true;D.demo=false;IMP=null;save();closeSheet();snd("chord");toast(IC("magnet",18)+"Переезд готов. С возвращением!");go("goals")}
+  D.nN=Math.max(D.nN,...D.goals.map(g=>g.n+1),1);D.set.legacy=true;D.started=true;D.demo=false;IMP=null;save();closeSheet();snd("chord");toast("Переезд готов. С возвращением!");go("goals")}
 
 /* ---------- DEMO ---------- */
 function demo(){const s=D.set.sound;D=blank();D.set.sound=s;D.started=true;D.demo=true;D.created=Date.now()-60*864e5;const k=TODAY(),A=n=>addDays(k,n);
@@ -2460,13 +2460,13 @@ const A={
  gdone:e=>{const g=goal(e.dataset.id);g.st="done";g.doneAt=TODAY();const n=award("gd:"+g.id,10,"цель достигнута");save();snd("win");closeSheet();go("goals");setTimeout(()=>toast(SP(18)+`«${esc(g.t)}» достигнута · +${n} искр`),300)},
  gpause:e=>{goal(e.dataset.id).st="pause";save();closeSheet();render()},
  gwish:e=>{goal(e.dataset.id).st="wish";save();closeSheet();render()},
- gundo:e=>{const g=goal(e.dataset.id);if(work().length>=3){toast("В работе уже три магнита");return}g.st="work";save();closeSheet();render()},
+ gundo:e=>{const g=goal(e.dataset.id);if(work().length>=3){toast("В работе уже три цели");return}g.st="work";save();closeSheet();render()},
  gdel:e=>{const b=e;if(b.dataset.sure){D.goals=D.goals.filter(g=>g.id!==b.dataset.id);D.tasks.forEach(t=>{if(t.goal===b.dataset.id)t.goal=null});save();closeSheet();render()}else{b.dataset.sure=1;b.textContent="Точно удалить? Нажми ещё раз"}},
  woop:e=>sheetWoop(e.dataset.id),
  wcov:e=>{SH.st.cover=e.dataset.v;pickOn("button",e)},
  wswap:e=>{SH.st.swap=e.dataset.g;pickOn(".chip",e)},
  wfill:e=>{const f=document.getElementById(e.dataset.f);f.value=e.dataset.v},
- wnext:()=>{woopCollect(SH);if(SH.step===0&&!SH.st.t)return;if(SH.step===0&&work().filter(x=>x.id!==SH.id).length>=3&&!SH.st.swap){toast("Выбери, какой магнит отложить");return}if(SH.step===3)return woopFinish(SH);sheetWoop(SH.id,SH.step+1,SH.st)},
+ wnext:()=>{woopCollect(SH);if(SH.step===0&&!SH.st.t)return;if(SH.step===0&&work().filter(x=>x.id!==SH.id).length>=3&&!SH.st.swap){toast("Выбери, какую цель отложить");return}if(SH.step===3)return woopFinish(SH);sheetWoop(SH.id,SH.step+1,SH.st)},
  wback:()=>{woopCollect(SH);sheetWoop(SH.id,SH.step-1,SH.st)},
  word:()=>sheetWord(),wordskip:()=>{const dy=day(TODAY());dy.word={skip:1};save();closeSheet();render()},
  whint:()=>wordHint(),wgive:()=>{const w=day(TODAY()).word;w.gave=1;save();sheetWordDone()},
@@ -2551,7 +2551,7 @@ function render(){const app=$("#app");
   $("#tabs").hidden=false;const tb=t=>`<button type="button" class="${UI.tab===t[0]?"on":""}" data-a="tab" data-t="${t[0]}" aria-label="${t[1]}">${IC(t[2],22)}<span>${t[1]}</span></button>`;
   $("#tabs nav").innerHTML=tb(TABS2[0])+tb(TABS2[1])+`<button type="button" class="hub drugoy-hub-preview" id="hub" data-a="quick" aria-label="Записать. Удерживай, чтобы надиктовать"><img class="drugoy-ring" src="brand/12a1-ring-foreground.png" alt="" aria-hidden="true"></button>`+tb(TABS2[2])+tb(TABS2[3]);
   app.innerHTML=(({today:vToday,goals:vGoals,tracker:vTracker,money:vMoney})[UI.tab]||vToday)()}
-function welcome(){return`<div class="welcome"><span class="hubbig">${UMAG(64)}</span><h1>Магнит</h1><p>Твои цели — магниты. Минута утром, минута вечером — и дни начинают к ним притягиваться.</p>
+function welcome(){return`<div class="welcome"><h1>Твой день</h1><p>Дела, цели, привычки и мысли в одном месте.</p>
 <button type="button" class="btn w" data-a="start">Начать с чистого листа</button><button type="button" class="btn ghost w" data-a="demo">Посмотреть на примере</button><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="restore">Восстановить из копии</button></div>`}
 const H2=(k,h,right)=>`<header class="hd"><div class="grow"><div class="k">${k}</div><h1>${h}</h1></div>${right?`<div class="tools">${right}</div>`:""}</header>`;
 const fmtMin=m=>m>=60?Math.floor(m/60)+" ч"+(m%60?" "+m%60:""):m+" мин";
@@ -2615,18 +2615,18 @@ function gDays(g){const s=g.since||iso(new Date(g.created||Date.now()));return M
 function gWeek(g){const W=addDays(TODAY(),-6);const n=(g.steps||[]).filter(s=>s.d>=W).length;return n>=3?"сильно ближе":n>=1?"ближе за неделю":null}
 function vGoals(){const W=work();if(UI.front&&!W.some(g=>g.id===UI.front))UI.front=null;const front=W.find(g=>g.id===UI.front)||W.slice().sort((a,b)=>(a.last||"").localeCompare(b.last||""))[W.length-1];
   const wishes=D.goals.filter(g=>g.st==="wish"||g.st==="pause").sort((a,b)=>a.n-b.n),done=D.goals.filter(g=>g.st==="done");
-  let o=H2("","Цели",`<span class="k" style="padding-bottom:6px">${W.length} ${plural(W.length,"магнит","магнита","магнитов")}</span>`);
+  let o=H2("","Цели",`<span class="k" style="padding-bottom:6px">${W.length} ${plural(W.length,"цель","цели","целей")}</span>`);
   o+=`<div class="wallet">`;
   W.filter(g=>g!==front).sort((a,b)=>(a.last||"").localeCompare(b.last||"")).forEach(g=>{const P=PAL[mt(g.cover)],pc=gPct(g);o+=`<button type="button" class="band" data-a="front" data-id="${g.id}" style="background:linear-gradient(120deg,${P.a},${P.b});color:${P.ink}"><span class="bg">${GLY(g.cover,20)}</span><b class="grow">${esc(g.t)}</b><span class="bp">${pc!=null?pc+"%":(g.steps||[]).length+" "+plural((g.steps||[]).length,"шаг","шага","шагов")}</span></button>`});
   if(front){const pc=gPct(front),wk=gWeek(front),n=(front.steps||[]).length,seg=pc!=null?Math.round(pc/100*7):Math.min(7,n);const nt=front.next&&D.tasks.find(t=>!t.done&&norm(t.t)===norm(front.next)&&t.d);
     o+=`<div class="gfront" data-a="goal" data-id="${front.id}">${SCN(front.cover)}<div class="gshade"></div>
-     <div class="gtop"><span class="gday">${UMAG(14,"#fff")}ДЕНЬ ${gDays(front)}</span>${wk?`<span class="gwk">${wk}</span>`:""}</div>
+     <div class="gtop"><span class="gday">ДЕНЬ ${gDays(front)}</span>${wk?`<span class="gwk">${wk}</span>`:""}</div>
      <div class="gbot"><div class="gname">${esc(front.t)}</div><div class="gseg">${[0,1,2,3,4,5,6].map(i=>`<i class="${i<seg?"on":""}"></i>`).join("")}</div>
      ${front.next?`<button type="button" class="gnext" data-a="gtoday" data-id="${front.id}"><span class="grow">Дальше: ${esc(front.next)}</span><span>${nt?(nt.d===TODAY()?"сегодня":WD[fromIso(nt.d).getDay()].toLowerCase()):"в сегодня"}</span></button>`:`<button type="button" class="gnext" data-a="goal" data-id="${front.id}"><span class="grow">Какой следующий шаг?</span><span>+</span></button>`}</div></div>`}
-  else o+=`<div class="slot">Пока ни одного магнита. Выбери желание ниже — оно станет целью в работе.</div>`;
+  else o+=`<div class="slot">Пока нет активных целей. Запиши желание и возьми его в работу.</div>`;
   o+=`</div>`;
   const WL=UI.allW?wishes:wishes.slice(0,6);
-  o+=`<div class="sec2"><b>${esc(wn(0))} · ${wishes.length}</b><span>${W.length<3?"тапни — станет магнитом":"в работе уже три"}</span></div><div class="card" style="padding:4px 14px">`;
+  o+=`<div class="sec2"><b>${esc(wn(0))} · ${wishes.length}</b><span>${W.length<3?"можно взять в работу":"в работе уже три"}</span></div><div class="card" style="padding:4px 14px">`;
   o+=`<button type="button" class="drow" data-a="qwish" style="color:var(--mut)">${IC("plus",20)}<span class="grow">Записать желание</span></button>`;
   o+=WL.map(g=>`<div class="drow"><span class="wn">№${g.n}</span>${GLY(g.cover,20)}<button type="button" class="grow wtx" data-a="goal" data-id="${g.id}">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">в работу</button></div>`).join("");
   if(wishes.length>6)o+=`<button type="button" class="drow" data-a="allw" style="justify-content:center;color:var(--acc);font-weight:600">${UI.allW?"Свернуть":"Показать все "+wishes.length}</button>`;
@@ -2642,7 +2642,7 @@ function vTracker(){const k=TODAY(),mode=UI.tmode||"week";
   return o+(mode==="week"?trWeek():trMonth())}
 function trWeek(){const k=TODAY(),y=addDays(k,-1),W=monday(k);let o="";
   const miss=D.habits.find(h=>h.start&&h.start<y&&!hm(h,y)&&!hm(h,k));
-  if(miss&&D.hint[k]!=="x")o+=`<div class="mhint">${AVA()}<p>Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума.</p></div>`;
+  if(miss&&D.hint[k]!=="x")o+=`<div class="mhint"><p>Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума.</p></div>`;
   o+=`<div class="hgrid">`;
   D.habits.forEach((h,i)=>{const s=habStats(h),v=hm(h,k),wide=i===D.habits.length-1&&D.habits.length%2===1;const badge=s.streak>=7?s.streak+" подряд":"день "+s.days;const yMiss=!hm(h,y)&&h.start&&h.start<y;
     const dots=[0,1,2,3,4,5,6].map(j=>{const d=addDays(W,j),x=hm(h,d),fut=d>k,pre=h.start&&d<h.start;return`<div class="dc"><span class="dl${d===k?" now":""}">${WD[fromIso(d).getDay()]}<br>${fromIso(d).getDate()}</span><i class="dt ${fut?"fut":x===1?"d1":x===2?"d2":d===k?"now":pre?"fut":"miss"}"></i></div>`}).join("");
@@ -2666,8 +2666,8 @@ function trMonth(){const k=TODAY(),d0=fromIso(k),Y=d0.getFullYear(),M=d0.getMont
     if(H){const v=hm(H,kk),pre=H.start&&kk<H.start;o+=`<div class="d ${fut||pre?"fut":v===1?"d1":v===2?"d2":kk===k?"now":"miss"}${kk===k?" now":""}">${d}</div>`}
     else{const act=D.habits.filter(h=>!(h.start&&kk<h.start)),n=act.filter(h=>hm(h,kk)).length,r=act.length?n/act.length:0;o+=`<div class="d${fut?" fut":""}${kk===k?" now":""}" style="${!fut&&r?`background:color-mix(in srgb,var(--vio) ${Math.round(18+r*82)}%,transparent);color:${r>.5?"#fff":"var(--fg)"};border-color:transparent`:""}">${d}</div>`}}
   o+=`</div></div>`;
-  if(ins&&ins.tot)o+=`<div class="mhint" style="margin-top:12px">${AVA()}<p>${ins.strong?`${ins.days.length===ins.tot?"Все пропуски":"Больше всего пропусков"} — в столбике ${WDG[ins.wd]}: ${ins.days.map(x=>fromIso(x).getDate()).join(", ")} ${MON[M]}.`:`Пропусков в этом месяце: ${ins.tot}. ${ins.tot<=3?"Это нормально.":"Посмотри, в какие дни сложнее."}`}</p></div>`;
-  else if(H)o+=`<div class="mhint" style="margin-top:12px">${AVA()}<p>В этом месяце без пропусков. Так держать.</p></div>`;
+  if(ins&&ins.tot)o+=`<div class="mhint" style="margin-top:12px"><p>${ins.strong?`${ins.days.length===ins.tot?"Все пропуски":"Больше всего пропусков"} — в столбике ${WDG[ins.wd]}: ${ins.days.map(x=>fromIso(x).getDate()).join(", ")} ${MON[M]}.`:`Пропусков в этом месяце: ${ins.tot}. ${ins.tot<=3?"Это нормально.":"Посмотри, в какие дни сложнее."}`}</p></div>`;
+  else if(H)o+=`<div class="mhint" style="margin-top:12px"><p>В этом месяце без пропусков. Так держать.</p></div>`;
   o+=`<div class="legend"><span><i class="dt d1" style="background:var(--vio)"></i>сделано</span><span><i class="dt miss"></i>пропуск</span><span><i class="dt now"></i>сегодня</span></div>`;
   return o}
 /* карточка привычки (Habit) */
@@ -2683,7 +2683,7 @@ function sheetHabit(id){const h=D.habits.find(x=>x.id===id);if(!h)return;const k
    <p class="small mut" style="margin:6px 0 0;line-height:1.4">Самый крутой подъём — первые недели. Потом легче: привычка держится сама.</p></div>
   <div class="tiles3 light"><div class="tile"><b>${s.days}/${total}</b><span>дней сделано</span></div><div class="tile"><b>${best}</b><span>лучшая серия</span></div><div class="tile${s.twice===0?" good":""}"><b>${s.twice}</b><span>повторных пропусков</span></div></div>
   <div class="card" style="margin-top:12px"><b>Пропуски по дням недели</b><div class="wbars">${ins.c.map((n,i)=>`<div><i style="height:${Math.max(3,n/mx*46)}px;${ins.strong&&i===ins.wd?"background:var(--warm)":""}"></i><span${ins.strong&&i===ins.wd?' style="color:var(--spark);font-weight:700"':""}>${WDS[i]}</span></div>`).join("")}</div>
-   ${ins.strong&&!h.insX?`<div class="mhint plain">${AVA()}<p>${ins.days.length===ins.tot?`Все ${ins.tot} ${plural(ins.tot,"пропуск","пропуска","пропусков")} — в ${WDN[ins.wd]}.`:`${ins.days.length} из ${ins.tot} пропусков — по ${WDP[ins.wd]}.`} Может, по таким дням утро другое? Можно поменять сигнал на этот день.</p></div><div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn sm" data-a="halt" data-id="${h.id}" data-wd="${ins.wd}">${(ins.wd===1?"Во ":"В ")+WDN[ins.wd]} — после обеда</button><button type="button" class="btn ghost sm" data-a="hkeep" data-id="${h.id}">Оставить</button></div>`:ins.tot?"":`<p class="small mut" style="margin:8px 0 0">Пропусков пока нет.</p>`}${h.alt?`<p class="small" style="margin:10px 0 0;color:var(--acc)">По ${WDP[h.alt.wd]}: ${esc(h.alt.cue)}</p>`:""}</div>
+   ${ins.strong&&!h.insX?`<div class="mhint plain"><p>${ins.days.length===ins.tot?`Все ${ins.tot} ${plural(ins.tot,"пропуск","пропуска","пропусков")} — в ${WDN[ins.wd]}.`:`${ins.days.length} из ${ins.tot} пропусков — по ${WDP[ins.wd]}.`} Может, по таким дням утро другое? Можно поменять сигнал на этот день.</p></div><div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn sm" data-a="halt" data-id="${h.id}" data-wd="${ins.wd}">${(ins.wd===1?"Во ":"В ")+WDN[ins.wd]} — после обеда</button><button type="button" class="btn ghost sm" data-a="hkeep" data-id="${h.id}">Оставить</button></div>`:ins.tot?"":`<p class="small mut" style="margin:8px 0 0">Пропусков пока нет.</p>`}${h.alt?`<p class="small" style="margin:10px 0 0;color:var(--acc)">По ${WDP[h.alt.wd]}: ${esc(h.alt.cue)}</p>`:""}</div>
   <label class="lb" for="hc">Сигнал · после чего</label><input id="hc" class="field" value="${esc(h.cue||"")}" placeholder="после кофе">
   <label class="lb" for="hmn">Минимум · хотя бы</label><input id="hmn" class="field" value="${esc(h.min||"")}" placeholder="1 страница">
   ${work().length?`<label class="lb">Тянет к цели</label><div id="gc">${goalChips(h.goal,"pickg")}</div>`:""}
@@ -2707,7 +2707,7 @@ function vMoney(){const k=TODAY(),ms=monthStats(k),m=D.money,dp=daysToPay();
   if(ops.length)o+=`<button type="button" class="grow-row" data-a="ops" style="margin-top:14px">${IC("card",18)}<span class="grow">Операции за ${MONN[fromIso(k).getMonth()].toLowerCase()}</span><span class="mut">${ops.length} ›</span></button>`;
   return o}
 function sheetOps(){const k=TODAY(),m=D.money;const ops=[...m.inc.map(x=>({...x,in:1})),...m.sp].filter(x=>mkey(x.d)===mkey(k)).sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
-  openSheet(`<h3>Операции</h3><p class="sub">${MONN[fromIso(k).getMonth()]} · записывай кнопкой-магнитом: «350 кофе»</p><div class="card" style="padding:6px 16px">${ops.map(x=>`<div class="op"><span class="small mut" style="width:52px;flex:none">${dshort(x.d)}</span><span class="grow" style="min-width:0;overflow-wrap:anywhere">${esc(x.t||(x.in?"Доход":"Трата"))}${x.in?"":` <span class="small mut">· ${x.b==="want"?"желания":"нужное"}</span>`}</span><span class="a${x.in?" in":""}">${x.in?"+":"−"}${rub(x.amt)}</span><button type="button" class="ib" data-a="opdel2" data-id="${x.id}" data-in="${x.in?1:0}" aria-label="Удалить" style="width:28px;height:28px;background:none;border:0">×</button></div>`).join("")}</div>
+  openSheet(`<h3>Операции</h3><p class="sub">${MONN[fromIso(k).getMonth()]} · записывай через главную кнопку: «350 кофе»</p><div class="card" style="padding:6px 16px">${ops.map(x=>`<div class="op"><span class="small mut" style="width:52px;flex:none">${dshort(x.d)}</span><span class="grow" style="min-width:0;overflow-wrap:anywhere">${esc(x.t||(x.in?"Доход":"Трата"))}${x.in?"":` <span class="small mut">· ${x.b==="want"?"желания":"нужное"}</span>`}</span><span class="a${x.in?" in":""}">${x.in?"+":"−"}${rub(x.amt)}</span><button type="button" class="ib" data-a="opdel2" data-id="${x.id}" data-in="${x.in?1:0}" aria-label="Удалить" style="width:28px;height:28px;background:none;border:0">×</button></div>`).join("")}</div>
   <div class="row" style="gap:8px;margin-top:12px"><button type="button" class="btn grow" data-a="spend">− Трата</button><button type="button" class="btn ghost grow" data-a="income">+ Доход</button></div>`)}
 
 /* ---------- ПОНЕДЕЛЬНИК (Pull3) ---------- */
@@ -2770,7 +2770,7 @@ function vTracker(){const k=TODAY(),mode=UI.tmode||"week";
 /* неделя — списком: строка на привычку, сколько бы их ни было */
 function trWeek(){const k=TODAY(),y=addDays(k,-1),W=addDays(monday(k),(UI.wkOff||0)*7);let o="";
   const miss=D.habits.find(h=>h.start&&h.start<y&&sched(h,y)&&sched(h,k)&&!hm(h,y)&&!hm(h,k));
-  if(miss&&!UI.wkOff)o+=`<div class="mhint">${AVA()}<p>Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума: ${esc(miss.min||"совсем чуть-чуть")}.</p></div>`;
+  if(miss&&!UI.wkOff)o+=`<div class="mhint"><p>Вчера без отметки: «${esc(miss.name)}». Сегодня можно начать с минимума: ${esc(miss.min||"совсем чуть-чуть")}.</p></div>`;
   o+=`<div class="card tlist"><div class="trow thead"><span class="tnm small mut" style="flex-direction:row;align-items:center;gap:4px"><button type="button" class="ib sm" data-a="wk" data-v="-1" aria-label="Прошлая неделя">‹</button><span style="white-space:nowrap">${UI.wkOff?dshort(W):"эта неделя"}</span>${UI.wkOff?`<button type="button" class="ib sm" data-a="wk" data-v="1" aria-label="Следующая неделя">›</button>`:""}</span>${[0,1,2,3,4,5,6].map(i=>{const d=addDays(W,i);return`<span class="tdh${d===k?" now":""}">${WD[fromIso(d).getDay()]}<b>${fromIso(d).getDate()}</b></span>`}).join("")}</div>`;
   D.habits.forEach(h=>{const s=habStats(h),c=hcol(h);
     o+=`<div class="trow"><button type="button" class="tnm" data-a="hab" data-id="${h.id}"><span class="row" style="gap:8px">${HG(h.ico,20)}<b>${esc(h.name)}</b></span><small>${h.days?"по "+h.days.map(i=>WDS[i].toLowerCase()).join(", ")+" · ":""}${s.streak>=3?s.streak+" подряд":(s.days?"день "+s.days+"/66":"новая")}</small></button>`;
@@ -2799,8 +2799,8 @@ function trMonth(){const k=TODAY(),d0=fromIso(k),Y=d0.getFullYear(),M=d0.getMont
     if(H){const v=hm(H,kk),pre=H.start&&kk<H.start,c=hcol(H);const dot=pre?"":fut?(sched(H,kk)?`<i class="plan" style="box-shadow:inset 0 0 0 1.5px ${c}"></i>`:""):v===1?`<i style="background:${c}"></i>`:v===2?`<i style="box-shadow:inset 0 0 0 2px ${c}"></i>`:kk<k&&sched(H,kk)?`<i class="ms"></i>`:"";o+=`<div class="d all one${fut||pre?" fut":""}${kk===k?" now":""}"><span class="dn">${d}</span>${dot?`<span class="hdots">${dot}</span>`:""}</div>`}
     else o+=`<button type="button" class="d all${fut?" fut":""}${kk===k?" now":""}" data-a="dayhab" data-d="${kk}"><span class="dn">${d}</span>${fut?planCell(kk):kk===k&&D.habits.length<=MANY?todayCell(kk):splitCell(kk)}</button>`}
   o+=`</div></div>`;
-  if(ins&&ins.tot)o+=`<div class="mhint" style="margin-top:12px">${AVA()}<p>${ins.strong?`${ins.days.length===ins.tot?"Все пропуски":"Больше всего пропусков"} — в столбике ${WDG[ins.wd]}: ${ins.days.map(x=>fromIso(x).getDate()).join(", ")} ${MON[M]}.`:`Пропусков в этом месяце: ${ins.tot}. ${ins.tot<=3?"Это нормально.":"Посмотри, в какие дни сложнее."}`}</p></div>`;
-  else if(H)o+=`<div class="mhint" style="margin-top:12px">${AVA()}<p>В этом месяце без пропусков. Так держать.</p></div>`;
+  if(ins&&ins.tot)o+=`<div class="mhint" style="margin-top:12px"><p>${ins.strong?`${ins.days.length===ins.tot?"Все пропуски":"Больше всего пропусков"} — в столбике ${WDG[ins.wd]}: ${ins.days.map(x=>fromIso(x).getDate()).join(", ")} ${MON[M]}.`:`Пропусков в этом месяце: ${ins.tot}. ${ins.tot<=3?"Это нормально.":"Посмотри, в какие дни сложнее."}`}</p></div>`;
+  else if(H)o+=`<div class="mhint" style="margin-top:12px"><p>В этом месяце без пропусков. Так держать.</p></div>`;
   o+=H?`<div class="legend"><span><i class="dt" style="background:${c}"></i>сделано</span><span><i class="dt" style="background:transparent;box-shadow:inset 0 0 0 2px ${c}"></i>минимум</span><span><i class="dt" style="background:transparent;box-shadow:inset 0 0 0 1.5px #B4BBB7"></i>пропуск</span></div>`
    :D.habits.length>MANY?`<p class="small mut" style="margin:10px 6px 0">Привычек много, поэтому вместо точек — кольцо: какая доля привычек сделана в этот день. Чтобы увидеть одну привычку, выбери её сверху. Тап по дню — список привычек.</p>`:`<div class="legend">${D.habits.map(h=>`<span><i class="dt" style="background:${hcol(h)}"></i>${esc(h.name)}</span>`).join("")}</div><p class="small mut" style="margin:6px 6px 0">Точка под числом — привычка, сделанная в этот день. Кружок — минимум. Тап по дню — список привычек. Бледные точки в будущих днях — что запланировано.</p>`;
   return o}
@@ -2835,12 +2835,12 @@ function sheetSettings(){const presets=Object.keys(WISHN),R=D.set.rem||{},th=D.s
    <div class="op"><span class="grow">Утро · главное дня</span><input type="time" id="rm" class="field" value="${R.morning||"08:30"}" style="width:110px;height:38px"><button type="button" class="tog${R.mOn!==false?" on":""}" data-a="remtog" data-k="mOn" aria-label="Утреннее напоминание"></button></div>
    <div class="op"><span class="grow">Вечер · закрыть день</span><input type="time" id="re" class="field" value="${R.evening||"21:30"}" style="width:110px;height:38px"><button type="button" class="tog${R.eOn!==false?" on":""}" data-a="remtog" data-k="eOn" aria-label="Вечернее напоминание"></button></div>
    <div class="op"><span class="grow">Привычки · если не отмечены</span><input type="time" id="rh" class="field" value="${R.habits||"20:00"}" style="width:110px;height:38px"><button type="button" class="tog${R.hOn!==false?" on":""}" data-a="remtog" data-k="hOn" aria-label="Напоминание о привычках"></button></div>
-  </div><p class="small mut" style="margin:6px 4px 0;line-height:1.4">Напоминания приходят, пока Магнит открыт. В версии из магазина приложений они станут обычными уведомлениями телефона.</p>
+  </div><p class="small mut" style="margin:6px 4px 0;line-height:1.4">В браузере напоминания работают, пока приложение открыто.</p>
   <label class="lb">Как называть список желаний</label><div class="chips">${presets.map(p=>`<button type="button" class="chip${D.set.wish===p?" on":""}" data-a="wishname" data-v="${p}">${p}</button>`).join("")}</div>
   <div class="row" style="margin-top:8px"><input id="wcus" class="field" placeholder="Своё название" value="${presets.includes(D.set.wish)?"":esc(D.set.wish)}"><button type="button" class="btn ghost sm" data-a="wishcustom">ОК</button></div>
   <label class="lb">Мой день</label><div class="op" style="border:0"><span class="grow">Сколько часов на дела</span><input id="cap" class="field" inputmode="numeric" value="${Math.round((D.set.cap||480)/60)}" style="width:70px;height:38px;text-align:center"><span class="mut">ч</span></div>
   <label class="lb">Звуки</label><div class="chips"><button type="button" class="chip${D.set.sound?" on":""}" data-a="sound" data-v="1">Тихие щелчки</button><button type="button" class="chip${!D.set.sound?" on":""}" data-a="sound" data-v="0">Без звука</button></div>
-  <label class="lb">Данные</label><div class="stack" style="margin-top:0"><button type="button" class="btn ghost w" data-a="import">${IC("magnet",18)} Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="copyall">Скопировать все данные</button>
+  <label class="lb">Данные</label><div class="stack" style="margin-top:0"><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="copyall">Скопировать все данные</button>
   <div id="danger"><button type="button" class="btn ghost w" data-a="askdemo">Заполнить примером</button><button type="button" class="lnk" data-a="askreset" style="width:100%;color:var(--hot)">Начать заново</button></div></div>
   <p class="small mut" style="margin-top:14px;line-height:1.4">Данные хранятся только на этом устройстве, в этом браузере.</p>`,{settings:true})}
 function saveRem(){const R=D.set.rem=D.set.rem||{};const g=id=>{const e=document.getElementById(id);return e&&e.value};if(g("rm"))R.morning=g("rm");if(g("re"))R.evening=g("re");if(g("rh"))R.habits=g("rh");const c=parseFloat(g("cap"));if(c>0&&c<=16)D.set.cap=Math.round(c*60);save()}
@@ -2872,17 +2872,17 @@ function GHOST_MID(){return[["Позвонить маме","19:00"],["Купит
 function GHOST_SM(){return["оплатить связь","корм коту","ответить в чат"].map(x=>`<button type="button" class="tpill ghost" data-a="gtask" data-size="small" data-t="${x}">${x}</button>`).join("")}
 
 const _vGoals=vGoals;vGoals=function(){if(D.goals.length)return _vGoals();
-  let o=H2("","Цели",`<span class="k" style="padding-bottom:6px">0 магнитов</span>`);
+  let o=H2("","Цели",`<span class="k" style="padding-bottom:6px">0 целей</span>`);
   o+=`<div class="wallet ghostw"><div class="band" style="background:linear-gradient(120deg,${PAL.pig.a},${PAL.pig.b});color:#fff"><span class="bg">${GLY("pig",20)}</span><b class="grow">Подушка на 3 месяца</b><span class="bp">18%</span></div>
-  <button type="button" class="gfront" data-a="qwish" style="border:0;padding:0;width:100%;text-align:left">${SCN("sea")}<div class="gshade"></div><div class="gtop"><span class="gday">${UMAG(14,"#fff")}ДЕНЬ 1</span>${GTAG}</div><div class="gbot"><div class="gname">Поездка к морю</div><div class="gseg">${[0,1,2,3,4,5,6].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</div><span class="gnext"><span class="grow">Дальше: посмотреть билеты</span><span>сб</span></span></div></button></div>
-  <p class="small mut" style="margin:10px 6px 0;line-height:1.4">Так будут выглядеть цели в работе — до трёх «магнитов». Начни с желания: любое из них потом можно взять в работу.</p>
+  <button type="button" class="gfront" data-a="qwish" style="border:0;padding:0;width:100%;text-align:left">${SCN("sea")}<div class="gshade"></div><div class="gtop"><span class="gday">ДЕНЬ 1</span>${GTAG}</div><div class="gbot"><div class="gname">Поездка к морю</div><div class="gseg">${[0,1,2,3,4,5,6].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</div><span class="gnext"><span class="grow">Дальше: посмотреть билеты</span><span>сб</span></span></div></button></div>
+  <p class="small mut" style="margin:10px 6px 0;line-height:1.4">В работе может быть до трёх целей.</p>
   <div class="sec2"><b>${esc(wn(0))}</b><span>без лимита</span></div><div class="card" style="padding:4px 14px"><button type="button" class="drow" data-a="qwish" style="color:var(--acc);font-weight:600">${IC("plus",20)}<span class="grow">Записать первое желание</span></button>
   ${[["1","Выучить английский до B1","book"],["2","Пробежать 10 км","medal"],["3","Свой угол — квартира","house"]].map(x=>`<button type="button" class="drow ghost" data-a="qwish" data-t="${x[1]}"><span class="wn">№${x[0]}</span>${GLY(x[2],20)}<span class="grow">${x[1]}</span>${GTAG}</button>`).join("")}</div>`;
   return o};
 
 const _vTracker=vTracker;vTracker=function(){if(D.habits.length)return _vTracker();const k=TODAY(),W=monday(k);
   let o=H2("","Трекер",`<button type="button" class="ib" data-a="hhelp" aria-label="Как это работает">${IC("q",18)}</button>`);
-  o+=`<div class="mhint">${AVA()}<p>Привычка = сигнал → действие → минимум. Ниже — как это может выглядеть. Тапни пример, чтобы сделать его своим, или добавь свою.</p></div>`;
+  o+=`<div class="mhint"><p>Привычка = сигнал → действие → минимум. Ниже — как это может выглядеть. Тапни пример, чтобы сделать его своим, или добавь свою.</p></div>`;
   o+=`<div class="card tlist"><div class="trow thead"><span class="tnm small mut">эта неделя</span>${[0,1,2,3,4,5,6].map(i=>{const d=addDays(W,i);return`<span class="tdh${d===k?" now":""}">${WD[fromIso(d).getDay()]}<b>${fromIso(d).getDate()}</b></span>`}).join("")}</div>`;
   const EX=[["Чтение","book","после кофе","1 страница",[1,1,0,1,1,0,0]],["Прогулка","walk","после обеда","10 минут",[1,0,1,1,0,1,0]],["Вода","drop","сразу после пробуждения","стакан",[1,1,1,0,1,1,0]]];
   EX.forEach((x,n)=>{o+=`<button type="button" class="trow ghost" data-a="ghab" data-n="${n}"><span class="tnm"><span class="row" style="gap:8px">${HG(x[1],20)}<b>${x[0]}</b></span><small>${x[2]} · ${x[3]}</small></span>${x[4].map((v,i)=>`<span class="tc">${v?`<i style="background:${HPAL[n]}"></i>`:""}</span>`).join("")}</button>`});
@@ -3101,13 +3101,13 @@ function backupName(){const d=new Date();return`magnit-backup-${iso(d)}.json`}
 async function saveBackup(btn){const data=JSON.stringify({magnitBackup:2,schema:SCHEMA,app:APP_VER,at:Date.now(),data:D});
   const CP=window.Capacitor;if(CP&&CP.isNativePlatform&&CP.isNativePlatform()){const P=CP.Plugins||{};try{
     const w=await P.Filesystem.writeFile({path:backupName(),data,directory:"CACHE",encoding:"utf8"});
-    try{await P.Share.share({title:"Копия Магнита",text:"Резервная копия Магнита",files:[w.uri],dialogTitle:"Куда сохранить копию?"})}catch(x){if(!/cancel/i.test(String(x&&x.message||x)))throw x;toast("Сохранение отменено");return}
+    try{await P.Share.share({title:"Резервная копия",text:"Резервная копия приложения",files:[w.uri],dialogTitle:"Куда сохранить копию?"})}catch(x){if(!/cancel/i.test(String(x&&x.message||x)))throw x;toast("Сохранение отменено");return}
     D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return}catch(e){try{await P.Filesystem.writeFile({path:backupName(),data,directory:"DOCUMENTS",encoding:"utf8"});D.lastBackup=TODAY();save();toast("Копия в папке «Документы»");return}catch(e2){fallbackCopy(data);return}}}
   if(DL){try{await DL.save({filename:backupName(),data});D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return}catch(e){if(e&&e.code&&/not_granted|declined|dismiss/i.test(e.code)){toast("Сохранение отменено");return}}}
   try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=backupName();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓"}catch(e){fallbackCopy(data)}}
 function sheetRestore(){openSheet(`<h3>Восстановить из копии</h3><p class="sub">Выбери файл «magnit-backup-….json». Текущие данные на этом устройстве заменятся данными из копии.</p>
   <input id="rsf" type="file" accept=".json,application/json,text/plain" class="field" style="padding:10px"><div id="rsres"></div>`);
-  setTimeout(()=>{const f=$("#rsf");if(f)f.addEventListener("change",()=>{const x=f.files&&f.files[0];if(!x)return;const r=new FileReader();r.onload=()=>{let o;try{o=JSON.parse(r.result)}catch(e){$("#rsres").innerHTML=`<p class="small" style="color:var(--hot)">Файл не читается — это точно копия Магнита?</p>`;return}
+  setTimeout(()=>{const f=$("#rsf");if(f)f.addEventListener("change",()=>{const x=f.files&&f.files[0];if(!x)return;const r=new FileReader();r.onload=()=>{let o;try{o=JSON.parse(r.result)}catch(e){$("#rsres").innerHTML=`<p class="small" style="color:var(--hot)">Файл не читается — Выбери корректный файл резервной копии.</p>`;return}
     const d=o&&o.magnitBackup?o.data:o&&o.money&&o.goals&&o.tasks?o:null;if(!d){if(o&&(o.wishes||o.magnitExport)){$("#rsres").innerHTML=`<p class="small mut">Это данные старого Магнита — для них есть «Перенести из старого Магнита».</p>`}else $("#rsres").innerHTML=`<p class="small" style="color:var(--hot)">В файле нет данных Магнита.</p>`;return}
     window.__rs=d;$("#rsres").innerHTML=`<div class="card" style="margin-top:12px"><div class="small" style="line-height:1.5">Копия от <b>${o.at?dshort(iso(new Date(o.at))):"неизвестной даты"}</b>: целей ${d.goals.length}, дел ${d.tasks.length}, привычек ${d.habits.length}, операций ${(d.money.inc||[]).length+(d.money.sp||[]).length}.</div></div><div class="stack"><button type="button" class="btn w" data-a="rsgo">Восстановить</button></div>`};r.readAsText(x)})},100)}
 
@@ -3116,7 +3116,7 @@ const _settings2=sheetSettings;sheetSettings=function(){_settings2();const ancho
   el.innerHTML=`<button type="button" class="btn w" data-a="backup">Сохранить копию файлом</button><button type="button" class="btn ghost w" data-a="restore">Восстановить из копии</button><p class="small mut" style="margin:0;line-height:1.4">${D.lastBackup?"Последняя копия: "+dshort(D.lastBackup)+".":"Копий пока не было."} Данные хранятся только в этом браузере — копия спасёт, если его почистить.</p>`;anchor.before(...el.children);anchor.remove()};
 /* раз в неделю мягко предложить копию */
 const _render5=render;render=function(){_render5();if(!D.started||D.demo||UI.tab!=="today"||offDay())return;const last=D.lastBackup||iso(new Date(D.created||Date.now()));if(addDays(last,7)>TODAY()||D.hint["bk:"+TODAY()])return;
-  const has=D.tasks.length+D.goals.length+D.habits.length>5;if(!has)return;const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px">${AVA()}<div class="grow"><p>Неделя без резервной копии. Данные живут только в этом браузере — сохранить копию файлом?</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="backup">Сохранить</button><button type="button" class="btn ghost sm" data-a="bkx">Позже</button></div></div></div>`;const end=document.querySelector("#app .lnk[data-a='later']")||null;const app=$("#app");if(end)end.before(box.firstElementChild);else app.appendChild(box.firstElementChild)};
+  const has=D.tasks.length+D.goals.length+D.habits.length>5;if(!has)return;const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px"><div class="grow"><p>Неделя без резервной копии. Данные живут только в этом браузере — сохранить копию файлом?</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="backup">Сохранить</button><button type="button" class="btn ghost sm" data-a="bkx">Позже</button></div></div></div>`;const end=document.querySelector("#app .lnk[data-a='later']")||null;const app=$("#app");if(end)end.before(box.firstElementChild);else app.appendChild(box.firstElementChild)};
 
 /* ---------- напоминания по времени (пока внутри открытого приложения) ---------- */
 const hmToMin=s=>{const[a,b]=String(s).split(":").map(Number);return a*60+(b||0)};
@@ -3177,7 +3177,7 @@ function kitchen(){kitMig();const K=D.kit;const shelves=[];for(let i=0;i<Math.ma
   <div class="sec"><h2>Лавка</h2><span class="c">всё здесь растёт</span></div><div class="shop" style="margin-top:6px">${Object.entries(GROW).map(([k,G])=>`<button type="button" data-a="buyg" data-v="${k}" ${D.sparks<G.p?"disabled":""}>${S(G.st[G.st.length-1],44)}<span>${G.n}</span><span class="small mut" style="display:flex;align-items:center;gap:3px">растёт от ${MATICO(G.mat,14)}</span><span class="pr">${SP(13)}${G.p}</span></button>`).join("")}</div>
 `;
   return o}
-function sheetKitchen(){openSheet(`<h3>Кухня Магнитика</h3>`+kitchen())}
+function sheetKitchen(){openSheet(`<h3>Комната</h3>`+kitchen())}
 function sheetItem(id){kitMig();const it=D.kit.items.find(x=>x.id===id);if(!it)return;if(it.decor){openSheet(`<div class="win">${S(it.type,110)}<h3>${esc((DECOR.find(x=>x[0]===it.type)||[,,"Вещь"])[2])}</h3><p class="sub">Просто для уюта.</p></div><div class="stack"><button type="button" class="btn ghost w" data-a="kitchen">Назад на кухню</button></div>`);return}
   const G=GROW[it.type],s=stageOf(it),last=s>=G.st.length-1,need=last?0:G.need[s],have=D.kit.mats[G.mat],fed=it.fed||0;
   openSheet(`<div class="win">${itemArt(it,120)}<h3>${G.n} · ${G.names[s]}</h3><p class="sub">${last?"Вырос полностью ✓":`Стадия ${s+1} из ${G.st.length}. Растёт от: ${MATS[G.mat][1]}.`}</p></div>
@@ -3201,7 +3201,7 @@ const _vMoney3=vMoney;vMoney=function(){let o=_vMoney3();const m=D.money;if(!(m.
   if(ms.reserve)o=o.replace('не потратишь — перейдёт на завтра','не потратишь — перейдёт на завтра<br><span style="color:var(--spark)">учёл платежи до конца месяца: '+rub(ms.reserve)+'</span>');
   const C={};m.sp.filter(x=>mkey(x.d)===M).forEach(x=>{const c=spCat(x);C[c]=(C[c]||0)+x.amt});const tot=Object.values(C).reduce((a,b)=>a+b,0);
   if(tot){const L=Object.entries(C).sort((a,b)=>b[1]-a[1]);add+=`<button type="button" class="card mbar" data-a="cats" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>Куда ушли деньги</b><span class="small mut">${rub(tot)} ›</span></div><div class="sbar" style="height:10px">${L.map(([c,v])=>`<span style="flex:${v};background:${BANK.col[c]||"#999"}"></span>`).join("")}</div><div class="catl">${L.slice(0,4).map(([c,v])=>`<span><i style="background:${BANK.col[c]||"#999"}"></i>${esc(c)} <b>${Math.round(v/tot*100)}%</b></span>`).join("")}</div></button>`}
-  const subs=detectSubs();if(subs.length)add+=`<div class="mhint" style="margin-top:12px">${AVA()}<div class="grow"><p>Похоже на регулярные платежи — добавить, чтобы я учитывал их в лимите и напоминал?</p><div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${subs.map(s=>`<div class="row" style="gap:8px"><span class="grow small"><b>${esc(s.name)}</b> · ${rub(s.amt)} · ~${s.dom}-го</span><button type="button" class="chip on" data-a="subadd" data-k="${esc(s.k)}" data-n="${esc(s.name)}" data-v="${s.amt}" data-d="${s.dom}">Добавить</button><button type="button" class="chip" data-a="subx" data-k="${esc(s.k)}">Нет</button></div>`).join("")}</div></div></div>`;
+  const subs=detectSubs();if(subs.length)add+=`<div class="mhint" style="margin-top:12px"><div class="grow"><p>Похоже на регулярные платежи — добавить, чтобы я учитывал их в лимите и напоминал?</p><div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${subs.map(s=>`<div class="row" style="gap:8px"><span class="grow small"><b>${esc(s.name)}</b> · ${rub(s.amt)} · ~${s.dom}-го</span><button type="button" class="chip on" data-a="subadd" data-k="${esc(s.k)}" data-n="${esc(s.name)}" data-v="${s.amt}" data-d="${s.dom}">Добавить</button><button type="button" class="chip" data-a="subx" data-k="${esc(s.k)}">Нет</button></div>`).join("")}</div></div></div>`;
   add+=`<button type="button" class="grow-row" data-a="bank" style="margin-top:12px">${IC("card",18)}<span class="grow">Загрузить выписку из банка<span class="small mut" style="display:block;font-weight:500">PDF, Excel, CSV или текст — разбираю прямо в телефоне</span></span><span class="mut">›</span></button>`;
   const anchor='<div class="sec2"><b>Копилки</b>';return o.includes(anchor)?o.replace(anchor,add+anchor):o+add};
 function sheetCats(){const M=mkey(TODAY());const C={};D.money.sp.filter(x=>mkey(x.d)===M).forEach(x=>{const c=spCat(x);(C[c]=C[c]||[]).push(x)});const L=Object.entries(C).map(([c,a])=>[c,a,a.reduce((s,x)=>s+x.amt,0)]).sort((a,b)=>b[2]-a[2]);
@@ -3222,7 +3222,7 @@ function bankPreview(){BANK.learn(D.money.learn||{});const t=($("#bkt")||{}).val
   const seen=new Set([...D.money.sp,...D.money.inc].map(x=>x.key||(x.d+"|"+Math.round(x.amt)+"|"+BANK.key(x.t))));
   const rows=r.ops.map((o,i)=>{const di=iso(o.date),v=o.cur==="RUB"?o.v:o.alt&&o.alt.cur==="RUB"?o.alt.v*(o.v<0?-1:1):o.v*BANK.rate(o.cur),cat=BANK.cat(o),key=di+"|"+Math.round(Math.abs(v))+"|"+BANK.key(o.who);return{i,d:di,who:o.who,v,cat,key,dup:seen.has(key)}});
   IMPB=rows;const fresh=rows.filter(x=>!x.dup),trn=fresh.filter(x=>x.v<0&&x.cat==="Переводы").reduce((a,x)=>a-x.v,0),sp=fresh.filter(x=>x.v<0&&x.cat!=="Переводы").reduce((a,x)=>a-x.v,0),inc=fresh.filter(x=>x.v>0).reduce((a,x)=>a+x.v,0);const d1=rows.reduce((a,x)=>x.d<a?x.d:a,"9"),d2=rows.reduce((a,x)=>x.d>a?x.d:a,"0");
-  box.innerHTML=`<div class="mhint" style="margin-top:12px">${AVA()}<p><b>Я понял так:</b> ${rows.length} ${plural(rows.length,"операция","операции","операций")} с ${dshort(d1)} по ${dshort(d2)}. Траты ${rub(sp)}${inc?", поступления "+rub(inc):""}${trn?", переводы между своими счетами "+rub(trn)+" — их не считаю тратами":""}.${rows.length-fresh.length?" "+(rows.length-fresh.length)+" уже были загружены — пропущу.":""}</p></div>
+  box.innerHTML=`<div class="mhint" style="margin-top:12px"><p><b>Я понял так:</b> ${rows.length} ${plural(rows.length,"операция","операции","операций")} с ${dshort(d1)} по ${dshort(d2)}. Траты ${rub(sp)}${inc?", поступления "+rub(inc):""}${trn?", переводы между своими счетами "+rub(trn)+" — их не считаю тратами":""}.${rows.length-fresh.length?" "+(rows.length-fresh.length)+" уже были загружены — пропущу.":""}</p></div>
   <div class="card" style="padding:4px 12px;margin-top:10px;max-height:38vh;overflow:auto">${fresh.slice(0,60).map(x=>`<div class="op"><span class="small mut" style="width:46px;flex:none">${dshort(x.d)}</span><span class="grow small" style="min-width:0;overflow-wrap:anywhere">${esc(x.who)}</span>${x.v<0?`<select class="bksel" data-i="${x.i}" style="--c:${BANK.col[x.cat]||"#999"}">${BANK.cats.map(c=>`<option${c===x.cat?" selected":""}>${c}</option>`).join("")}</select>`:`<span class="chip on" style="height:26px">доход</span>`}<b class="a${x.v>0?" in":""}" style="font-size:13px">${x.v>0?"+":"−"}${rub(Math.abs(x.v))}</b></div>`).join("")}</div>${fresh.length>60?`<p class="small mut">…и ещё ${fresh.length-60}</p>`:""}`;
   const b=$("#bkbtn");b.textContent=fresh.length?"Загрузить "+fresh.length:"Нечего загружать";b.dataset.a=fresh.length?"banksave":"close"}
 document.addEventListener("change",e=>{const s=e.target.closest&&e.target.closest(".bksel");if(!s||!IMPB)return;const x=IMPB[+s.dataset.i];x.cat=s.value;D.money.learn=D.money.learn||{};D.money.learn[BANK.key(x.who)]=s.value});
@@ -3382,15 +3382,15 @@ addEventListener("error",e=>logErr(e.message,(e.filename||"")+":"+(e.lineno||"")
 function storageOk(){try{localStorage.setItem("magnit-probe","1");localStorage.removeItem("magnit-probe");return true}catch(e){return false}}
 /* подсказка о сохранности, если открыто как файл */
 const _render7=render;render=function(){_render7();if(!D.started||UI.tab!=="today"||offDay())return;let msg="";
-  if(!storageOk())msg="Этот браузер не даёт сохранять данные — после закрытия всё пропадёт. Открой Магнит в Chrome или Safari.";
-  else if(/^(file|content):/.test(location.protocol)&&!D.hint.origin)msg="Магнит открыт как файл. Данные хранятся в этом браузере: открывай файл всегда одним способом — лучше сохрани его в «Загрузки» и открывай оттуда в Chrome или Safari. И раз в неделю сохраняй копию в настройках.";
-  if(!msg)return;const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px">${AVA()}<div class="grow"><p>${msg}</p>${storageOk()?`<div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="backup">Сохранить копию</button><button type="button" class="btn ghost sm" data-a="origx">Понятно</button></div>`:""}</div></div>`;const hd=document.querySelector("#app .hd");if(hd)hd.after(box.firstElementChild)};
+  if(!storageOk())msg="Этот браузер не даёт сохранять данные — после закрытия всё пропадёт. Открой приложение в Chrome или Safari.";
+  else if(/^(file|content):/.test(location.protocol)&&!D.hint.origin)msg="Приложение открыто как файл. Данные хранятся в этом браузере: открывай файл всегда одним способом — лучше сохрани его в «Загрузки» и открывай оттуда в Chrome или Safari. И раз в неделю сохраняй копию в настройках.";
+  if(!msg)return;const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px"><div class="grow"><p>${msg}</p>${storageOk()?`<div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="backup">Сохранить копию</button><button type="button" class="btn ghost sm" data-a="origx">Понятно</button></div>`:""}</div></div>`;const hd=document.querySelector("#app .hd");if(hd)hd.after(box.firstElementChild)};
 /* восстановление и импорт проходят через миграции */
 const _rsgo=A.rsgo;A.rsgo=e=>{if(window.__rs)migrate(window.__rs);_rsgo(e);migrate(D);saveNow()};
 /* настройки: версия, перенос, отчёт */
 const _set5=sheetSettings;sheetSettings=function(){_set5();const el=document.createElement("div");const cp=window.Capacitor,isApp=!!(cp&&cp.isNativePlatform&&cp.isNativePlatform());
   el.innerHTML=`<label class="lb">${isApp?"Резервная копия":"Перенос в приложение"}</label><div class="card"><p class="small" style="margin:0;line-height:1.45">${isApp?"Сохрани копию данных файлом, прежде чем менять или удалять приложение. Для восстановления используй пункт «Восстановить из копии» в настройках. Проверь, что вместе с записями сохранились фото и аудио.":"Перед переходом в Android-приложение сохрани копию файлом, затем восстанови её в приложении через настройки. Копия включает цели, дела, привычки, дневник, деньги и другие данные. Проверь сохранность фотографий и аудио."}</p></div>
-  <label class="lb">О версии</label><div class="card" style="padding:6px 16px"><div class="op"><span class="grow">Магнит</span><b>${APP_VER}</b></div><div class="op"><span class="grow">Формат данных</span><span class="mut">версия ${SCHEMA}</span></div><div class="op"><span class="grow">Ошибок записано</span><span class="mut">${(D.errs||[]).length}</span></div></div>
+  <label class="lb">О версии</label><div class="card" style="padding:6px 16px"><div class="op"><span class="grow">Версия приложения</span><b>${APP_VER}</b></div><div class="op"><span class="grow">Формат данных</span><span class="mut">версия ${SCHEMA}</span></div><div class="op"><span class="grow">Ошибок записано</span><span class="mut">${(D.errs||[]).length}</span></div></div>
   <div class="stack" style="margin-top:8px"><button type="button" class="btn ghost w" data-a="report">Скопировать отчёт для разработчика</button><p class="small mut" style="margin:0;line-height:1.4">В отчёте только версия, устройство, количество записей и ошибки — без текстов твоих дел и целей.</p></div>`;
   $("#sheet").appendChild(el)};
 function reportText(){const r={app:APP_VER,schema:SCHEMA,ua:navigator.userAgent,screen:innerWidth+"x"+innerHeight+"@"+devicePixelRatio,proto:location.protocol,storage:storageOk(),days:Object.keys(D.days).length,tasks:D.tasks.length,goals:D.goals.length,habits:D.habits.length,ops:D.money.inc.length+D.money.sp.length,kit:(D.kit.items||[]).length,size:(()=>{try{return(localStorage.getItem(KEY)||"").length}catch(e){return-1}})(),errs:D.errs||[]};return JSON.stringify(r,null,1)}
@@ -3557,13 +3557,13 @@ Object.assign(A,{thmark:e=>{markHabit(e.dataset.h,e.dataset.d);save();render()}}
 const _impCheck13=impCheck;impCheck=function(){let o=null;try{o=JSON.parse(($("#imp").value||"").trim())}catch(e){}
   const d=o&&o.magnitBackup?o.data:o&&o.money&&o.goals&&o.tasks&&o.days?o:null;if(!d)return _impCheck13();
   migrate(d);window.__rs=d;
-  $("#impres").innerHTML=`<div class="card" style="margin-top:12px"><div class="small" style="line-height:1.5">Это копия <b>нового</b> Магнита${o.at?" от "+dshort(iso(new Date(o.at))):""}: целей ${d.goals.length}, дел ${d.tasks.length}, привычек ${d.habits.length}, операций ${(d.money.inc||[]).length+(d.money.sp||[]).length}. Восстановлю её целиком.</div></div>`;
+  $("#impres").innerHTML=`<div class="card" style="margin-top:12px"><div class="small" style="line-height:1.5">Это резервная копия приложения${o.at?" от "+dshort(iso(new Date(o.at))):""}: целей ${d.goals.length}, дел ${d.tasks.length}, привычек ${d.habits.length}, операций ${(d.money.inc||[]).length+(d.money.sp||[]).length}. Восстановлю её целиком.</div></div>`;
   const b=document.querySelector('#sheet [data-a="impcheck"]');if(b){b.textContent="Восстановить";b.dataset.a="rsgo"}};
 /* обучение: отдельный экран про кнопку-магнит + подсветка кнопки до первой записи */
-setTimeout(()=>{const s=INTRO[1];if(s){s.p="Одно главное дело, до пяти важных, а мелочей может быть сколько угодно. Полоска сверху покажет, если план перегружен. Тапни магнит, чтобы записать мысль; удерживай для голоса.";const a=s.art;s.art=()=>a().replace(">3 важных<",">до 5 важных<").replace(">5 мелочей<",">мелочи<")}
+setTimeout(()=>{if(INTRO.some(x=>x.h==="Главная кнопка"))return;const s=INTRO[1];if(s){s.p="Одно главное дело, до пяти важных, а мелочей может быть сколько угодно. Полоска сверху покажет, если план перегружен. Тапни магнит, чтобы записать мысль; удерживай для голоса.";const a=s.art;s.art=()=>a().replace(">3 важных<",">до 5 важных<").replace(">5 мелочей<",">мелочи<")}
   const ex=[["завтра в 10 позвонить маме","Дело","завтра · 10:00","clock"],["350 кофе","Трата","350 ₽","card"],["бегаю по вторникам","Привычка","по вт · в трекер","cal"],["мысль: утром работается лучше","Дневник","сегодня","note"]];
-  INTRO.splice(2,0,{h:"Кнопка-магнит — записать что угодно",p:"Пиши как думаешь, можно несколько через запятую. Магнит сам поймёт, что это: дело, привычка, трата или мысль — и перед сохранением покажет, как понял. Не так — поправишь одним тапом. Удержи кнопку, чтобы надиктовать голосом.",
-   art:()=>`<div class="iart plain"><div class="qdemo">${ex.map(e=>`<div class="qd"><span class="qq">«${e[0]}»</span><span class="qa"><span class="qic">${IC(e[3],14)}</span><b>${e[1]}</b><small>${e[2]}</small></span></div>`).join("")}</div><div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="hubmini">${IC("magnet",20)}</span><span class="small mut">тап — написать · удержать — сказать</span></div></div>`})},0);
+  if(!INTRO.some(x=>x.h==="Главная кнопка"))INTRO.splice(2,0,{h:"Кнопка-магнит — записать что угодно",p:"Пиши как думаешь, можно несколько через запятую. Магнит сам поймёт, что это: дело, привычка, трата или мысль — и перед сохранением покажет, как понял. Не так — поправишь одним тапом. Удержи кнопку, чтобы надиктовать голосом.",
+   art:()=>`<div class="iart plain"><div class="qdemo">${ex.map(e=>`<div class="qd"><span class="qq">«${e[0]}»</span><span class="qa"><span class="qic">${IC(e[3],14)}</span><b>${e[1]}</b><small>${e[2]}</small></span></div>`).join("")}</div><div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="small mut">тап — написать · удержать — сказать</span></div></div>`})},0);
 const _render13b=render;render=function(){_render13b();};
 const _quick13=A.quick;A.quick=e=>{if(!D.hint.hub){D.hint.hub=1;save();}return _quick13(e)};
 
@@ -3571,7 +3571,7 @@ const _quick13=A.quick;A.quick=e=>{if(!D.hint.hub){D.hint.hub=1;save();}return _
 function dictPut(text){const el=micFor&&document.getElementById(micFor);if(el&&text){el.value=(el.value?el.value.trim()+" ":"")+text.trim();el.dispatchEvent(new Event("input",{bubbles:true}));el.focus()}}
 function micLive(on){document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",on));}
 function makeDict(){const CP=window.Capacitor,NSR=CP&&CP.isNativePlatform&&CP.isNativePlatform()&&CP.Plugins&&CP.Plugins.SpeechRecognition;
-  if(NSR)return{kind:"native",async start(){try{const p=await NSR.requestPermissions();if(p&&p.speechRecognition&&p.speechRecognition!=="granted"){toast("Разреши Магниту микрофон в настройках телефона");return}
+  if(NSR)return{kind:"native",async start(){try{const p=await NSR.requestPermissions();if(p&&p.speechRecognition&&p.speechRecognition!=="granted"){toast("Разреши приложению доступ к микрофону в настройках телефона");return}
       micLive(true);const r=await NSR.start({language:"ru-RU",maxResults:1,prompt:"Говори — я запишу",popup:true,partialResults:false});micLive(false);dictPut(r&&r.matches&&r.matches[0])}catch(e){micLive(false);if(!/cancel|no match|0|7/i.test(String(e&&e.message||e)))toast("Голос не распознался — попробуй ещё раз или микрофон на клавиатуре")}},stop(){try{NSR.stop()}catch(e){}}};
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;let rec=null;
   return{kind:"web",start(){return new Promise(res=>{try{if(rec)rec.abort()}catch(e){}rec=new SR();rec.lang="ru-RU";rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
@@ -3596,7 +3596,7 @@ function titleH(k){const t=dayTitle(k);return t.length>8?`<span class="t-long">$
 
 /* операции: категория — на что потратил; корзина 50/30/20 — из какой части бюджета. Понятными словами и с переключением */
 sheetOps=function(){const k=TODAY(),m=D.money;const ops=[...m.inc.map(x=>({...x,in:1})),...m.sp].filter(x=>mkey(x.d)===mkey(k)).sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
-  openSheet(`<h3>Операции</h3><p class="sub">${MONN[fromIso(k).getMonth()]} · записывай кнопкой-магнитом: «цветы 350»</p>
+  openSheet(`<h3>Операции</h3><p class="sub">${MONN[fromIso(k).getMonth()]} · записывай через главную кнопку: «цветы 350»</p>
   <div class="card ops2">${ops.length?ops.map(x=>`<div class="op2"><span class="od">${dshort(x.d)}</span><span class="ot"><b>${esc(x.t||(x.in?"Доход":"Трата"))}</b>${x.in?`<small>доход</small>`:`<small>${esc(spCat(x))} <button type="button" class="bk${x.b==="want"?" want":""}" data-a="opb" data-id="${x.id}">${x.b==="want"?"из «желаний»":"из «нужного»"}</button></small>`}</span><span class="a${x.in?" in":""}">${x.in?"+":"−"}${rub(x.amt)}</span><button type="button" class="ox" data-a="opdel2" data-id="${x.id}" data-in="${x.in?1:0}" aria-label="Удалить">×</button></div>`).join(""):`<p class="small mut" style="margin:10px 0">Пока пусто.</p>`}</div>
   <p class="small mut" style="margin:8px 4px 0;line-height:1.4">Под названием — на что ушли деньги и из какой части бюджета: «нужное» (50%) или «желания» (30%). Тапни, чтобы поменять.</p>
   <div class="opbtns"><button type="button" class="btn" data-a="spend">− Трата</button><button type="button" class="btn ghost" data-a="income">+ Доход</button></div>`)};
@@ -3630,7 +3630,7 @@ let magnitLnChannelReady=false;
 async function magnitLnChannel(P){
   if(magnitLnChannelReady)return true;
   if(!P.createChannel)return false; // Fail closed: do not post via an uncontrolled default channel.
-  await P.createChannel({id:MAGNIT_LN_CHANNEL,name:"Напоминания Магнита",
+  await P.createChannel({id:MAGNIT_LN_CHANNEL,name:"Напоминания",
     description:"Напоминания без личных подробностей на экране блокировки",
     importance:3,visibility:0}); // Android VISIBILITY_PRIVATE
   magnitLnChannelReady=true;
@@ -3639,7 +3639,7 @@ async function magnitLnChannel(P){
 function lnPlan(){const R=D.set.rem||{},k=TODAY(),now=Date.now(),L=[];const at=(d,hm)=>{const [h,m]=hm.split(":").map(Number);const x=fromIso(d);x.setHours(h,m||0,0,0);return x};
   const add=(when,title,body)=>{if(when.getTime()>now+30e3)L.push({when,title,body})};
   for(let i=0;i<3;i++){const d=addDays(k,i),dy=D.days[d]||{};
-    if(R.mOn!==false&&!dy.morning&&!dy.closed)add(at(d,R.morning||"08:30"),"Магнит · утро","Минута: выбери главное на день");
+    if(R.mOn!==false&&!dy.morning&&!dy.closed)add(at(d,R.morning||"08:30"),"Утро · планы","Минута: выбери главное на день");
     if(R.eOn!==false&&!dy.closed)add(at(d,R.evening||"21:30"),"Закроем день?","Минута: каким был день и три хороших момента");
     if(R.hOn!==false&&D.habits.some(h=>sched(h,d)&&!hm(h,d)))add(at(d,R.habits||"20:00"),"Привычки","Отметь, что получилось сегодня — хватит и минимума");
     if(R.tOn!==false)D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time)return;const w=at(d,t.time);if(!t.magRemind)w.setMinutes(w.getMinutes()-(R.lead||10));add(w,t.magRemind?"Напоминание: "+t.t:"Скоро: "+t.t,"В "+t.time)});
@@ -3657,7 +3657,7 @@ async function lnSync(){const P=LN();if(!P||!D.started||D.demo)return;try{
 const _save13=save;save=function(){_save13.apply(this,arguments);if(LN()){clearTimeout(lnT);lnT=setTimeout(lnSync,2500)}};
 setTimeout(()=>{if(LN())lnSync()},3000);
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&LN())lnSync()});
-const _set13=sheetSettings;sheetSettings=function(){_set13();if(!LN())return;document.querySelectorAll("#sheet p, #sheet .small").forEach(p=>{if(/Напоминания приходят, пока Магнит открыт/.test(p.textContent))p.textContent="На Android уведомления могут приходить, когда Магнит закрыт, если они разрешены. На доставку влияют настройки телефона."})};
+const _set13=sheetSettings;sheetSettings=function(){_set13();if(!LN())return;document.querySelectorAll("#sheet p, #sheet .small").forEach(p=>{if(/В браузере напоминания работают/.test(p.textContent))p.textContent="На Android уведомления могут приходить и при закрытом приложении, если разрешены в настройках телефона."})};
 
 /* ===== 0.9.4: цели в «Сегодня», честные деньги и разбор, мягкий лимит, пример отдельно, тихие уведомления ===== */
 
@@ -3725,7 +3725,7 @@ const _vToday14c=vToday;vToday=function(){return _vToday14c().replace("<b>Важ
 const DEMOKEY="magnit2-demo";
 (()=>{let mode=null;try{mode=localStorage.getItem("magnit2-mode")}catch(e){}if(mode==="demo"){try{const s=localStorage.getItem(DEMOKEY);if(s){const o=JSON.parse(s);D=Object.assign(blank(),o);D.demo=true}}catch(e){}}})();
 function exitDemo(){try{localStorage.setItem("magnit2-mode","real");localStorage.removeItem(DEMOKEY)}catch(e){}D=load();if(D.demo){D=blank()}render();applyLook&&applyLook()}
-const _set14=sheetSettings;sheetSettings=function(){_set14();if(!D.demo)return;const el=document.createElement("div");el.innerHTML=`<div class="mhint" style="margin:12px 0">${AVA()}<div class="grow"><p>Сейчас открыт пример. Твои настоящие данные не тронуты и ждут отдельно.</p><button type="button" class="btn sm" data-a="exitdemo" style="margin-top:8px">Выйти из примера</button></div></div>`;const h=$("#sheet h3");if(h)h.after(el.firstElementChild)};
+const _set14=sheetSettings;sheetSettings=function(){_set14();if(!D.demo)return;const el=document.createElement("div");el.innerHTML=`<div class="mhint" style="margin:12px 0"><div class="grow"><p>Сейчас открыт пример. Твои настоящие данные не тронуты и ждут отдельно.</p><button type="button" class="btn sm" data-a="exitdemo" style="margin-top:8px">Выйти из примера</button></div></div>`;const h=$("#sheet h3");if(h)h.after(el.firstElementChild)};
 Object.assign(A,{exitdemo:()=>{closeSheet();exitDemo();toast("Вернулись к твоим данным")}});
 /* в примере — заметная плашка с выходом на «Сегодня» */
 const _vToday14d=vToday;vToday=function(){let o=_vToday14d();if(D.demo)o=o.replace(' <span class="demo">пример</span>',' <button type="button" class="demo" data-a="exitdemo" title="Выйти из примера">пример ×</button>');return o};
@@ -3734,15 +3734,15 @@ const _backup14=A.backup;A.backup=e=>{if(D.demo){toast("Это пример — 
 
 /* ---------- уведомления: не больше пяти в день и тихие часы ---------- */
 const _lnPlan14=lnPlan;lnPlan=function(){const L=_lnPlan14();const R=D.set.rem||{};const q1=R.quietFrom||"22:30",q2=R.quietTo||"07:30";const hm=d=>pad(d.getHours())+":"+pad(d.getMinutes());
-  const quiet=d=>{const x=hm(d);return q1>q2?(x>=q1||x<q2):(x>=q1&&x<q2)};const pr=x=>/^Скоро:/.test(x.title)?0:x.title==="Магнит · утро"?2:x.title==="Закроем день?"?3:x.title==="Привычки"?4:1;
+  const quiet=d=>{const x=hm(d);return q1>q2?(x>=q1||x<q2):(x>=q1&&x<q2)};const pr=x=>/^Скоро:/.test(x.title)?0:x.title==="Утро · планы"?2:x.title==="Закроем день?"?3:x.title==="Привычки"?4:1;
   const byDay={};L.filter(x=>!quiet(x.when)).forEach(x=>{const k=iso(x.when);(byDay[k]=byDay[k]||[]).push(x)});
   return Object.values(byDay).flatMap(a=>a.sort((x,y)=>pr(x)-pr(y)).slice(0,5)).sort((a,b)=>a.when-b.when)};
 /* примеры — только пока не записано ни одного своего дела; не повторяют частые дела */
-const _gm14=GHOST_MID;GHOST_MID=function(){if(D.tasks.some(t=>!/^p\d+_\d+$/.test(t.id)))return`<p class="small mut" style="margin:10px 2px">Важные — то, что продвигает день. Добавь кнопкой-магнитом или «+».</p><button type="button" class="tpill add" data-a="addtask" data-size="mid" aria-label="Добавить важное" style="margin:0 0 6px">+</button>`;return _gm14().replace(/Позвонить маме/g,"Подготовить презентацию").replace("Три важных дела на сегодня","До пяти важных дел на сегодня")};
+const _gm14=GHOST_MID;GHOST_MID=function(){if(D.tasks.some(t=>!/^p\d+_\d+$/.test(t.id)))return`<p class="small mut" style="margin:10px 2px">Важные — то, что продвигает день. Добавь через главную кнопку или «+».</p><button type="button" class="tpill add" data-a="addtask" data-size="mid" aria-label="Добавить важное" style="margin:0 0 6px">+</button>`;return _gm14().replace(/Позвонить маме/g,"Подготовить презентацию").replace("Три важных дела на сегодня","До пяти важных дел на сегодня")};
 const _gs14=typeof GHOST_SM==="function"?GHOST_SM:null;if(_gs14)GHOST_SM=function(){if(D.tasks.some(t=>!/^p\d+_\d+$/.test(t.id)))return"";return _gs14()};
 
 /* искры — тихо, в самом верхнем правом углу */
-const _vToday14e=vToday;vToday=function(){const o=_vToday14e();return o.replace('<div class="k">',`<div class="k"><button type="button" class="kspark" data-a="kitchen" aria-label="Искры и кухня Магнитика">${SP(12)}${D.sparks}</button>`)};
+const _vToday14e=vToday;vToday=function(){const o=_vToday14e();return o.replace('<div class="k">',`<div class="k"><button type="button" class="kspark" data-a="kitchen" aria-label="Искры и комната">${SP(12)}${D.sparks}</button>`)};
 
 /* ===== 0.9.5: упрощение — вечер в минуту, одна «Запись», один «Потом», единый язык жестов, кухня на искрах ===== */
 
@@ -3955,24 +3955,24 @@ function sheetRhythm(){const R=rhythm(28),H=rhythmHints(R),M=metrics();const ord
   const hwr=ord.map(i=>R.hw[i].s?Math.round(R.hw[i].d/R.hw[i].s*100):0);
   const row=(lab,a,b,suf)=>{if(a===null)return"";const df=b===null?0:a-b;return`<div class="op"><span class="grow">${lab}</span><b>${a}${suf||""}</b><span class="rdel ${df>0?"up":df<0?"dn":""}">${b===null||!df?"":(df>0?"↑ ":"↓ ")+Math.abs(df)}</span></div>`};
   openSheet(`<h3>Мой ритм</h3><p class="sub">По твоим записям за 4 недели. Это не оценка — просто зеркало, чтобы планировать под себя.</p>
-  ${H.length?`<div class="mhint" style="margin-top:4px">${AVA()}<div class="grow">${H.map(x=>`<p style="margin:0 0 6px">${x}</p>`).join("")}</div></div>`:`<div class="card"><p class="small mut" style="margin:0">Пока мало данных — отмечай дела и привычки, и через неделю здесь появятся подсказки.</p></div>`}
+  ${H.length?`<div class="mhint" style="margin-top:4px"><div class="grow">${H.map(x=>`<p style="margin:0 0 6px">${x}</p>`).join("")}</div></div>`:`<div class="card"><p class="small mut" style="margin:0">Пока мало данных — отмечай дела и привычки, и через неделю здесь появятся подсказки.</p></div>`}
   ${R.done?`<label class="lb">Дела по дням недели</label><div class="card">${rbarsH(ord.map(i=>R.wd[i]),ord.map(i=>WDS7[i]))}</div>
   <label class="lb">Когда закрываешь дела</label><div class="card">${rbarsH(R.tod,["Утро","День","Вечер"])}</div>`:""}
   ${hwr.some(Boolean)?`<label class="lb">Привычки по дням недели, %</label><div class="card">${rbarsH(hwr,ord.map(i=>WDS7[i]))}</div>`:""}
   <label class="lb">Две недели · рядом с прошлыми двумя</label><div class="card" style="padding:6px 16px">
-  ${row("Дней с Магнитом",M.now.act,M.prev.act)}${row("Дел закрыто",M.now.tasks,M.prev.tasks)}${row("Шагов к целям",M.now.steps,M.prev.steps)}${row("Привычки выполнены",M.now.hab,M.prev.hab,"%")}${row("Закрытых вечеров",M.now.closed,M.prev.closed)}${row("Хороших моментов",M.now.goods,M.prev.goods)}</div>
+  ${row("Дней с приложением",M.now.act,M.prev.act)}${row("Дел закрыто",M.now.tasks,M.prev.tasks)}${row("Шагов к целям",M.now.steps,M.prev.steps)}${row("Привычки выполнены",M.now.hab,M.prev.hab,"%")}${row("Закрытых вечеров",M.now.closed,M.prev.closed)}${row("Хороших моментов",M.now.goods,M.prev.goods)}</div>
   <p class="small mut" style="line-height:1.4;margin-top:10px">Всё считается только на этом устройстве и никуда не отправляется.</p>`);
   D.hint["rh:"+monday(TODAY())]=1;save()}
 /* вход: настройки, трекер, мягкая подсказка по понедельникам */
 const _set17=sheetSettings;sheetSettings=function(){_set17();const sh=$("#sheet");if(!sh)return;const L=learnD(),n=L.log.length,first=sh.querySelector("h3");
   const el=document.createElement("div");el.innerHTML=`<button type="button" class="btn ghost w" data-a="rhythm" style="margin:6px 0 4px">${IC("cal",18)} Мой ритм</button>`;if(first)first.after(el.firstElementChild);
-  const box=document.createElement("div");box.innerHTML=`<label class="lb">Кнопка-магнит учится</label><div class="card"><p class="small" style="margin:0 0 8px;line-height:1.45">${n?`Запомнено исправлений: <b>${n}</b>. Когда поправляешь «не то?», Магнит в следующий раз понимает похожую запись сам.`:"Если Магнит понял запись не так — нажми «не то?» и выбери правильно. Он запомнит."}</p>${n?`<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sm ghost" data-a="lshare">Поделиться для обучения</button><button type="button" class="btn sm ghost" data-a="lforget" style="color:var(--hot)">Забыть</button></div><p class="small mut" style="margin:8px 0 0;line-height:1.4">«Поделиться» копирует тексты исправленных записей — отправляй, только если не против. Это помогает научить Магнитика понимать лучше.</p>`:""}</div>`;
+  const box=document.createElement("div");box.innerHTML=`<label class="lb">Исправления распознавания</label><div class="card"><p class="small" style="margin:0 0 8px;line-height:1.45">${n?`Запомнено исправлений: <b>${n}</b>. Исправления прежнего обработчика. Новый разбор текста использует отдельные правила.`:"Здесь хранятся исправления прежнего обработчика."}</p>${n?`<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sm ghost" data-a="lshare">Поделиться для обучения</button><button type="button" class="btn sm ghost" data-a="lforget" style="color:var(--hot)">Забыть</button></div><p class="small mut" style="margin:8px 0 0;line-height:1.4">«Поделиться» копирует тексты исправленных записей — отправляй, только если не против. Это помогает научить Магнитика понимать лучше.</p>`:""}</div>`;
   const rep=sh.querySelector('[data-a="report"]');const lb=rep&&rep.closest(".stack");if(lb)lb.after(...box.children);else sh.append(...box.children)};
 const _rt17=reportText;reportText=function(){const o=JSON.parse(_rt17());const M=metrics(),R=rhythm(28);o.learnFixes=learnD().log.length;o.metrics14=M.now;o.metricsPrev14=M.prev;o.rhythm={done28:R.done,planDays:R.pdays,plan:R.plan,planDone:R.pdone};return JSON.stringify(o,null,1)};
 const _render17=render;render=function(){_render17();if(!D.started||D.demo)return;const app=$("#app");if(!app)return;
   if(UI.tab==="tracker"&&!app.querySelector(".rhlink")){const d=document.createElement("div");d.innerHTML=`<button type="button" class="card row rhlink" data-a="rhythm" style="width:100%;margin-top:14px;gap:12px;text-align:left">${BADGE("cal","vio")}<span class="grow"><b>Мой ритм</b><br><span class="small mut">когда ты успеваешь и что проседает</span></span><span class="mut">›</span></button>`;app.appendChild(d.firstElementChild)}
   if(UI.tab==="today"&&!offDay()&&new Date().getDay()===1&&!D.hint["rh:"+monday(TODAY())]&&!app.querySelector(".rhhint,.mhint")){const R=rhythm(28);if(R.done<8)return;const H=rhythmHints(R);if(!H.length)return;
-    const d=document.createElement("div");d.innerHTML=`<div class="mhint rhhint" style="margin-top:12px">${AVA()}<div class="grow"><p>Новая неделя. ${H[0]}</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="rhythm">Мой ритм</button><button type="button" class="btn ghost sm" data-a="rhx">Позже</button></div></div></div>`;
+    const d=document.createElement("div");d.innerHTML=`<div class="mhint rhhint" style="margin-top:12px"><div class="grow"><p>Новая неделя. ${H[0]}</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="rhythm">Мой ритм</button><button type="button" class="btn ghost sm" data-a="rhx">Позже</button></div></div></div>`;
     const end=app.querySelector(".lnk[data-a='later']");if(end)end.before(d.firstElementChild);else app.appendChild(d.firstElementChild)}};
 Object.assign(A,{
  qnot:e=>{const r=SH.st.items[+e.dataset.n];if(r){r.open=1;drawPrev()}},
@@ -4036,9 +4036,9 @@ async function lnExactCheck(){const P=LN();if(!P||typeof P.checkExactNotificatio
 setTimeout(()=>{if(LN())lnExactCheck().then(()=>{if(D.lnExact==="denied")render()})},3500);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&LN())lnExactCheck().then(v=>{if(v)render()})});
 const _set18=sheetSettings;sheetSettings=function(){_set18();if(!LN()||D.lnExact!=="denied")return;const sh=$("#sheet");if(!sh)return;const card=[...sh.querySelectorAll(".card")].find(c=>c.querySelector("#rh,.op"));const el=document.createElement("div");
-  el.innerHTML=`<div class="mhint" style="margin:10px 0">${AVA()}<div class="grow"><p>Точные напоминания выключены в Android — уведомление может прийти с опозданием или когда откроешь приложение.</p><button type="button" class="btn sm" data-a="lnexact" style="margin-top:8px">Включить</button></div></div>`;(card||sh.querySelector("h3")).after(el.firstElementChild)};
+  el.innerHTML=`<div class="mhint" style="margin:10px 0"><div class="grow"><p>Точные напоминания выключены в Android — уведомление может прийти с опозданием или когда откроешь приложение.</p><button type="button" class="btn sm" data-a="lnexact" style="margin-top:8px">Включить</button></div></div>`;(card||sh.querySelector("h3")).after(el.firstElementChild)};
 const _render18b=render;render=function(){_render18b();if(!LN()||D.lnExact!=="denied"||UI.tab!=="today"||offDay()||D.hint["lnx:"+TODAY()])return;if(!D.tasks.some(t=>!t.done&&t.d===TODAY()&&t.time))return;const app=$("#app");if(!app||app.querySelector(".mhint"))return;
-  const d=document.createElement("div");d.innerHTML=`<div class="mhint" style="margin-top:12px">${AVA()}<div class="grow"><p>Чтобы напоминания о делах со временем приходили минута в минуту, разреши Магниту точные будильники.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="lnexact">Разрешить</button><button type="button" class="btn ghost sm" data-a="lnxx">Позже</button></div></div></div>`;
+  const d=document.createElement("div");d.innerHTML=`<div class="mhint" style="margin-top:12px"><div class="grow"><p>Чтобы напоминания о делах со временем приходили минута в минуту, разреши приложению точные будильники.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="lnexact">Разрешить</button><button type="button" class="btn ghost sm" data-a="lnxx">Позже</button></div></div></div>`;
   const end=app.querySelector(".lnk[data-a='later']");if(end)end.before(d.firstElementChild);else app.appendChild(d.firstElementChild)};
 Object.assign(A,{
  lnexact:async()=>{const P=LN();if(!P||typeof P.changeExactNotificationSetting!=="function"){toast("Открой Настройки → Приложения → Магнит → Будильники и напоминания");return}try{await P.changeExactNotificationSetting()}catch(e){}const v=await lnExactCheck();if(v==="granted"){toast("Готово — напоминания будут точными");lnSync()}render()},
@@ -4388,7 +4388,7 @@ const _po24=parseOne;parseOne=function(v,ctx){let s=String(v).trim();
 /* ---------- уведомления: сводка дня и «Пора» тоже входят в лимит 5 в день и тихие часы ---------- */
 const _lnPlan24=lnPlan;lnPlan=function(){const L=_lnPlan24(),R=D.set.rem||{},q1=R.quietFrom||"22:30",q2=R.quietTo||"07:30";const hhmm=d=>pad(d.getHours())+":"+pad(d.getMinutes());
   const quiet=d=>{const x=hhmm(d);return q1>q2?(x>=q1||x<q2):(x>=q1&&x<q2)};
-  const pr=x=>/^(Скоро|Пора):/.test(x.title)?0:/^В \d/.test(x.body||"")?0:x.title==="Магнит · утро"?3:x.title==="Закроем день?"?4:x.title==="Привычки"?5:/^Привычки на сегодня$/.test(x.title)?2:1;
+  const pr=x=>/^(Скоро|Пора):/.test(x.title)?0:/^В \d/.test(x.body||"")?0:x.title==="Утро · планы"?3:x.title==="Закроем день?"?4:x.title==="Привычки"?5:/^Привычки на сегодня$/.test(x.title)?2:1;
   const by={};L.filter(x=>!quiet(x.when)).forEach(x=>{const k=iso(x.when);(by[k]=by[k]||[]).push(x)});
   return Object.values(by).flatMap(a=>a.sort((x,y)=>pr(x)-pr(y)).slice(0,5)).sort((a,b)=>a.when-b.when)};
 
@@ -4412,11 +4412,11 @@ function checkUnlock(){if(!D.started)return;D.unlock=D.unlock||{};const days=Mat
 const _render=render;render=function(){_render();if(!D.started)return;
   document.querySelectorAll('#tabs nav [data-a="tab"]').forEach(b=>{if(!isOpen(b.dataset.t))b.remove()});const nv=document.querySelector('#tabs nav');if(nv)nv.classList.toggle('few',nv.querySelectorAll('[data-a="tab"]').length<4);
   if(UI.tab!=="today"&&!isOpen(UI.tab)){UI.tab="today";_render()}
-  if(UI.tab==="today"&&D.unNew&&!D.demo&&!D.set.allTabs){const u=UNL.find(x=>x[0]===D.unNew);if(u){const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px">${AVA()}<div class="grow"><p><b>Открылся раздел «${u[2]}»</b> — ${u[3]}.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="unlgo" data-t="${u[0]}">Посмотреть</button><button type="button" class="btn ghost sm" data-a="unlx">Позже</button></div></div></div>`;const hd=document.querySelector("#app .hd");if(hd)hd.after(box.firstElementChild)}}};
+  if(UI.tab==="today"&&D.unNew&&!D.demo&&!D.set.allTabs){const u=UNL.find(x=>x[0]===D.unNew);if(u){const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px"><div class="grow"><p><b>Открылся раздел «${u[2]}»</b> — ${u[3]}.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="unlgo" data-t="${u[0]}">Посмотреть</button><button type="button" class="btn ghost sm" data-a="unlx">Позже</button></div></div></div>`;const hd=document.querySelector("#app .hd");if(hd)hd.after(box.firstElementChild)}}};
 
 /* ---------- знакомство: три экрана ---------- */
 const INTRO=[
- {h:"Цели — магниты",p:"Записываешь, чего хочется. До трёх целей берёшь в работу — и обычные дни понемногу к ним притягиваются.",art:()=>`<div class="iart">${SCN("mount")}<div class="gshade"></div><span class="gday" style="position:absolute;left:16px;top:14px">${UMAG(14,"#fff")}ДЕНЬ 1</span><b style="position:absolute;left:16px;bottom:14px;color:#fff;font-size:22px">Поездка на Байкал</b></div>`},
+ {h:"Цели — магниты",p:"Записываешь, чего хочется. До трёх целей берёшь в работу — и обычные дни понемногу к ним притягиваются.",art:()=>`<div class="iart">${SCN("mount")}<div class="gshade"></div><span class="gday" style="position:absolute;left:16px;top:14px">ДЕНЬ 1</span><b style="position:absolute;left:16px;bottom:14px;color:#fff;font-size:22px">Поездка на Байкал</b></div>`},
  {h:"День 1-3-5",p:"Одно главное дело, до пяти важных. Мелочей может быть сколько угодно — они не обязаны становиться главным. Тап по магниту внизу — записать мысль, удержание — надиктовать.",art:()=>`<div class="iart plain"><div class="hero" style="margin:0;padding:16px"><span class="hk">ГЛАВНОЕ</span><div class="ht" style="font-size:18px;margin-top:8px">Одно дело, после которого день удался</div></div><div class="pills" style="margin-top:10px"><span class="tpill">до 5 важных</span><span class="tpill">мелочи без лимита</span><span class="hubmini">${UMAG(20)}</span></div></div>`},
  {h:"Минута утром, минута вечером",p:"Утром выбираешь главное. Вечером отмечаешь, каким был день, и три хороших момента. По понедельникам — куда тебя притянула неделя.",art:()=>`<div class="iart plain"><div class="row" style="gap:10px"><div class="tile grow"><b>${sunI()}</b><span>утро · главное</span></div><div class="tile grow" style="background:#1E2A36;color:#F2F5F3"><b>${IC("moon",22)}</b><span style="color:#A9B4C0">вечер · итоги</span></div></div><p class="small mut" style="margin:12px 2px 0;line-height:1.4">В каждом разделе сначала бледные примеры — тапни любой, чтобы записать своё.</p></div>`}];
 function sheetIntro(i){i=i||0;const s=INTRO[i];
@@ -4596,7 +4596,7 @@ A.mic=()=>{};
   const oldOpen=openSheet;openSheet=function(...args){reset();return oldOpen.apply(this,args)};const oldClose=closeSheet;closeSheet=function(...args){reset();return oldClose.apply(this,args)};
 })();
 /* подсказка, когда телефон не дал разрешение */
-function permHint(kind){const T={mic:"Микрофон выключен для Магнита. Включи его в настройках телефона — и магнит снова будет слушать.",notif:"Уведомления для Магнита выключены. Включи их в настройках телефона, чтобы напоминания приходили."};
+function permHint(kind){const T={mic:"Разреши доступ к микрофону в настройках телефона.",notif:"Уведомления приложения выключены. Включи их в настройках телефона, чтобы напоминания приходили."};
   const NS=PLG("NativeSettings");if(NS){openSheet(`<h3>${kind==="mic"?"Нужен микрофон":"Нужны уведомления"}</h3><p class="sub">${T[kind]}</p><div class="stack"><button type="button" class="btn w" data-a="opensets" data-v="${kind}">Открыть настройки</button><button type="button" class="lnk" data-a="close">Позже</button></div>`)}else toast(T[kind])}
 A.opensets=e=>{const NS=PLG("NativeSettings");if(!NS)return;const o=e&&e.dataset&&e.dataset.v==="notif"?"app_notification":e&&e.dataset&&e.dataset.v==="battery"?"battery_optimization":"application_details";
   NS.openAndroid({option:o}).catch(()=>NS.openAndroid({option:"application_details"}).catch(()=>{}));closeSheet()};
@@ -4780,7 +4780,7 @@ function suStep(i){UI.su=UI.su||{};
     `<div class="skins">${SKINS.map(([k,n,s])=>`<button type="button" class="sk ${k}${cur===k?" on":""}" data-a="setskin" data-v="${k}" aria-pressed="${cur===k}"><span class="skp" aria-hidden="true"><i></i><i></i><i></i></span><b>${n}</b><small>${s}</small></button>`).join("")}</div>
     <label class="lb">Тема</label><div class="seg sutheme">${[["light","Светлая"],["dark","Тёмная"],["system","Как в телефоне"]].map(([k,n])=>`<button type="button" class="${th===k?"on":""}" data-a="suth" data-v="${k}">${n}</button>`).join("")}</div>
     <label class="lb">Цвет</label><div class="suacc">${Object.entries(ACCENTS).map(([k,a])=>`<button type="button" class="${(D.set.accent||"violet")===k?"on":""}" data-a="suac" data-v="${k}" style="--c:${a[1]}" aria-label="${a[0]}"></button>`).join("")}</div>`)}
-  if(i===1)return suShell(1,"Что хочется изменить?","В ближайшие месяцы. До трёх — они станут целями-магнитами, к которым притягиваются дни. Можно голосом.",
+  if(i===1)return suShell(1,"Что хочется изменить?","В ближайшие месяцы. До трёх целей можно взять в работу.",
     suField("suq","Например: высыпаться, накопить на поездку")+suChips(SU_G,"suq"));
   if(i===2)return suShell(2,"О чём мечтаешь?","Без сроков и планов — просто список желаний. Любое потом можно взять в работу.",
     suField("suq","Например: увидеть море, научиться играть на гитаре")+suChips(SU_W,"suq"));
@@ -4820,8 +4820,8 @@ function suApply(i){const v=(($("#suq")||{}).value||"").trim();const S=UI.su.sum
   save()}
 function suDone(){const S=(UI.su&&UI.su.sum)||{g:0,w:0,h:0,e:0};D.set.allTabs=true;D.hint.setup=1;save();
   const L=[[S.g,"цель","цели","целей"],[S.w,"желание","желания","желаний"],[S.h,"привычка","привычки","привычек"],[S.e,"дата","даты","дат"]].filter(x=>x[0]);
-  openSheet(`<div class="iart plain" style="text-align:center"><span class="hubbig" style="display:inline-grid">${UMAG(48)}</span></div><h3 style="margin-top:14px">Готово</h3>
-  <p class="sub" style="font-size:15px">${L.length?"Записал: "+L.map(x=>x[0]+" "+plural(x[0],x[1],x[2],x[3])).join(", ")+".":"Начнём с чистого дня — всё остальное добавишь кнопкой-магнитом."} Кнопка-магнит внизу: тап — записать, удержание — сказать голосом.</p>
+  openSheet(`<h3 style="margin-top:14px">Готово</h3>
+  <p class="sub" style="font-size:15px">${L.length?"Записал: "+L.map(x=>x[0]+" "+plural(x[0],x[1],x[2],x[3])).join(", ")+".":"Начнём с чистого дня. Остальное можно добавить позже."} Главная кнопка: нажми для текста, удерживай для записи.</p>
   <div class="stack"><button type="button" class="btn w" data-a="sufin">Начать первый день</button></div>`);render()}
 Object.assign(A,{
  quiz:()=>{D.started=true;D.created=Date.now();D.unlock={};D.set.allTabs=true;UI.su={sum:{g:0,w:0,h:0,e:0}};save();render();setTimeout(()=>suStep(0),250)},
@@ -4840,7 +4840,7 @@ Object.assign(A,{
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="sucap"){const v=$("#sucapv");if(v)v.textContent=e.target.value+" ч"}});
 /* приветствие: тест — первым, чистый лист — рядом */
 welcome=(function(prev){return function(){return prev().replace('<button type="button" class="btn w" data-a="start">Начать с чистого листа</button>',
-  `<button type="button" class="btn w" data-a="quiz">Познакомиться · 2 минуты</button><p class="small mut wsub">Пара вопросов о целях, привычках и важных датах — и Магнит настроится под тебя</p><button type="button" class="btn ghost w" data-a="start">Начать с чистого листа</button>`)}})(welcome);
+  `<button type="button" class="btn w" data-a="quiz">Познакомиться · 2 минуты</button><p class="small mut wsub">Пара вопросов о целях, привычках и важных датах — и приложение настроится под тебя</p><button type="button" class="btn ghost w" data-a="start">Начать с чистого листа</button>`)}})(welcome);
 /* «Как тебе удобнее»: выбор оформления сразу видно */
 A.setskin=(function(prev){return function(e){prev(e);if(SH&&SH.su===0){document.querySelectorAll("#sheet .skins .sk").forEach(b=>{const on=b===e;b.classList.toggle("on",on)})}}})(A.setskin);
 
@@ -4879,14 +4879,14 @@ sheetSettings=(function(prev){return function(){prev();if(!NATIVE())return;const
   const lbs=[...s.querySelectorAll(".lb")];const after=lbs.find(x=>/Напомина/.test(x.textContent));const card=after&&after.nextElementSibling;if(!card)return;
   card.insertAdjacentHTML("afterend",`<label class="lb">Телефон</label><div class="card phset" style="padding:4px 16px">
    <div class="op"><span class="grow">Уведомления<span class="small mut" id="phn" style="display:block;font-weight:500">проверяю…</span></span><button type="button" class="chip" data-a="phnot">Настроить</button></div>
-   <div class="op"><span class="grow">Работа в фоне<span class="small mut" style="display:block;font-weight:500">Если напоминания опаздывают — разреши Магниту работать без ограничений батареи</span></span><button type="button" class="chip" data-a="opensets" data-v="battery">Открыть</button></div>
+   <div class="op"><span class="grow">Работа в фоне<span class="small mut" style="display:block;font-weight:500">Если напоминания опаздывают — разреши приложению работать без ограничений батареи</span></span><button type="button" class="chip" data-a="opensets" data-v="battery">Открыть</button></div>
    <div class="op" style="border:0"><span class="grow">Микрофон и камера<span class="small mut" style="display:block;font-weight:500">Для голоса и фото в дневнике</span></span><button type="button" class="chip" data-a="opensets" data-v="app">Открыть</button></div></div>`);
   const P=LN();if(P)P.checkPermissions().then(st=>{const t=$("#phn");if(t)t.textContent=st.display==="granted"?"включены":"выключены — напоминания не придут"}).catch(()=>{})}})(sheetSettings);
 A.phnot=async()=>{const P=LN();if(!P)return;try{let st=await P.checkPermissions();if(st.display!=="granted")st=await P.requestPermissions();if(st.display!=="granted"){A.opensets({dataset:{v:"notif"}});return}toast("Уведомления включены");lnSync();const t=$("#phn");if(t)t.textContent="включены"}catch(x){}};
 /* мягкая подсказка на «Сегодня», если уведомления выключены (не чаще раза в неделю) */
 render=(function(prev){return function(){prev();if(!NATIVE()||UI.tab!=="today"||!D.started||D.demo)return;const P=LN();if(!P)return;D.hint=D.hint||{};const last=D.hint.lnOff||"";if(last&&last>addDays(TODAY(),-7))return;
   P.checkPermissions().then(st=>{if(st.display==="granted"||$("#lnoff"))return;const R=D.set.rem||{};if(R.mOn===false&&R.eOn===false&&R.hOn===false&&R.tOn===false)return;const app=$("#app"),ref=app&&app.querySelector(".load");if(!ref)return;
-    ref.insertAdjacentHTML("beforebegin",`<div class="mhint" id="lnoff" style="margin-top:12px">${AVA()}<div class="grow"><p>Уведомления для Магнита выключены — напоминания не придут.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="phnot">Включить</button><button type="button" class="lnk" data-a="lnoffx">Не сейчас</button></div></div></div>`)}).catch(()=>{})}})(render);
+    ref.insertAdjacentHTML("beforebegin",`<div class="mhint" id="lnoff" style="margin-top:12px"><div class="grow"><p>Уведомления приложения выключены — напоминания не придут.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="phnot">Включить</button><button type="button" class="lnk" data-a="lnoffx">Не сейчас</button></div></div></div>`)}).catch(()=>{})}})(render);
 A.lnoffx=()=>{D.hint.lnOff=TODAY();save();const b=$("#lnoff");if(b)b.remove()};
 
 /* перерисовать с новыми слоями */
@@ -5132,8 +5132,8 @@ A.ndel=(function(prev){return function(e){if(!SH||SH.k==null||SH.i==null)return;
 lnPlan=(function(prev){return function(){const list=prev();if(D.set.rem&&D.set.rem.names===true)return list;
   return list.map(n=>({
     ...n,
-    title:/^Магнит · утро$/.test(n.title)?"Магнит · утро":/^Закроем день\?$/.test(n.title)?"Закроем день?":/^Привычки/.test(n.title)?"Магнит · привычки":"Магнит · напоминание",
-    body:"Открой Магнит, чтобы посмотреть подробности"
+    title:/^Утро · планы$/.test(n.title)?"Утро · планы":/^Закроем день\?$/.test(n.title)?"Закроем день?":/^Привычки/.test(n.title)?"Привычки":"Напоминание",
+    body:"Открой приложение, чтобы посмотреть подробности"
   }))}})(lnPlan);
 sheetSettings=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh||sh.querySelector("#notifnames"))return;
   const R=D.set.rem||{},row=`<div class="op"><span class="grow">Показывать названия в уведомлениях<span class="small mut" style="display:block">Выключено по умолчанию — на экране блокировки личные записи скрыты</span></span><button type="button" id="notifnames" class="tog${R.names===true?" on":""}" data-a="notifnames" aria-label="Показывать названия в уведомлениях" aria-pressed="${R.names===true}"></button></div>`;
@@ -5147,7 +5147,7 @@ A.hmenu=e=>{const id=e.dataset.h||e.dataset.id,d=e.dataset.d||viewDay(),h=D.habi
 sheetWordDone=(function(prev){return function(fresh){prev(fresh);const w=day(TODAY()).word;
   if(!w||!w.won)return;const sh=$("#sheet"),win=sh&&sh.querySelector(".win");if(!win||sh.querySelector(".patchwin"))return;
   const el=document.createElement("div");el.className="card patchwin";
-  el.innerHTML=`<div class="row" style="gap:10px">${TAL(w.ico,44)}<div class="grow"><b>Нашивка за победу!</b><div class="small mut">«${esc(w.t)}» — в твоей коллекции на кухне Магнитика</div></div></div>`;
+  el.innerHTML=`<div class="row" style="gap:10px">${TAL(w.ico,44)}<div class="grow"><b>Нашивка за победу!</b><div class="small mut">«${esc(w.t)}» — в твоей коллекции в комнате</div></div></div>`;
   win.after(el)}})(sheetWordDone);
 sheetKitchen=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh||sh.querySelector(".patchgallery"))return;
   const wins=D.kit&&D.kit.words||[];const seen=new Map();wins.forEach(w=>{if(w&&w.w)seen.set(w.w,w)});
@@ -5212,12 +5212,12 @@ A.nlistoffer=()=>{const st=SH&&SH.nst,ta=$("#ntx");if(!st||st.i!=null||!ta)retur
 
 /* 0.9.15 #7-8: компактная практика магнита в обоих маршрутах знакомства.
    Пример не сохраняется, пока человек сам не нажмёт «Записать». */
-INTRO.push({h:"Попробуй кнопку-магнит",p:"Тапни магнит внизу — можно записать несколько мыслей сразу. Удерживай его, чтобы надиктовать. Магнит предложит разложить слова по местам, а ты решишь, что сохранить.",art:()=>`<div class="iart plain"><p style="font-size:15px;line-height:1.5">Например: «завтра в 19 позвонить маме, 300 на кофе, хочу на море»</p><button type="button" class="btn w" data-a="magdemo">${UMAG(22)} Попробовать на примере</button><p class="small mut">Это только пример: он не попадёт в твои дела без твоего решения.</p></div>`});
+INTRO.push({h:"Попробуй кнопку-магнит",p:"Тапни магнит внизу — можно записать несколько мыслей сразу. Удерживай его, чтобы надиктовать. Магнит предложит разложить слова по местам, а ты решишь, что сохранить.",art:()=>`<div class="iart plain"><p style="font-size:15px;line-height:1.5">Например: «завтра в 19 позвонить маме, 300 на кофе, хочу на море»</p><button type="button" class="btn w" data-a="magdemo">Попробовать на примере</button><p class="small mut">Это только пример: он не попадёт в твои дела без твоего решения.</p></div>`});
 A.magdemo=()=>{sheetQuick();setTimeout(()=>{const q=$("#qq");if(!q)return;q.value="завтра в 19 позвонить маме, 300 на кофе, хочу на море";q.dispatchEvent(new Event("input",{bubbles:true}));if(typeof drawPrev==="function")drawPrev()},90)};
-suDone=(function(prev){return function(){prev();const sh=$("#sheet");if(sh&&!sh.querySelector(".magtry")){const b=document.createElement("button");b.type="button";b.className="btn ghost w magtry";b.dataset.a="magdemo";b.textContent="Попробовать кнопку-магнит на примере";const target=sh.querySelector(".stack");if(target)target.appendChild(b)}}})(suDone);
+suDone=(function(prev){return function(){prev();const sh=$("#sheet");if(sh&&!sh.querySelector(".magtry")){const b=document.createElement("button");b.type="button";b.className="btn ghost w magtry";b.dataset.a="magdemo";b.textContent="Попробовать ввод на примере";const target=sh.querySelector(".stack");if(target)target.appendChild(b)}}})(suDone);
 /* Подсказка доступна из обычного интерфейса, а не только при первом запуске. */
-A.maghelp=()=>openSheet(`<h3>Как работает Магнит</h3><div class="card"><p><b>Утром</b> выбери главное дело дня. Вечером отметь, что получилось, и как прошёл день.</p><p><b>Цели</b> — до трёх активных магнитов. Дела можно связывать с целями.</p><p><b>Минимум привычки</b> — нажимай клетку по кругу: сделано → минимум → пусто.</p><p><b>Кнопка-магнит</b> — тап для текста, удержание для голоса.</p></div><button type="button" class="btn w" data-a="magdemo">Попробовать на примере</button>`);
-render=(function(prev){return function(){prev();if(!D.started||UI.tab!=="today")return;const hd=$("#app .hd");if(hd&&!hd.querySelector(".maghelp"))hd.insertAdjacentHTML("beforeend",`<button type="button" class="ib sm maghelp" data-a="maghelp" aria-label="Как пользоваться Магнитом" title="Подсказки">?</button>`)}})(render);
+A.maghelp=()=>openSheet(`<h3>Как работает приложение</h3><div class="card"><p><b>Утром</b> выбери главное дело дня. Вечером отметь, что получилось, и как прошёл день.</p><p><b>Цели</b> — до трёх активных целей. Дела можно связывать с целями.</p><p><b>Минимум привычки</b> — нажимай клетку по кругу: сделано → минимум → пусто.</p><p><b>Кнопка-магнит</b> — тап для текста, удержание для голоса.</p></div><button type="button" class="btn w" data-a="magdemo">Попробовать на примере</button>`);
+render=(function(prev){return function(){prev();if(!D.started||UI.tab!=="today")return;const hd=$("#app .hd");if(hd&&!hd.querySelector(".maghelp"))hd.insertAdjacentHTML("beforeend",`<button type="button" class="ib sm maghelp" data-a="maghelp" aria-label="Как пользоваться приложением" title="Подсказки">?</button>`)}})(render);
 A.nlsave=()=>{if(SH&&SH.nlist&&typeof SH.onSave==="function")SH.onSave()};
 
 /* 0.9.15 #18 — аудиозаметки. Запись локальная, без отправки на сервер.
@@ -5260,7 +5260,7 @@ function stopNoteAudio(cancel){const r=NOTE_AUDIO;if(!r)return;NOTE_AUDIO=null;
   naudTracksStop(r.stream);naudControls(false);
 }
 function naudFailureMessage(error){const name=error&&error.name||"";
-  if(name==="NotAllowedError"||name==="SecurityError"||name==="PermissionDeniedError")return"Микрофон запрещён. Разреши доступ для Магнита в настройках телефона.";
+  if(name==="NotAllowedError"||name==="SecurityError"||name==="PermissionDeniedError")return"Микрофон запрещён. Разреши доступ для приложения в настройках телефона.";
   if(name==="NotFoundError"||name==="DevicesNotFoundError")return"Микрофон не найден на устройстве.";
   if(name==="NotReadableError"||name==="TrackStartError")return"Микрофон занят другим приложением. Закрой его и попробуй снова.";
   if(name==="TimeoutError")return"Микрофон долго не отвечает. Проверь системный запрос разрешения и попробуй ещё раз.";
@@ -5335,12 +5335,12 @@ A.naudexport=async e=>{
     const CP=window.Capacitor,P=CP&&CP.Plugins||{};
     if(CP&&CP.isNativePlatform&&CP.isNativePlatform()&&P.Filesystem&&P.Share){
       const r=await P.Filesystem.writeFile({path:filename,data:data.slice(data.indexOf(",")+1),directory:"CACHE"});
-      await P.Share.share({title:"Аудио из Магнита",files:[r.uri],dialogTitle:"Выбери приложение или место сохранения"});
+      await P.Share.share({title:"Аудиозапись",files:[r.uri],dialogTitle:"Выбери приложение или место сохранения"});
       return;
     }
     const f=new File([blob],filename,{type:blob.type});
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
-      await navigator.share({files:[f],title:"Аудио из Магнита"});return;
+      await navigator.share({files:[f],title:"Аудиозапись"});return;
     }
     const url=URL.createObjectURL(blob),a=document.createElement("a");
     try{a.href=url;a.download=filename;document.body.appendChild(a);a.click();toast("Аудиофайл подготовлен к сохранению")}
@@ -5385,22 +5385,22 @@ render=(function(prev){return function(){
   app.querySelectorAll(".maghelp").forEach(b=>b.remove());
 }})(render);
 /* Обновляем старую подсказку о жесте в уже существующем диалоге. */
-A.maghelp=()=>openSheet(`<h3>Как пользоваться Магнитом</h3>
+A.maghelp=()=>openSheet(`<h3>Как пользоваться приложением</h3>
 <p class="small mut">Короткая справка. Здесь нет обязательных правил — выбирай то, что помогает.</p>
 <div class="card magfaq" style="line-height:1.5">
 <details open><summary>Минута утром и минута вечером</summary><p>Утром выбери главное дело, если хочешь. Вечером отметь настроение и хорошее за день. В понедельник можно оглянуться на неделю. Не обязательно заполнять всё каждый раз.</p></details>
 <details><summary>Главное, важное и мелочи</summary><p>Главное — одно дело. Важных дел — до пяти. Мелочи можно записывать без ограничения. Если день перегружен, приложение подскажет.</p></details>
-<details><summary>Цели и магниты</summary><p>В работе может быть до трёх целей. Шаги — небольшие действия, которые приближают к цели. Число дней около 66 — ориентир, а не крайний срок и не оценка успеха.</p></details>
+<details><summary>Цели</summary><p>В работе может быть до трёх целей. Шаги — небольшие действия, которые приближают к цели. Число дней около 66 — ориентир, а не крайний срок и не оценка успеха.</p></details>
 <details><summary>Привычки и минимум</summary><p>В трекере нажимай клетку: первый раз — сделано, второй — минимум, третий — пусто. Минимум означает: маленький шаг тоже считается.</p></details>
-<details><summary>Искры и нашивки</summary><p>Искры — игровые награды за движение. Их можно тратить на уютные вещи в комнате. Нашивки за «Ассоциации» собираются на кухне Магнитика. Не нужно зарабатывать их любой ценой.</p></details>
+<details><summary>Искры и нашивки</summary><p>Искры — игровые награды за движение. Их можно тратить на уютные вещи в комнате. Нашивки за «Ассоциации» собираются в комнате. Не нужно зарабатывать их любой ценой.</p></details>
 <details><summary>Кнопка-магнит</summary><p>Нажми магнит, чтобы написать сразу несколько мыслей. Удерживай для голоса, если устройство поддерживает распознавание. Перед сохранением можно исправить то, как Магнит разложил записи.</p></details>
 <details><summary>Напоминания и личные данные</summary><p>В уведомлениях названия дел по умолчанию скрыты. Показ можно включить в настройках. Дневник и вложения остаются на устройстве; делай резервную копию перед переустановкой.</p></details>
-</div><div class="stack"><button type="button" class="btn w" data-a="magdemo">Попробовать магнит на примере</button><button type="button" class="btn ghost w" data-a="magintro">Повторить знакомство</button></div>`);
+</div><div class="stack"><button type="button" class="btn w" data-a="magdemo">Попробовать ввод на примере</button><button type="button" class="btn ghost w" data-a="magintro">Повторить знакомство</button></div>`);
 A.magintro=()=>sheetIntro(0);
 sheetSettings=(function(prev){return function(){
   prev();const sh=$("#sheet");if(!sh||sh.querySelector('[data-a="maghelp"]'))return;
   const b=document.createElement("div");b.className="stack";
-  b.innerHTML=`<button type="button" class="btn ghost w" data-a="maghelp">? Как пользоваться Магнитом</button>`;
+  b.innerHTML=`<button type="button" class="btn ghost w" data-a="maghelp">Как пользоваться приложением</button>`;
   const first=sh.querySelector(".lb");if(first)first.before(b);else sh.appendChild(b);
 }})(sheetSettings);
 
@@ -5432,7 +5432,7 @@ saveBackup=async function(btn){let data;
   const CP=window.Capacitor;const P=CP&&CP.Plugins||{};
   if(CP&&CP.isNativePlatform&&CP.isNativePlatform()){
     try{const w=await P.Filesystem.writeFile({path:backupName(),data,directory:"CACHE",encoding:"utf8"});
-      try{await P.Share.share({title:"Копия Магнита",text:"Резервная копия Магнита",files:[w.uri],dialogTitle:"Куда сохранить копию?"})}
+      try{await P.Share.share({title:"Резервная копия",text:"Резервная копия приложения",files:[w.uri],dialogTitle:"Куда сохранить копию?"})}
       catch(e){if(/cancel|dismiss/i.test(String(e&&e.message||e))){toast("Сохранение копии отменено");return false}throw e}
       D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return true
     }catch(e){try{await P.Filesystem.writeFile({path:backupName(),data,directory:"DOCUMENTS",encoding:"utf8"});
@@ -6040,6 +6040,42 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  const dn=dayNotes;dayNotes=function(k){let h=dn(k);(D.days[k]?.notes||[]).forEach((n,i)=>{if(!n.t&&!noteAudios(n).length)return;const needle=`data-a="nedit" data-d="${k}" data-i="${i}" title="Изменить запись"`;const pos=h.indexOf(needle);if(pos<0)return;const start=h.lastIndexOf('<div class="ntools"',pos);if(start<0)return;h=h.slice(0,start)+`<button type="button" class="lnk" style="display:block;margin:6px 0;text-align:left" data-a="nfind56" data-d="${k}" data-i="${i}">${n.t?'Найти действия':'Расшифровать и найти действия'}</button>`+h.slice(start)});return h};A.nfind56=e=>{sheetNote(e.dataset.d,+e.dataset.i);[...$('#sheet').querySelectorAll('button')].find(b=>b.textContent==='Найти действия')?.click()};
  /* Keep original quick-entry tools for explicit specialised modes and photo/list workflows. */
  const quickPrev=sheetQuick;sheetQuick=function(listen,force){quickPrev(listen,force);if(force)return;const input=$('#qq'),host=$('#qprev'),b=$('#qbtn');if(!input||!host||!b)return;const st=SH.st;let panel=document.createElement('div');host.after(panel);const source=mount(input,panel,{date:TODAY(),money:UI.tab==='money'});const isLegacy=()=>!!st.photos?.length;const saveText=document.createElement('button');saveText.type='button';saveText.className='btn ghost w';saveText.textContent='В дневник текст';saveText.onclick=()=>{const value=input.value.trim();if(!value)return;sheetNote(TODAY(),null);const el=$('#ntx');if(el){el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));if(SH?.nst)SH.nst.command56=[...source.seen]}};panel.after(saveText);const update=()=>{saveText.hidden=!input.value.trim()||isLegacy();if(isLegacy()){st.items=input.value.trim()?[{kind:'note',text:input.value.trim(),src:'Дневник: '+input.value.trim()}]:[];host.hidden=false;panel.hidden=true;b.hidden=false;drawPrev();return}st.items=[];host.hidden=true;b.hidden=true;source.update()};const photoWatch=new MutationObserver(()=>{if(!input.isConnected){photoWatch.disconnect();return}const on=isLegacy();if(on&&b.hidden){host.hidden=false;panel.hidden=true;b.hidden=false;saveText.hidden=true;st.items=input.value.trim()?[{kind:'note',text:input.value.trim(),src:'Дневник: '+input.value.trim()}]:[];drawPrev()}else if(!on&&!b.hidden)update()});photoWatch.observe($('#sheet'),{childList:true,subtree:true});input.addEventListener('input',update);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!isLegacy()){e.preventDefault();e.stopImmediatePropagation()}},true);update()};
+})();
+
+
+/* H1.57: first scoped UX cleanup; preserve data and accepted AI-05. */
+(()=>{
+ const todayPrev=vToday;vToday=function(){let h=todayPrev();if(h.includes('class="gpill kpill epill" data-a="evening"'))h=h.replace(/<button type="button" class="grow-row[^"]*" data-a="evening">[\s\S]*?<\/button>/,'');return h.replace(/ <button type="button" class="qhelp" data-a="why" data-v="mid"[^>]*>\?<\/button>/,'')};
+ const quick=sheetQuick;sheetQuick=function(listen,force){quick(listen,force);if(!force){const q=$('#qq');if(q)q.placeholder='Запиши мысль, дело или команду'}};
+ // Preserve the original illustrations for goals, day and evening; replace overlapping voice slides.
+ const oldIntro=INTRO.slice(), goalsIntro=oldIntro.find(x=>x.h==='Цели — магниты'),dayIntro=oldIntro.find(x=>x.h==='День 1-3-5'),eveningIntro=oldIntro.find(x=>x.h==='Минута утром, минута вечером');
+ if(goalsIntro&&dayIntro&&eveningIntro){INTRO.splice(0,INTRO.length,
+ {...goalsIntro,h:'Цели',p:'Записывай желания. До трёх целей можно взять в работу.'},
+ {...dayIntro,h:'Дела на день',p:'Одно главное дело, до пяти важных и мелочи.'},
+ {...eveningIntro,p:'Утром выбери главное. Вечером подведи итоги дня. Это необязательно.'},
+ {h:'Главная кнопка',p:'Нажми для текста или удерживай для записи. Свайп вверх и отпускание закрепляют запись, влево или вправо отменяют её до закрепления. Из зоны захвата можно отменить движением вниз по диагонали. Модель для расшифровки загружается по желанию. Действия сохраняются только после подтверждения.',art:()=>`<div class="iart plain"><button type="button" class="btn w" data-a="magdemo">Попробовать ввод на примере</button></div>`});}
+ const help=A.maghelp;A.maghelp=function(){help();const sh=$('#sheet');if(!sh)return;const sec=[...sh.querySelectorAll('.magfaq details')].find(x=>x.querySelector('summary')?.textContent.trim()==='Кнопка-магнит');if(sec)sec.innerHTML=`<summary>Главная кнопка</summary><p>Нажми для текста. Удерживай для записи, отпусти для завершения или проведи вверх и отпусти для закрепления. До закрепления отмена — влево или вправо, из зоны захвата — вниз по диагонали. После закрепления нажми «Стоп».</p><p>Модель расшифровки загружается по желанию. Найденные действия можно проверить, исправить и подтвердить. В дневнике есть «Найти действия».</p>`;};
+})();
+
+
+/* H1.57a: remove retired brand ornaments and fold settings without changing handlers. */
+(()=>{
+ const goalPrev=vGoals;vGoals=function(){if(D.demo||D.goals.length)return goalPrev();return H2('', 'Цели','')+`<div class="card"><p class="small mut" style="margin:0 0 12px">Пока нет целей. Запиши желание и возьми его в работу.</p><button type="button" class="btn w" data-a="qwish">+ Записать желание</button></div>`};
+ const trackerPrev=vTracker;vTracker=function(){if(D.demo||D.habits.length)return trackerPrev();return H2('', 'Трекер','')+`<div class="card"><p class="small mut" style="margin:0 0 12px">Пока нет привычек.</p><button type="button" class="btn w" data-a="habadd">+ Добавить привычку</button><button type="button" class="lnk" data-a="hhelp" style="width:100%;margin-top:8px">Как это работает</button></div>`};
+ const openGroups=new Set();
+ const settingsPrev=sheetSettings;sheetSettings=function(){settingsPrev();const sh=$('#sheet');if(!sh||sh.querySelector('.settings-group57'))return;
+  const labels={'Тема':'Оформление','Оформление':'Оформление','Цвет':'Оформление','Напоминания':'Напоминания и телефон','Телефон':'Напоминания и телефон','Как называть список желаний':'Предпочтения','Мой день':'Предпочтения','Звуки':'Предпочтения','Данные':'Данные и резервные копии'};
+  const groups=new Map();let cur=null;
+  const group=name=>{if(groups.has(name))return groups.get(name);const d=document.createElement('details');d.className='settings-group57';d.open=openGroups.has(name);const sm=document.createElement('summary');sm.textContent=name;d.append(sm);const body=document.createElement('div');body.className='settings-body57';d.append(body);d.addEventListener('toggle',()=>{if(!d.isConnected)return;if(d.open)openGroups.add(name);else openGroups.delete(name)});groups.set(name,{d,body});return groups.get(name)};
+  const children=[...sh.children];for(const el of children){if(el.matches('.x,.grab,h3')||el.matches('.mhint')&&!cur)continue;
+   if(el.matches('.lb')){const label=el.textContent.trim();cur=group(labels[label]||'Дополнительно');cur.body.append(el);continue;}
+   if(el.matches('[data-a="rhythm"]')||el.querySelector('[data-a="maghelp"]')){group('Помощь и статистика').body.append(el);continue;}
+   if(el.querySelector('[data-a="report"]')||el.textContent.trim().startsWith('Pro'))cur=group('Дополнительно');
+   if(cur)cur.body.append(el);
+  }
+  for(const name of ['Оформление','Напоминания и телефон','Предпочтения','Данные и резервные копии','Помощь и статистика','Дополнительно']){const g=groups.get(name);if(g)sh.append(g.d)}
+ };
+ const css=document.createElement('style');css.textContent=`.settings-group57{border:1px solid var(--edge);border-radius:16px;background:var(--glass);margin:8px 0;overflow:hidden}.settings-group57>summary{cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-weight:700;list-style:none}.settings-group57>summary::-webkit-details-marker{display:none}.settings-group57>summary::after{content:'›';font-size:21px;color:var(--mut)}.settings-group57[open]>summary::after{transform:rotate(90deg)}.settings-body57{padding:0 12px 12px}.settings-body57>.lb:first-child{margin-top:4px}.mhint>p{flex:1;min-width:0}`;document.head.append(css);
 })();
 
 </script>
