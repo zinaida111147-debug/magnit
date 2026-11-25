@@ -1,5 +1,5 @@
 // Офлайн: для приложения сначала сеть, затем последний успешно сохранённый ответ.
-const C="magnit-v0915-rc1b-drugoy-ai05-h159d";
+const C="magnit-v0915-rc1b-drugoy-ai05-h159e";
 const PREFIX="magnit-v0915-rc1b-drugoy-ai05-";
 const SCOPE=new URL("./",self.location.href).href;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","ai05-integration.js","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","brand/12a1-ring-foreground.png"])).then(()=>self.skipWaiting()))});
