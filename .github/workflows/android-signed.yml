@@ -24,6 +24,70 @@ jobs:
       - name: Capacitor
         run: |
           npm install
+          # Capacitor Share 6 forces */* for every multi-file share. Keep a common
+          # MIME type for homogeneous files so Telegram/WhatsApp receive audio or photos.
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          p = Path('node_modules/@capacitor/share/android/src/main/java/com/capacitorjs/plugins/share/SharePlugin.java')
+          s = p.read_text()
+          decl = re.search(r'(?m)^([ \t]*)ArrayList<Uri> fileUris = new ArrayList<>\(\);$', s)
+          if not decl or s.count('ArrayList<Uri> fileUris = new ArrayList<>();') != 1:
+              raise SystemExit('Capacitor Share source changed: fileUris declaration not found uniquely')
+          indent = decl.group(1)
+          s = s[:decl.end()] + '\n' + indent + 'String sharedType = null;' + s[decl.end():]
+          mime = re.search(
+              r'(?m)^([ \t]*)String type = getMimeType\(file\);\n'
+              r'\1if \(type == null \|\| filesList\.size\(\) > 1\) \{\n'
+              r'\1    type = "\*/\*";\n'
+              r'\1\}\n'
+              r'\1intent\.setType\(type\);',
+              s
+          )
+          if not mime:
+              raise SystemExit('Capacitor Share MIME block changed: refusing an unsafe patch')
+          mi = mime.group(1)
+          mime_replacement = (
+              f'{mi}String type = getMimeType(file);\n'
+              f'{mi}if (type == null && file.toLowerCase().endsWith(".weba")) {{\n'
+              f'{mi}    type = "audio/webm";\n'
+              f'{mi}}}\n'
+              f'{mi}if (type == null) {{\n'
+              f'{mi}    sharedType = "*/*";\n'
+              f'{mi}}} else if (sharedType == null) {{\n'
+              f'{mi}    sharedType = type;\n'
+              f'{mi}}} else if (!sharedType.equals(type)) {{\n'
+              f'{mi}    boolean bothImages = sharedType.startsWith("image/") && type.startsWith("image/");\n'
+              f'{mi}    sharedType = bothImages ? "image/*" : "*/*";\n'
+              f'{mi}}}\n'
+              f'{mi}intent.setType(sharedType);'
+          )
+          s = s[:mime.start()] + mime_replacement + s[mime.end():]
+          stream = re.search(
+              r'(?m)^([ \t]*)if \(fileUris\.size\(\) > 1\) \{\n'
+              r'\1[ \t]+intent\.putExtra\(Intent\.EXTRA_STREAM, fileUris\);\n'
+              r'\1\}',
+              s
+          )
+          if not stream:
+              raise SystemExit('Capacitor Share stream block changed: refusing an unsafe patch')
+          si = stream.group(1)
+          stream_replacement = (
+              f'{si}if (fileUris.size() > 1) {{\n'
+              f'{si}    ClipData clipData = ClipData.newRawUri("", fileUris.get(0));\n'
+              f'{si}    for (int i = 1; i < fileUris.size(); i++) {{\n'
+              f'{si}        clipData.addItem(new ClipData.Item(fileUris.get(i)));\n'
+              f'{si}    }}\n'
+              f'{si}    intent.setClipData(clipData);\n'
+              f'{si}    intent.putExtra(Intent.EXTRA_STREAM, fileUris);\n'
+              f'{si}}}'
+          )
+          s = s[:stream.start()] + stream_replacement + s[stream.end():]
+          if 'import android.content.ClipData;' not in s and 'import android.content.*;' not in s:
+              s = s.replace('import android.content.Intent;', 'import android.content.ClipData;\nimport android.content.Intent;', 1)
+          p.write_text(s)
+          print('Patched Capacitor Share multi-file MIME and ClipData handling.')
+          PY
           npx cap add android
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
           python3 - <<'PY'
