@@ -25,8 +25,8 @@ let geometry=null,visualState='idle',observedHub=null,geometryPending=false;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const sceneFrame=f=>requestAnimationFrame(f);
 function localRect(el){const r=el.getBoundingClientRect(),s=geometry?.scale||1;return {left:r.left/s,top:r.top/s,right:r.right/s,bottom:r.bottom/s,width:r.width/s,height:r.height/s};}
-function syncGeometry(){geometryPending=false;const hub=$('#hub'),nav=$('#tabs nav');if(!hub||!nav||!nav.getClientRects().length){host.hidden=true;document.body.classList.remove('ai05-h153-ready','ai05-focused');return}
- let n=nav.getBoundingClientRect();if(n.width<1||n.height<1){host.hidden=true;return}
+function syncGeometry(){geometryPending=false;const hub=$('#hub'),nav=$('#tabs nav');if(!hub||!nav||!nav.getClientRects().length){host.hidden=true;geometry=null;document.body.classList.remove('ai05-h153-ready','ai05-focused');return}
+ let n=nav.getBoundingClientRect();if(n.width<1||n.height<1){host.hidden=true;geometry=null;document.body.classList.remove('ai05-h153-ready');return}
  // Use only the other navigation items and padding to determine the stable dock height.
  // The hub must never change the measurement from which its own size is calculated.
  const nc=getComputedStyle(nav),pad=['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum,key)=>sum+(parseFloat(nc[key])||0),0);
@@ -36,7 +36,11 @@ function syncGeometry(){geometryPending=false;const hub=$('#hub'),nav=$('#tabs n
  const d=60*s,margin=Math.min(0,(contentH-d)/2);
  if(hub!==observedHub||Math.abs(parseFloat(hub.style.width||'0')-d)>.1){observedHub=hub;hub.style.width=d+'px';hub.style.height=d+'px';}
  const m=margin.toFixed(3)+'px';if(hub.style.getPropertyValue('--ai05-hub-margin')!==m)hub.style.setProperty('--ai05-hub-margin',m);
- n=nav.getBoundingClientRect();const hr=hub.getBoundingClientRect(),hostRect=host.getBoundingClientRect(),x=hr.left+hr.width/2-hostRect.left,y=n.top+n.height/2-hostRect.top;
+ // Make the fixed host measurable before using its coordinate origin.
+ host.hidden=false;
+ n=nav.getBoundingClientRect();const hr=hub.getBoundingClientRect(),hostRect=host.getBoundingClientRect();
+ if(!Number.isFinite(s)||s<=0||!hr.width||!hr.height||!hostRect.width||!hostRect.height){host.hidden=true;geometry=null;document.body.classList.remove('ai05-h153-ready');return}
+ const x=hr.left+hr.width/2-hostRect.left,y=n.top+n.height/2-hostRect.top;
  geometry={x,y,scale:s,d,navWidth:n.width,navHeight:n.height,hostTop:hostRect.top};
  sceneApp.style.left=(x-REF.w*s/2)+'px';sceneApp.style.top=(y-REF.h*REF.idle*s)+'px';sceneApp.style.transform=`scale(${s})`;
  sceneApp.style.setProperty('--dock-d','60px');syncDockColor(hub);host.hidden=false;document.body.classList.add('ai05-h153-ready');

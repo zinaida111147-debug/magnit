@@ -1505,8 +1505,9 @@ body.hlmode #app{padding-bottom:300px}
 /* шапка остаётся на каждом экране */
 .pinhd{position:sticky;top:0;z-index:15;margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:0 max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));transition:box-shadow .2s,background .2s}
 .pinhd.stuck{background:var(--bg1);-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 8px 18px -12px rgba(20,16,40,.35)}
-.pinhd .hd{transition:padding .2s}
-.pinhd.stuck .hd{padding-top:12px}
+.pinhd .hd{transition:none}
+.pinhd{overflow-anchor:none}
+#app:has(.pinhd){overflow-anchor:none}
 .pinhd .seg{margin-bottom:4px}
 .stkmini{display:none;align-items:center;gap:8px;padding:6px 2px 2px;overflow-x:auto;scrollbar-width:none}
 .stkmini::-webkit-scrollbar{display:none}
@@ -5298,9 +5299,9 @@ render=(function(prev){return function(){prev();STK30=null;if(!D.started)return;
   const mini=stkMini();if(mini){box.insertAdjacentHTML("beforeend",mini)}
   STK30={box,ref:UI.tab==="goals"?app.querySelector(".wallet"):UI.tab==="money"?(app.querySelector(".mtop")||app.querySelector(".mcenter")):null};
   stkTick();requestAnimationFrame(stkTick)}})(render);
-function stkTick(){if(!STK30||!STK30.box.isConnected)return;const b=STK30.box;b.classList.toggle("stuck",(window.scrollY||document.documentElement.scrollTop)>4);
-  const m=b.querySelector(".stkmini");if(m){const show=STK30.ref?STK30.ref.getBoundingClientRect().bottom<b.getBoundingClientRect().bottom-(m.classList.contains("on")?m.offsetHeight:0)+4:false;m.classList.toggle("on",show)}
-  document.documentElement.style.setProperty("--stkh",b.offsetHeight+"px")}
+function stkTick(){if(!STK30||!STK30.box.isConnected)return;const b=STK30.box;const y=Math.max(0,window.scrollY||document.documentElement.scrollTop||0),was=b.classList.contains("stuck");b.classList.toggle("stuck",was?y>2:y>=8);
+  const m=b.querySelector(".stkmini");if(m){const on=m.classList.contains("on"),base=b.getBoundingClientRect().bottom-(on?m.getBoundingClientRect().height:0),delta=STK30.ref?STK30.ref.getBoundingClientRect().bottom-base:Infinity;m.classList.toggle("on",on?delta<12:delta<=-8)}
+  const h=b.offsetHeight+"px";if(document.documentElement.style.getPropertyValue("--stkh")!==h)document.documentElement.style.setProperty("--stkh",h)}
 addEventListener("scroll",()=>{if(STK30)requestAnimationFrame(stkTick)},{passive:true});addEventListener("resize",()=>{if(STK30)stkTick()});
 
 /* ---------- план цели: готовые шаги по типу цели ---------- */
@@ -6129,7 +6130,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
     const income=sumAmount(monthRows(m.inc,M)),spent=sumAmount(monthRows(m.sp,M)),cnt=moneyCount();
     const savedMonth=xSum(m.jars.flatMap(j=>monthRows(j.dep||[],M)));
     let out=H2('','Деньги','');
-    out+=`<div class="dm-balance r-balance"><div class="y-balance-main"><div class="mbig dm-amount">${rub(shown)}</div><button type="button" class="dm-infobtn" data-a="dmbalinfo" aria-label="Как считается баланс">!</button></div><div class="y-balance-modes" role="group" aria-label="Вид баланса">${[["available","Доступно"],["total","Общий"]].map(([v,t])=>`<button type="button" class="chip${mode===v?" on":""}" aria-pressed="${mode===v}" data-a="ybalance" data-v="${v}">${t}</button>`).join("")}</div></div>`;
+    out+=`<div class="dm-balance r-balance"><div class="y-balance-main"><div class="mbig dm-amount">${rub(shown)}</div></div><div class="y-balance-modes" role="group" aria-label="Вид баланса">${[["available","Доступно"],["total","Общий"]].map(([v,t])=>`<button type="button" class="chip${mode===v?" on":""}" aria-pressed="${mode===v}" data-a="ybalance" data-v="${v}">${t}</button>`).join("")}</div></div>`;
     out+=`<div class="mtop dm-quick"><button type="button" class="btn dm-qbtn" data-a="income" aria-label="Добавить доход">+ Доход</button><button type="button" class="btn ghost dm-qbtn" data-a="spend" aria-label="Добавить трату">− Трата</button><button type="button" class="btn ghost dm-ops" data-a="ops" aria-label="Операции за месяц: ${cnt}">${IC('list',18)}${cnt?`<span>${cnt}</span>`:''}</button></div>`;
     out+=`<div class="card dm-goals"><div class="dm-cardtitle"><b>Мои цели и копилки</b><button type="button" class="dm-more" data-a="dmalljars">Все · ${m.jars.length} ›</button></div>`;
     if(m.jars.length){out+=m.jars.slice(0,3).map(j=>{const total=jarSum(j),g=j.goal&&goal(j.goal),pc=j.target>0?Math.min(100,Math.max(0,Math.round(total/j.target*100))):null;
@@ -6816,7 +6817,7 @@ body.ai05-h153-ready #tabs nav{-webkit-backdrop-filter:none!important;backdrop-f
 (function(){const previous=render;render=function(){previous();if(!D.started)return;const hd=document.querySelector('#app .hd');if(!hd||UI.tab!=="today")return;const gear=hd.querySelector('.tools [data-a="settings"]'),k=hd.querySelector('.k');if(gear&&k){hd.classList.add('y-today');k.appendChild(gear);gear.classList.add('y-settings');}if(typeof stkTick==='function')requestAnimationFrame(stkTick)};
 const style=document.createElement('style');style.id='h159y-ui';style.textContent=`
 :root{--y-a:34px;--y-b:44px}
-#app .hd.y-today{display:grid;grid-template-columns:minmax(0,1fr) var(--y-b);gap:5px 6px;align-items:center}
+#app .hd.y-today{display:grid;grid-template-columns:minmax(0,1fr) var(--y-a);gap:5px 6px;align-items:center}
 #app .hd.y-today>.grow{display:contents}
 #app .hd.y-today .k{grid-column:1/-1;grid-row:1;display:flex;gap:4px;align-items:center;min-width:0}
 #app .hd.y-today h1{grid-column:1;grid-row:2;min-width:0;align-self:center}
@@ -6826,7 +6827,7 @@ const style=document.createElement('style');style.id='h159y-ui';style.textConten
 #app .hd.y-today .k .dnav{min-width:0;flex:0 1 auto;gap:2px}
 #app .hd.y-today .k .dnav .dar{height:var(--y-a);width:24px;min-width:20px;flex:none}
 #app .hd.y-today .k .dnav .dlab{min-height:var(--y-a);font-size:12px;padding:0 2px;min-width:0;white-space:nowrap}
-#app .hd.y-today .tools .kspark.big{height:var(--y-b);width:var(--y-b);min-width:var(--y-b);padding:0;flex-direction:row;gap:1px;font-size:11px;justify-content:center;align-items:center;border-radius:50%}
+#app .hd.y-today .tools .kspark.big{height:var(--y-a);width:var(--y-a);min-width:var(--y-a);padding:0;flex-direction:row;gap:1px;font-size:11px;justify-content:center;align-items:center;border-radius:50%}
 #app .hd.y-today .tools .kspark.big svg{width:13px;height:13px;flex:none}
 #app .hd .tools .hmeta,#app .hd .tools .s-dynamics{height:var(--y-a);min-height:var(--y-a);max-height:var(--y-a);box-sizing:border-box}
 #app .hd .tools .ib,#sheet .ntools button,#app .ntools button{height:var(--y-a);width:var(--y-a);min-width:var(--y-a);min-height:var(--y-a)}
