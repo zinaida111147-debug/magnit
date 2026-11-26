@@ -2274,7 +2274,8 @@ function sheetWordDone(fresh){const w=day(TODAY()).word,W=findW(w),g=w.gid&&goal
 
 /* ---------- WEEK (понедельник) ---------- */
 const prevWeek=()=>addDays(monday(TODAY()),-7);
-function weekDue(){const W=prevWeek();if(D.weeks[W]&&D.weeks[W].done)return false;const created=iso(new Date(D.created));if(created>addDays(W,6)&&!D.demo)return false;return true}
+function weekOfferKey(){const k=TODAY(),d=fromIso(k);if(d.getDay()===0&&D.days[k]?.closed)return monday(k);if(d.getDay()===1)return prevWeek();return null}
+function weekDue(){const W=weekOfferKey();if(!W||D.weeks[W]?.done)return false;const created=iso(new Date(D.created));return created<=addDays(W,6)||D.demo}
 const QS=["Что на этой неделе получилось лучше, чем ожидал?","Что отняло больше сил, чем стоило?","Какой один шаг сделает следующую неделю легче?","Кому хочется сказать спасибо за эту неделю?","Что ты сделал для себя, а не для дел?","Чему научила эта неделя?"];
 function weekData(W){const E=addDays(W,6),inW=d=>d&&d>=W&&d<=E;
   return work().map(g=>{const steps=(g.steps||[]).filter(s=>inW(s.d));const hab=D.habits.filter(h=>h.goal===g.id).map(h=>{let n=0;for(let i=0;i<7;i++)if(hm(h,addDays(W,i)))n++;return n?{t:h.name+" ×"+n,n}:null}).filter(Boolean);
@@ -2688,7 +2689,7 @@ const EST={big:60,mid:30,small:10};const est=t=>typeof estAdj==="function"?estAd
 
 /* ---------- СЕГОДНЯ (Today3) ---------- */
 function vToday(){const k=viewDay(),dy=day(k),d=fromIso(k),isT=k===TODAY();
-  const pill=dy.closed?`<span class="gpill" aria-label="День закрыт">${IC("moon",16,"color:var(--vio)")}<span class="gl">день закрыт</span></span>`:`<button type="button" class="gpill mpill${dy.morning?" ok":""}" data-a="morning" aria-label="Утро${dy.morning?" — сделано":""}">${sunI()}<span class="gl">утро${dy.morning?" ✓":""}</span></button>`;
+  const pill=dy.closed?`<span class="gpill" aria-label="День закрыт">${IC("moon",16,"color:var(--vio)")}<span class="gl">день закрыт</span></span>`:`<button type="button" class="gpill mpill${dy.morning?" ok":""}" data-a="morning" aria-label="Начать день">${sunI()}<span class="gl">Начать день</span></button>`;
   let o=H2(dateNav(k)+(isT?pill.replace('class="gpill','class="gpill kpill'):`<button type="button" class="gpill kpill" data-a="dtoday">${IC("back",14)}к сегодня</button>`)+(D.demo?' <span class="demo">пример</span>':""),titleH(k),goalsMini()+`<button type="button" class="ib" data-a="settings" aria-label="Настройки">${IC("gear",18)}</button>`);
   const T=D.tasks.filter(t=>t.d===k),cap=D.set.cap||480;
   const done=T.filter(t=>t.done).reduce((a,t)=>a+est(t),0),bm=T.filter(t=>!t.done&&t.size!=="small").reduce((a,t)=>a+est(t),0),sm=T.filter(t=>!t.done&&t.size==="small").reduce((a,t)=>a+est(t),0),tot=done+bm+sm;
@@ -2709,7 +2710,7 @@ function vToday(){const k=viewDay(),dy=day(k),d=fromIso(k),isT=k===TODAY();
   if(prevDay&&prevDay.better)o+=`<div class="card tomorrow-intent"><div class="small mut">Вчера ты хотел попробовать сегодня</div><div class="t17" style="margin-top:4px">${esc(prevDay.better)}</div><div class="small mut" style="margin-top:5px">Это напоминание, не обязательная задача</div></div>`;
   o+=todayHabits(k);
   const later=D.tasks.filter(t=>!t.d&&!t.done);
-  if(isT&&weekDue())o+=`<button type="button" class="grow-row" data-a="week">${IC("map",18,"color:var(--vio)")}<span class="grow">Как прошла твоя неделя</span><span class="mut">›</span></button>`;
+  if(isT&&weekDue())o+=`<button type="button" class="grow-row" data-a="week">${IC("map",18,"color:var(--vio)")}<span class="grow">Подвести итоги недели</span><span class="mut">›</span></button>`;
   if(!isT){if(k<TODAY()&&dy.mood)o+=`<div class="grow-row" style="cursor:default">${S(dy.mood,28)}<span class="grow">День закрыт · ${esc(moodName(dy.mood))}</span></div>`;o+=dayNotes(k);return o}
   if(!dy.closed)o+=`<button type="button" class="grow-row${new Date().getHours()>=18?" night":""}" data-a="evening">${IC("moon",18)}<span class="grow">Закроем день? · 1 минута</span><span class="mut">›</span></button>`;
   else{const e=earnedToday().reduce((a,x)=>a+x.n,0);o+=`<div class="grow-row" style="cursor:default">${S(dy.mood||"leaf",28)}<span class="grow">День закрыт · ${esc(moodName(dy.mood))}</span><span class="spark-n">${SP(14)}+${e}</span></div>`;const w=dy.word;
@@ -3408,7 +3409,7 @@ function sheetDay(kk){const dy=D.days[kk]||{},T=D.tasks.filter(t=>t.d===kk),dn=T
   ${dy.word&&dy.word.t?`<p class="small mut" style="margin:12px 4px 0">Слово дня: «${esc(dy.word.t)}»${dy.word.won?" ✓":""}</p>`:""}
   <div class="stack"><button type="button" class="btn ghost w" data-a="hist" data-v="0">Назад к календарю</button></div>`)}
 ICP.history='<path d="M3 12a9 9 0 1 1 3 6.7M3 12V5m0 7h7M12 7v5l3 2"/>';
-const _render6=render;render=function(){_render6();if(!D.started||UI.tab!=="today"||offDay())return;const row=document.createElement("div");row.className="day-footer-actions";row.style.cssText="display:flex;justify-content:center;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap";const b=document.createElement("button");b.type="button";b.className="day-footer-action";b.dataset.a="hist";b.dataset.v="0";b.style.cssText="display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:none;border:0;padding:4px 0;color:var(--mut)";b.innerHTML=`<span class="chip" style="height:32px;background:transparent;color:inherit">${IC("history",14)}История дней</span>`;row.appendChild(b);$("#app").appendChild(row)};
+const _render6=render;render=function(){_render6();if(!D.started||UI.tab!=="today"||offDay())return;const row=document.createElement("div");row.className="day-footer-actions";row.style.cssText="display:flex;justify-content:center;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap";const b=document.createElement("button");b.type="button";b.className="day-footer-action";b.dataset.a="hist";b.dataset.v="0";b.style.cssText="display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:none;border:0;padding:4px 0;color:var(--mut)";b.innerHTML=`<span class="chip" style="height:32px;background:transparent;color:inherit">${IC("history",14)}История</span>`;row.appendChild(b);$("#app").appendChild(row)};
 
 /* ---------- ПОИСК через магнит ---------- */
 function searchAll(q){const Q=norm(q).split(/\s+/).filter(w=>w.length>=3).map(stem);if(!Q.length)return[];const hit=t=>{const W=words(t).map(stem);return Q.every(x=>W.some(y=>y.startsWith(x.slice(0,4))||x.startsWith(y.slice(0,4))))};const R=[];
@@ -4272,8 +4273,8 @@ const _applyLook20=applyLook;applyLook=function(){if(!ACCENTS[D.set.accent||""])
 /* --- полоска недели: кружок вокруг дня = доля сделанного из важного --- */
 function dayPct(k){const T=D.tasks.filter(t=>t.d===k&&t.size!=="small");const dy=D.days[k]||{};if(!T.length)return dy.closed?100:0;return Math.round(T.filter(t=>t.done).length/T.length*100)}
 function weekStrip(k){const t=TODAY(),w0=monday(k),W=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
-  return`<div class="wkstrip" role="group" aria-label="Неделя">${W.map((n,i)=>{const d=addDays(w0,i),p=d>t?0:dayPct(d);
-    return`<button type="button" class="wkd${d===k?" sel":""}${d===t?" now":""}${d<t?" past":""}${d>t?" fut":""}" data-a="wkpick" data-d="${d}" aria-label="${n}, ${fromIso(d).getDate()}${d<=t?", сделано "+p+"%":""}"><small>${n}</small><span class="wr" style="--p:${p}%"><span>${fromIso(d).getDate()}</span></span></button>`}).join("")}</div>`}
+  return`<div class="wkstrip" role="group" aria-label="Неделя">${W.map((n,i)=>{const d=addDays(w0,i),p=d>t?0:dayPct(d),E=plEv(d);
+    return`<button type="button" class="wkd${d===k?" sel":""}${d===t?" now":""}${d<t?" past":""}${d>t?" fut":""}" data-a="wkpick" data-d="${d}" aria-label="${n}, ${fromIso(d).getDate()}${d<=t?", сделано "+p+"%":""}${E.length?", события: "+esc(E.map(e=>e.t).join(", ")):""}"><small>${n}</small><span class="wr" style="--p:${p}%"><span>${fromIso(d).getDate()}</span>${E.length?`<i class="r-wevent" aria-hidden="true">${EVS(E[0].ic,19)}</i>`:""}</span></button>`}).join("")}</div>`}
 const _render20=render;render=function(){_render20();const app=$("#app");if(!app||!D.started)return;
   if(UI.tab==="today"&&!app.querySelector(".wkstrip")){const hd=app.querySelector(".hd");if(hd){const el=document.createElement("div");el.innerHTML=weekStrip(viewDay());hd.after(el.firstElementChild)}}
   /* кольца привычек в трекере: путь «день N из ~66» */
@@ -4351,7 +4352,7 @@ const _vToday22=vToday;vToday=function(){let o=_vToday22();
   const m=o.match(/<button type="button" class="kspark"[\s\S]*?<\/button>/);
   if(m){o=o.replace(m[0],"");o=o.replace('<button type="button" class="ib" data-a="settings"',m[0].replace('class="kspark"','class="kspark big"')+'<button type="button" class="ib" data-a="settings"')}
   const k=viewDay(),dy=day(k),h=new Date().getHours();
-  if(k===TODAY()&&!dy.closed&&(dy.morning||h>=17||h<4))o=o.replace(/<button type="button" class="gpill kpill mpill[^"]*" data-a="morning"[^>]*>[\s\S]*?<\/button>/,`<button type="button" class="gpill kpill epill" data-a="evening" aria-label="Закрыть день">${IC("moon",15)}<span class="gl">закрыть день</span></button>`);
+  if(k===TODAY()&&!dy.closed&&(dy.morning||h>=17||h<4))o=o.replace(/<button type="button" class="gpill kpill mpill[^"]*" data-a="morning"[^>]*>[\s\S]*?<\/button>/,`<button type="button" class="gpill kpill epill" data-a="evening" aria-label="Завершить день">${IC("moon",15)}<span class="gl">Завершить день</span></button>`);
   return o};
 const _render22=render;render=function(){_render22();const app=$("#app");if(!app||!D.started||UI.tab!=="today")return;
   const k=viewDay(),E=plEv(k);if(!E.length||app.querySelector(".evbar"))return;
@@ -5257,7 +5258,7 @@ function stkMini(){if(UI.tab==="goals"){const W=D.goals.filter(g=>g.st==="work")
     return`<div class="stkmini pmoney"><span class="mml">сегодня</span><b>${esc(big||"")}</b><span class="grow"></span><button type="button" class="chip on" data-a="spend">− Трата</button><button type="button" class="chip" data-a="income">+ Доход</button><button type="button" class="ib sm" data-a="ops" aria-label="Операции">${IC("list",16)}</button></div>`}
   return""}
 render=(function(prev){return function(){prev();STK30=null;if(!D.started)return;const app=$("#app");if(!app)return;
-  const pick={today:[".hd",".wkstrip"],tracker:[".hd",".seg"],goals:[".hd"],money:[".hd"]}[UI.tab];if(!pick)return;
+  const pick={today:[".hd",".wkstrip"],tracker:[".hd",".seg"],goals:[".hd"],money:[".hd",".r-balance"]}[UI.tab];if(!pick)return;
   const els=pick.map(s=>app.querySelector(":scope > "+s)).filter(Boolean);if(!els.length)return;
   const box=document.createElement("div");box.className="pinhd";els[0].before(box);els.forEach(e=>box.appendChild(e));
   const mini=stkMini();if(mini){box.insertAdjacentHTML("beforeend",mini)}
@@ -6094,7 +6095,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
     const income=sumAmount(monthRows(m.inc,M)),spent=sumAmount(monthRows(m.sp,M)),cnt=moneyCount();
     const savedMonth=m.jars.reduce((s,j)=>s+(j.dep||[]).filter(x=>x.d&&mkey(x.d)===M).reduce((a,x)=>a+(Number(x.amt)||0),0),0);
     let out=H2('','Деньги','');
-    out+=`<div class="card mcenter dm-balance"><button type="button" class="dm-infobtn" data-a="dmbalinfo" aria-label="Как считается баланс">ⓘ</button><div class="mut" style="font-size:15px">Общий баланс</div><div class="mbig dm-amount">${rub(balance)}</div><div class="small mut dm-hint">По записанным доходам и тратам</div></div>`;
+    out+=`<div class="dm-balance r-balance"><div class="mbig dm-amount">${rub(balance)}</div><button type="button" class="dm-infobtn" data-a="dmbalinfo" aria-label="Как считается баланс">!</button></div>`;
     out+=`<div class="mtop dm-quick"><button type="button" class="btn dm-qbtn" data-a="income" aria-label="Добавить доход">+ Доход</button><button type="button" class="btn ghost dm-qbtn" data-a="spend" aria-label="Добавить трату">− Трата</button><button type="button" class="btn ghost dm-ops" data-a="ops" aria-label="Операции за месяц: ${cnt}">${IC('list',18)}${cnt?`<span>${cnt}</span>`:''}</button></div>`;
     out+=`<div class="card dm-goals"><div class="dm-cardtitle"><b>Мои цели и копилки</b><button type="button" class="dm-more" data-a="dmalljars">Все ›</button></div>`;
     if(m.jars.length){out+=m.jars.slice(0,3).map(j=>{const total=jarSum(j),g=j.goal&&goal(j.goal),pc=j.target>0?Math.min(100,Math.max(0,Math.round(total/j.target*100))):null;
@@ -6140,7 +6141,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
     const inc=sumAmount(items.filter(x=>x.in)),sp=sumAmount(items.filter(x=>!x.in));
     openSheet(`<h3>Операции</h3>
       <div class="dm-filters" aria-label="Вид операций">${[['all','Все'],['inc','Доходы'],['sp','Траты']].map(([v,t])=>`<button type="button" class="chip${filter.kind===v?' on':''}" data-a="dmopfilter" data-v="${v}" aria-pressed="${filter.kind===v}">${t}</button>`).join('')}</div>
-      <label class="lb" style="margin-top:4px">Период</label><div class="dm-filters" aria-label="Период операций">${[['7','7 дней'],['30','30 дней'],['month','Месяц'],['all','Всё время'],['custom','Свои даты']].map(([v,t])=>`<button type="button" class="chip${filter.range===v?' on':''}" data-a="dmoprange" data-v="${v}" aria-pressed="${filter.range===v}">${t}</button>`).join('')}</div>
+      <label class="lb" style="margin-top:4px">Период</label><div class="dm-filters" aria-label="Период операций">${[['7','7 дней'],['month','Месяц'],['all','Всё время'],['custom','Свои даты']].map(([v,t])=>`<button type="button" class="chip${filter.range===v?' on':''}" data-a="dmoprange" data-v="${v}" aria-pressed="${filter.range===v}">${t}</button>`).join('')}</div>
       ${filter.range==='custom'?`<div class="dm-custom"><label>С даты<input type="date" class="field" id="dmfrom" value="${lo}"></label><label>По дату<input type="date" class="field" id="dmto" value="${hi}"></label></div>`:''}
       <div class="dm-ops-summary"><span>Найдено: <b>${items.length}</b></span><span>+ ${rub(inc)} / − ${rub(sp)}</span></div>
       <div class="card ops2">${items.length?items.map(x=>`<div class="op2"><span class="od">${dshort(x.d)}</span><span class="ot"><b class="dm-op-title">${esc(x.t||(x.in?'Доход':'Трата'))}</b>${norm(String(x.t||(x.in?'Доход':'Трата'))).trim()===norm(x.in?'Доход':spCat(x)).trim()?'':`<small>${x.in?'Доход':esc(spCat(x))}</small>`}</span><span class="a${x.in?' in':''}">${x.in?'+':'−'}${rub(x.amt)}</span><button type="button" class="ox" data-a="opdel2" data-id="${esc(x.id)}" data-in="${x.in?1:0}" aria-label="Удалить операцию">×</button></div>`).join(''):'<p class="dm-none">За выбранный период записей нет.</p>'}</div>
@@ -6157,7 +6158,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
   };
   /* Шапка после прокрутки отражает реальный баланс и порядок действий. */
   const oldStkMini=stkMini;
-  stkMini=function(){if(UI.tab==='money')return `<div class="stkmini pmoney"><span class="mml">баланс</span><b class="dm-stuck-bal">${rub(signedBalance())}</b><span class="grow"></span><button type="button" class="chip on" data-a="income">+ Доход</button><button type="button" class="chip" data-a="spend">− Трата</button><button type="button" class="ib sm" data-a="ops" aria-label="Операции">${IC('list',16)}</button></div>`;return oldStkMini();};
+  stkMini=function(){if(UI.tab==='money')return '';return oldStkMini();};
 })();
 
 </script>
@@ -6594,8 +6595,7 @@ render=function(){
  }else if(UI.tab==='money'){
    const existing=tools.querySelector('.k');
    if(existing){existing.classList.remove('k');existing.classList.add('hmeta');existing.dataset.h159qMeta='1';meta=existing}
-   const dp=daysToPay(),ms=monthStats(TODAY());
-   ensureMeta().textContent=dp!=null?`До зарплаты ${dp} ${plural(dp,'день','дня','дней')}`:ms.inc?`Можно сегодня ${rub(ms.today)}`:'Баланс и бюджет месяца';
+   ensureMeta().textContent=MONN[fromIso(TODAY()).getMonth()];
  }
  if(typeof stkTick==='function')requestAnimationFrame(stkTick);
 };
@@ -6607,10 +6607,56 @@ dayNotes=function(k){
  const empty='<p class="small mut" style="margin:10px 0 4px;line-height:1.4">Мысли, фото, рисунки — сюда.</p>';
  if(html.includes(empty))html=html.replace(empty,`<button type="button" class="note-compose" data-a="nadd" data-d="${k}">Мысли, фото, рисунки — сюда.</button>`);
  const oldRow=`<div class="naddrow"><button type="button" class="nadd" data-a="nlistnew" data-d="${k}">☑ Список</button><button type="button" class="nadd" data-a="nadd" data-d="${k}">${IC("plus",16)} Запись</button></div>`;
- const newRow=`<div class="naddrow"><button type="button" class="nadd" data-a="nlistnew" data-d="${k}">☑ Список</button><button type="button" class="nadd nadd-icon" data-a="nadd" data-d="${k}" aria-label="Новая запись" title="Новая запись">+</button></div>`;
+ const newRow=`<div class="naddrow"><button type="button" class="nadd nadd-icon" data-a="nlistnew" data-d="${k}" aria-label="Создать список" title="Создать список">${IC("list",19)}</button><button type="button" class="nadd nadd-icon" data-a="nadd" data-d="${k}" aria-label="Новая запись" title="Новая запись">+</button></div>`;
  if(html.includes(oldRow))html=html.replace(oldRow,newRow);
  return html;
 };
+
+/* H1.59r — согласованные шапки, календарь и недельный сценарий. */
+(function(){const style=document.createElement('style');style.id='h159r-ui';style.textContent=`
+.pinhd .r-balance{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:0;padding:3px 0 9px;margin:0;background:transparent;text-align:left}
+.r-balance .dm-amount{color:var(--spark);font-size:clamp(32px,10vw,48px);min-width:0;line-height:1.12;overflow-wrap:anywhere}
+.r-balance .dm-infobtn{position:relative;top:auto;right:auto;flex:none;display:grid;place-items:center;width:23px;height:23px;font-size:14px;font-weight:700;color:var(--mut);padding:0}
+.hd .tools .kspark.big,.hd .tools [data-a=settings]{width:44px;height:44px;min-width:44px;padding:0;border-radius:50%;flex:none;box-sizing:border-box}
+.hd .tools .kspark.big{flex-direction:column;justify-content:center;gap:0;font-size:11px;line-height:1.1}
+.hd .tools .kspark.big svg{width:16px;height:16px}
+.hd .k .gpill.kpill{flex:none;font-size:12px;padding:0 7px;white-space:nowrap}
+@media(max-width:360px){.hd .k .dnav{gap:3px}.hd .k .dnav .dar{width:29px}.hd .k .gpill.kpill{font-size:10.5px;padding:0 5px;gap:3px}.hd .k .gpill.kpill svg{width:13px;height:13px}}
+.wkd .wr .r-wevent{position:absolute;right:-4px;top:-5px;display:grid;place-items:center;width:21px;height:21px;z-index:2;background:var(--bg1);border-radius:50%;box-shadow:0 0 0 1px var(--edge);pointer-events:none;line-height:0}
+.notes .naddrow{justify-content:flex-end;gap:8px}.notes .naddrow .nadd-icon{margin:0;flex:none}
+.tc,.tc.fut,.cal.calm .d.all,.cal.calm .d.all.fut{background:transparent}
+.r-week .tiles3{margin:8px 0 12px}.r-week .tile{min-width:0}.r-week .tile span{white-space:normal;line-height:1.2}
+.r-week .moodstrip{margin:12px 0 0}.r-week .moodstrip>div{min-width:0;flex:1}
+.r-week .r-levels{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.r-week .r-levels .chip{height:auto;min-height:36px;white-space:normal;line-height:1.2;padding:6px 10px}
+.r-week .ncard{margin:12px 0 0}.r-week .ncard .small{line-height:1.4}.r-week .ncard .field{min-height:74px;resize:vertical}.r-week .op{overflow-wrap:anywhere}
+`;document.body.append(style)})();
+
+function rWeekAvailable(W){const k=TODAY(),end=addDays(W,6);return /^\d{4}-\d{2}-\d{2}$/.test(W)&&W===monday(W)&&(end<k||(end===k&&D.days[k]?.closed))&&(D.demo||end>=iso(new Date(D.created))||!!D.weeks[W])}
+function rWeekStats(W){const E=addDays(W,6),inside=d=>typeof d==='string'&&d>=W&&d<=E;
+ const completed=t=>{if(t.doneAt){const x=new Date(t.doneAt);if(!isNaN(x)){if(x.getHours()<4)x.setDate(x.getDate()-1);return iso(x)}}return t.d};
+ const tasks=D.tasks.filter(t=>t.done&&inside(completed(t))).length;
+ const goals=D.goals.map(g=>{const steps=(g.steps||[]).filter(s=>inside(s.d)),hab=D.habits.filter(h=>h.goal===g.id).map(h=>({name:h.name,n:Array.from({length:7},(_,i)=>hm(h,addDays(W,i))).filter(Boolean).length})).filter(h=>h.n),dep=D.money.jars.filter(j=>j.goal===g.id).reduce((a,j)=>a+(j.dep||[]).filter(x=>inside(x.d)).reduce((n,x)=>n+(Number(x.amt)||0),0),0);return {g,steps,hab,dep}});
+ const habitMarks=D.habits.reduce((n,h)=>n+Array.from({length:7},(_,i)=>hm(h,addDays(W,i))).filter(Boolean).length,0);
+ const days=Array.from({length:7},(_,i)=>({k:addDays(W,i),d:D.days[addDays(W,i)]||{}}));
+ return {tasks,habitMarks,steps:goals.reduce((n,g)=>n+g.steps.length,0),goals:goals.filter(x=>(x.g.st==='work'&&(!x.g.created||iso(new Date(x.g.created))<=E))||x.steps.length||x.hab.length||x.dep),days,goods:days.flatMap(({k,d})=>(d.goods||[d.good]).filter(Boolean).map(t=>({k,t})))};
+}
+function rWeekTabs(active){return `<div class="seg" style="margin:8px 0 12px"><button type="button" class="${active==='days'?'on':''}" data-a="hist" data-v="0">Дни</button><button type="button" class="${active==='weeks'?'on':''}" data-a="rhistweeks">Недели</button></div>`}
+const _rHistory=sheetHistory;
+sheetHistory=function(off){_rHistory(off);const h=$('#sheet h3');if(h){h.textContent='История';h.insertAdjacentHTML('afterend',rWeekTabs('days'))}};
+function rHistoryWeeks(page=0){const k=TODAY(),first=weekOfferKey()===monday(k)?monday(k):prevWeek(),start=addDays(first,-12*7*page),created=monday(iso(new Date(D.created)));const W=[];
+ for(let i=0;i<12;i++){const w=addDays(start,-7*i);if(rWeekAvailable(w))W.push(w)}
+ const older=addDays(start,-84)>=created||Object.keys(D.weeks).some(w=>w<addDays(start,-77));
+ openSheet(`<h3>История</h3>${rWeekTabs('weeks')}<p class="sub">Возвращайся к итогам в любое время.</p><div class="card">${W.map(w=>`<button type="button" class="grow-row" data-a="rweekopen" data-w="${w}"><span class="grow">${dshort(w)} – ${dshort(addDays(w,6))}<small class="mut" style="display:block">${D.weeks[w]?.done?'Итоги сохранены':'Можно подвести итоги'}</small></span><span class="mut">›</span></button>`).join('')||'<p class="small mut">Пока нет завершённых недель.</p>'}</div><div class="row" style="margin-top:10px"><button type="button" class="btn ghost grow" data-a="rhistweeks" data-p="${page+1}" ${older?'':'disabled'}>Раньше</button><button type="button" class="btn ghost grow" data-a="rhistweeks" data-p="${page-1}" ${page?'':'disabled'}>Позже</button></div>`);$('#sheet').scrollTop=0}
+function rCanPlan(W){return addDays(W,7)>=monday(TODAY())}
+const rLevels=[['still','На месте'],['closer','Чуть ближе'],['strong','Заметно ближе']];
+sheetWeek=function(W){W=typeof W==='string'?W:weekOfferKey()||prevWeek();if(!rWeekAvailable(W)){rHistoryWeeks();return}const E=addDays(W,6),rec=D.weeks[W]||{},R=rWeekStats(W),st={lv:{...(rec.lv||{})}},q=rec.q||QS[hash(W)%QS.length];
+ const goalCards=R.goals.map(({g,steps,hab,dep})=>`<div class="ncard"><div class="row">${GLY(g.cover,26)}<b class="grow">${esc(g.t)}</b></div><p class="small mut">${steps.length} ${plural(steps.length,'шаг','шага','шагов')} · ${hab.reduce((n,h)=>n+h.n,0)} отметок привычек${dep?' · '+rub(dep)+' в копилку':''}</p>${steps.map(s=>`<div class="small op">✓ <span class="grow">${esc(s.t)}</span></div>`).join('')}<div class="small mut" style="margin-top:8px">Как ты ощущаешь своё продвижение? (по желанию)</div><div class="r-levels" role="group" aria-label="Самооценка">${rLevels.map(([v,t])=>`<button type="button" class="chip${st.lv[g.id]===v?' on':''}" aria-pressed="${st.lv[g.id]===v}" data-a="rweeklevel" data-g="${esc(g.id)}" data-v="${v}">${t}</button>`).join('')}</div></div>`).join('');
+ openSheet(`<div class="r-week"><div class="k">${dshort(W)} – ${dshort(E)}</div><h3>Твоя неделя</h3><p class="sub">Посмотри, что изменилось за эти семь дней.</p><div class="tiles3"><div class="tile"><b>${R.tasks}</b><span>дел выполнено</span></div><div class="tile"><b>${R.habitMarks}</b><span>отметок привычек</span></div><div class="tile"><b>${R.steps}</b><span>шагов к целям</span></div></div><div class="nt">Движение к целям</div>${goalCards||'<p class="small mut">Нет записанных шагов к целям за эту неделю.</p>'}<div class="ncard"><div class="nt">Как ты себя чувствовал</div><div class="moodstrip">${R.days.map(({k,d})=>`<div><span>${WD[fromIso(k).getDay()]}</span>${d.mood?S(d.mood,26):'<i aria-label="Нет отметки"></i>'}</div>`).join('')}</div>${R.days.some(x=>x.d.mood)?'':'<p class="small mut">Пока нет отметок настроения за неделю.</p>'}</div><div class="ncard"><div class="nt">Хорошие моменты</div>${R.goods.map(x=>`<div class="op small"><span class="mut">${dshort(x.k)}</span><span class="grow">${esc(x.t)}</span></div>`).join('')||'<p class="small mut">Нет записанных хороших моментов.</p>'}</div><div class="ncard"><div class="nt">Вопрос недели</div><label class="lb" for="wq">${esc(q)}</label><textarea id="wq" class="field" placeholder="Если хочется, поделись мыслями…">${esc(rec.ans||'')}</textarea></div>${rec.plan?`<div class="ncard"><div class="nt">План на следующую неделю</div><div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc([rec.plan.focus,rec.plan.steps,rec.plan.reminder].filter(Boolean).join('\n')||'')}</div>${rCanPlan(W)?`<button type="button" class="btn ghost sm" data-a="rweekplan" data-w="${W}">Изменить план</button>`:''}</div>`:rec.done&&rCanPlan(W)?`<button type="button" class="grow-row" data-a="rweekplan" data-w="${W}">Запланировать следующую неделю <span class="mut">›</span></button>`:''}<div class="stack"><button type="button" class="btn w" data-a="wsave">Сохранить итоги</button><button type="button" class="btn ghost w" data-a="rhistweeks">К истории недель</button></div></div>`,{st,weekKey:W,onSave(){const old=D.weeks[W]||{};D.weeks[W]={...old,done:1,lv:st.lv,q,ans:$('#wq').value.trim()};const n=old.done?0:award('wk:'+W,3,'итоги недели');save();closeSheet();render();if(n)sparkToast(n,'неделя подведена');if(rCanPlan(W)&&!old.done){openSheet(`<h3>Неделя подведена</h3><p class="sub">Хочешь выбрать направление на следующую неделю?</p><div class="stack"><button type="button" class="btn w" data-a="rweekplan" data-w="${W}">Запланировать следующую неделю</button><button type="button" class="btn ghost w" data-a="close">Не сейчас</button></div>`)}else rHistoryWeeks()}});$('#sheet').scrollTop=0;
+};
+function rWeekPlan(W){if(!rWeekAvailable(W)||!D.weeks[W]?.done||!rCanPlan(W))return;const p=D.weeks[W].plan||{},N=addDays(W,7);openSheet(`<div class="k">${dshort(N)} – ${dshort(addDays(N,6))}</div><h3>Следующая неделя</h3><p class="sub">Выбери направление. Это личный план, дела не добавляются автоматически.</p><label class="lb" for="rwfocus">На чём сосредоточиться?</label><textarea id="rwfocus" class="field">${esc(p.focus||'')}</textarea><label class="lb" for="rwsteps">Какие шаги хочется сделать?</label><textarea id="rwsteps" class="field">${esc(p.steps||'')}</textarea><label class="lb" for="rwreminder">Что важно не забыть?</label><textarea id="rwreminder" class="field">${esc(p.reminder||'')}</textarea><div class="stack"><button type="button" class="btn w" data-a="rweekplansave">Сохранить план</button><button type="button" class="btn ghost w" data-a="rweekopen" data-w="${W}">Назад к итогам</button></div>`,{weekKey:W});$('#sheet').scrollTop=0}
+Object.assign(A,{week:()=>sheetWeek(),rweekopen:e=>sheetWeek(e.dataset.w),rhistweeks:e=>rHistoryWeeks(Math.max(0,+e.dataset.p||0)),rweeklevel:e=>{const g=e.dataset.g,v=e.dataset.v;if(!SH?.st?.lv||!rLevels.some(x=>x[0]===v))return;if(SH.st.lv[g]===v)delete SH.st.lv[g];else SH.st.lv[g]=v;e.parentElement.querySelectorAll('button').forEach(b=>{const on=SH.st.lv[g]===b.dataset.v;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})},rweekplan:e=>rWeekPlan(e.dataset.w),rweekplansave:()=>{const W=SH?.weekKey;if(!W||!D.weeks[W]?.done||!rCanPlan(W))return;const plan={focus:$('#rwfocus').value.trim(),steps:$('#rwsteps').value.trim(),reminder:$('#rwreminder').value.trim()};if(!Object.values(plan).some(Boolean)){toast('Можно оставить план на потом');return}D.weeks[W].plan=plan;save();sheetWeek(W);toast('План сохранён')}});
+const _rClosed=sheetClosed;
+sheetClosed=function(){_rClosed();if(weekDue()&&weekOfferKey()===monday(TODAY())){const stack=$('#sheet .stack');if(stack)stack.insertAdjacentHTML('afterbegin',`<button type="button" class="btn ghost w" data-a="week">Подвести итоги недели</button>`)}};
 
 </script>
 <script src="ai05-integration.js"></script>
