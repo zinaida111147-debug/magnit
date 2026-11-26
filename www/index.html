@@ -1916,7 +1916,8 @@ const pad=n=>String(n).padStart(2,"0");
 const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const fromIso=s=>{const p=String(s).split("-").map(Number);return new Date(p[0],p[1]-1,p[2])};
 const addDays=(s,n)=>{const d=fromIso(s);d.setDate(d.getDate()+n);return iso(d)};
-const TODAY=()=>iso(new Date(Date.now()-4*3600e3)); /* новый день начинается в 4:00 — ночь ещё относится к вчера */
+const TODAY=()=>{const d=new Date();if(d.getHours()<4)d.setDate(d.getDate()-1);return iso(d)}; /* новый день начинается в 4:00 по местному времени, включая переходы DST */
+const localTimeExists=(d,hm)=>{if(!/^\d{4}-\d\d-\d\d$/.test(d||"")||iso(fromIso(d))!==d||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hm||""))return false;const[h,m]=hm.split(":").map(Number),x=fromIso(d);x.setHours(h,m,0,0);return iso(x)===d&&x.getHours()===h&&x.getMinutes()===m};
 const monday=s=>{const d=fromIso(s);d.setDate(d.getDate()-(d.getDay()+6)%7);return iso(d)};
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
 const WD=["Вс","Пн","Вт","Ср","Чт","Пт","Сб"],WDL=["Воскресенье","Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
@@ -1930,11 +1931,55 @@ const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=M
 const ago=s=>{const n=Math.round((fromIso(TODAY())-fromIso(s))/864e5);return n<=0?"сегодня":n===1?"вчера":n+" "+plural(n,"день","дня","дней")+" назад"};
 
 /* ---------- state ---------- */
-const KEY="magnit2";
+const KEY="magnit2",RECOVERY_RAW_KEY="magnit2-recovery-raw";
+window.__startupRecovery=null;window.__startupAutoRecovered=false;window.__startupOriginalRaw=null;window.__startupStorageUnavailable=false;
 function blank(){return{v:1,created:Date.now(),started:false,demo:false,sparks:0,aw:{},log:[],days:{},tasks:[],goals:[],habits:[],money:{inc:[],sp:[],jars:[],r:[50,30,20]},weeks:{},kit:{items:[],words:[]},set:{wish:"Желания",wishForms:null,sound:true,legacy:false},nN:1,hint:{}}}
-function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);const b=blank();for(const k in b)if(o[k]===undefined)o[k]=b[k];o.money=Object.assign(b.money,o.money);o.set=Object.assign(b.set,o.set);o.kit=Object.assign(b.kit,o.kit);return o}}catch(e){}return blank()}
+function recoveryObject(v){return !!v&&typeof v==="object"&&!Array.isArray(v)}
+function load(){
+  let s;try{s=localStorage.getItem(KEY)}catch(e){window.__startupStorageUnavailable=true;return blank()}
+  if(!s)return blank();window.__startupOriginalRaw=s;
+  let o;try{o=JSON.parse(s)}catch(e){window.__startupRecovery={raw:s,reason:"invalid-json"};return blank()}
+  if(!recoveryObject(o)){window.__startupRecovery={raw:s,reason:"invalid-root"};return blank()}
+  const b=blank(),repairs=[],invalid=[];
+  const checkArray=(v,path)=>{if(v===null)repairs.push([path,[]]);else if(v!==undefined&&!Array.isArray(v))invalid.push(path)};
+  const checkObject=(v,path,def)=>{if(v===null)repairs.push([path,def]);else if(v!==undefined&&!recoveryObject(v))invalid.push(path)};
+  ["tasks","goals","habits","log","events","park"].forEach(k=>checkArray(o[k],k));
+  ["days","weeks","aw","hint","set","money","kit"].forEach(k=>checkObject(o[k],k,b[k]||{}));
+  if(o.money!==undefined&&o.money!==null&&recoveryObject(o.money)){
+    ["inc","sp","jars","pays"].forEach(k=>checkArray(o.money[k],"money."+k));
+    if(o.money.r===null)repairs.push(["money.r",b.money.r]);else if(o.money.r!==undefined&&(!Array.isArray(o.money.r)||o.money.r.length!==3||!o.money.r.every(Number.isFinite)))invalid.push("money.r");
+    ["learn","catB","subX"].forEach(k=>checkObject(o.money[k],"money."+k,{}));
+  }
+  if(o.kit!==undefined&&o.kit!==null&&recoveryObject(o.kit)){
+    ["items","words","combos"].forEach(k=>checkArray(o.kit[k],"kit."+k));
+    checkObject(o.kit.mats,"kit.mats",{water:0,light:0,food:0,love:0,star:0});
+    checkObject(o.kit.harv,"kit.harv",{});
+  }
+  /* Null records inside otherwise valid collections are not silently discarded. */
+  for(const k of ["tasks","goals","habits","log","events","park"]){if(Array.isArray(o[k])&&o[k].some(x=>!recoveryObject(x)))invalid.push(k+"[]")}
+  if(recoveryObject(o.money))for(const k of ["inc","sp","jars","pays"]){if(Array.isArray(o.money[k])&&o.money[k].some(x=>!recoveryObject(x)))invalid.push("money."+k+"[]")}
+  if(recoveryObject(o.kit))for(const k of ["items","words","combos"]){if(Array.isArray(o.kit[k])&&o.kit[k].some(x=>x==null))invalid.push("kit."+k+"[]")}
+  if(recoveryObject(o.days))for(const [k,dy] of Object.entries(o.days)){
+    if(dy===null)repairs.push(["days."+k,{}]);
+    else if(!recoveryObject(dy))invalid.push("days."+k);
+    else if(dy.notes===null)repairs.push(["days."+k+".notes",[]]);
+    else if(dy.notes!==undefined&&!Array.isArray(dy.notes))invalid.push("days."+k+".notes");
+    else if(Array.isArray(dy.notes)&&dy.notes.some(n=>!recoveryObject(n)))invalid.push("days."+k+".notes[]");
+  }
+  if(recoveryObject(o.weeks))for(const [k,w] of Object.entries(o.weeks)){if(w===null)repairs.push(["weeks."+k,{}]);else if(!recoveryObject(w))invalid.push("weeks."+k)}
+  if(invalid.length){window.__startupRecovery={raw:s,reason:"invalid-shape",fields:invalid};return blank()}
+  const needsMigration=!o.schema||o.schema<2;
+  if(repairs.length||needsMigration){
+    try{localStorage.setItem(RECOVERY_RAW_KEY,s)}catch(e){window.__startupRecovery={raw:s,reason:"backup-write-failed",fields:repairs.map(x=>x[0])};return blank()}
+    for(const [path,value] of repairs){const parts=path.split(".");let target=o;for(let i=0;i<parts.length-1;i++)target=target[parts[i]];target[parts[parts.length-1]]=Array.isArray(value)?value.slice():recoveryObject(value)?JSON.parse(JSON.stringify(value)):value}
+    window.__startupAutoRecovered=true;
+  }
+  for(const k in b)if(o[k]===undefined)o[k]=b[k];
+  o.money=Object.assign(b.money,o.money);o.set=Object.assign(b.set,o.set);o.kit=Object.assign(b.kit,o.kit);
+  return o
+}
 let D=load();
-let _svT=null;function saveNow(){clearTimeout(_svT);_svT=null;try{if(D&&D.demo){localStorage.setItem("magnit2-demo",JSON.stringify(D));localStorage.setItem("magnit2-mode","demo")}else{localStorage.setItem(KEY,JSON.stringify(D));localStorage.setItem("magnit2-mode","real")}}catch(e){window.__saveErr=1}}
+let _svT=null;function saveNow(){clearTimeout(_svT);_svT=null;if(window.__startupRecovery||window.__startupStorageUnavailable)return false;try{if(D&&D.demo)localStorage.setItem("magnit2-demo",JSON.stringify(D));else localStorage.setItem(KEY,JSON.stringify(D))}catch(e){window.__saveErr=1;return false}try{localStorage.setItem("magnit2-mode",D&&D.demo?"demo":"real")}catch(e){window.__saveModeErr=1}return true}
 function save(){if(_svT)return;_svT=setTimeout(saveNow,300)}
 addEventListener("pagehide",saveNow);addEventListener("beforeunload",saveNow);document.addEventListener("visibilitychange",()=>{if(document.hidden)saveNow()});
 const day=k=>D.days[k]||(D.days[k]={});
@@ -2105,7 +2150,8 @@ function sheetTask(id,size){const t=id?D.tasks.find(x=>x.id===id):null;const st=
   <div class="stack"><button type="button" class="btn w" data-a="tsave">${t?"Сохранить":"Добавить"}</button>
   ${t?`<div class="row" style="justify-content:center;gap:4px;flex-wrap:wrap">${t.d?`<button type="button" class="lnk" data-a="tmove" data-id="${t.id}">На завтра</button><button type="button" class="lnk" data-a="tlater" data-id="${t.id}">В «Потом»</button>`:`<button type="button" class="lnk" data-a="ttoday" data-id="${t.id}">На сегодня</button>`}<button type="button" class="lnk" data-a="tdel" data-id="${t.id}" style="color:var(--hot)">Удалить</button></div>`:""}</div>`,
   {st,onSave(){const v=$("#tt").value.trim();if(!v)return $("#tt").focus();
-    const tm=$("#ttm").value||null,est=st.est?+st.est:null;
+    const tm=$("#ttm").value||null,est=st.est?+st.est:null,taskDate=t?t.d:viewDay();
+    if(tm&&taskDate&&!localTimeExists(taskDate,tm)){toast("В этот день такого времени нет из-за перевода часов. Выбери другое.");return}
     if(t){t.t=v;t.time=tm;t.est=est;if(st.size!==t.size){if(st.size==="big")D.tasks.forEach(o=>{if(o!==t&&o.d===t.d&&o.size==="big"&&!o.done)o.size=t.size});t.size=st.size}t.goal=st.goal||null;if(t.goal)delete t.sug;save()}
     else{const x=addTask(v,{size:st.size,goal:st.goal});x.time=tm;x.est=est;save()}
     closeSheet();render()}});
@@ -2653,7 +2699,7 @@ function vToday(){const k=viewDay(),dy=day(k),d=fromIso(k),isT=k===TODAY();
     <div class="row" style="justify-content:space-between"><span class="hk">ГЛАВНОЕ</span>${g?`<button type="button" class="hchip" data-a="goal" data-id="${g.id}">→ ${esc(g.t.length>16?g.t.slice(0,15)+"…":g.t)}</button>`:""}</div>
     <div class="row" style="margin-top:12px;align-items:flex-start"><button type="button" class="ck big hck${big.done?" on":""}" data-a="tdone" data-id="${big.id}" aria-label="Готово"></button><button type="button" class="ht" data-a="tedit" data-id="${big.id}">${esc(big.t)}</button><button type="button" class="pen hpen" data-a="tedit" data-id="${big.id}" aria-label="Изменить">${IC("pen",17)}</button></div>
     <div class="hs">~${fmtMin(est(big))}${typeof tnote==="function"?tnote(big):""}${big.time?" · в "+big.time:""}${big.moves>=2&&!big.done?" · переносится "+big.moves+"-й раз":g?" · шаг к цели":""}</div></section>`}
-  else o+=`<button type="button" class="hero empty" data-a="addtask" data-size="big"><span class="hk">ГЛАВНОЕ</span><span class="ht" style="opacity:.55">Например: сдать отчёт</span><span class="hs">Одно дело, после которого день удался · тапни, чтобы выбрать своё</span></button>`;
+  else o+=`<button type="button" class="hero empty" data-a="addtask" data-size="big"><span class="hk">ГЛАВНОЕ</span><span class="ht" style="opacity:.55">Добавить главное дело</span><span class="hs">Одно дело, после которого день удался</span></button>`;
   const mid=T.filter(t=>t.size==="mid");
   o+=`<div class="sec3"><b>Важные · до 5</b><span>${mid.filter(t=>t.done).length} из ${mid.length}</span></div><div class="card list3">${mid.length?mid.map(t=>{const g=t.goal&&goal(t.goal),sg=!t.goal&&t.sug&&goal(t.sug);return`<div class="task${t.done?" done":""}"><button type="button" class="ck${t.done?" on":""}" data-a="tdone" data-id="${t.id}" aria-label="Готово"></button><button type="button" class="tt" data-a="tedit" data-id="${t.id}">${esc(t.t)}</button><span class="meta">${sg&&sg.st==="work"?`<button type="button" class="chip sug" data-a="link" data-id="${t.id}" data-g="${sg.id}">→ ${esc(sg.t.length>10?sg.t.slice(0,9)+"…":sg.t)}?</button>`:t.time?`<span class="tm">${t.time}</span>`:`<span class="es">${g?GLY(g.cover,16):""}~${fmtMin(est(t))}</span>`}<button type="button" class="pen" data-a="tedit" data-id="${t.id}" aria-label="Изменить">${IC("pen",16)}</button></span></div>`}).join(""):GHOST_MID()}</div>`;
   const sm2=T.filter(t=>t.size==="small");
@@ -3188,10 +3234,32 @@ async function saveBackup(btn){const data=JSON.stringify({magnitBackup:2,schema:
     D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return}catch(e){try{await P.Filesystem.writeFile({path:backupName(),data,directory:"DOCUMENTS",encoding:"utf8"});D.lastBackup=TODAY();save();toast("Копия в папке «Документы»");return}catch(e2){fallbackCopy(data);return}}}
   if(DL){try{await DL.save({filename:backupName(),data});D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓";return}catch(e){if(e&&e.code&&/not_granted|declined|dismiss/i.test(e.code)){toast("Сохранение отменено");return}}}
   try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=backupName();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);D.lastBackup=TODAY();save();if(btn)btn.textContent="Копия сохранена ✓"}catch(e){fallbackCopy(data)}}
+function recoverySnapshotToBackup(o){
+  if(!o||o.magnitRecovery!==1||typeof o.raw!=="string")throw Error("формат исходного снимка");
+  let d;try{d=JSON.parse(o.raw)}catch(e){throw Error("исходный JSON повреждён; сохранённую копию можно передать для ручного восстановления")}
+  if(!recoveryObject(d))throw Error("структура исходных данных не поддерживается");
+  const b=blank(),clone=x=>JSON.parse(JSON.stringify(x));
+  for(const k in b)if(d[k]===undefined)d[k]=clone(b[k]);
+  const arr=(obj,k,path,def=[])=>{if(obj[k]===undefined||obj[k]===null)obj[k]=clone(def);else if(!Array.isArray(obj[k]))throw Error("неверный формат: "+path)};
+  const obj=(owner,k,path,def={})=>{if(owner[k]===undefined||owner[k]===null)owner[k]=clone(def);else if(!recoveryObject(owner[k]))throw Error("неверный формат: "+path)};
+  for(const k of ["tasks","goals","habits","log","events","park"])arr(d,k,k,b[k]||[]);
+  for(const k of ["tasks","goals","habits","log","events","park"])if(d[k].some(x=>!recoveryObject(x)))throw Error("в коллекции "+k+" есть повреждённая запись");
+  for(const k of ["days","weeks","aw","hint","set","money","kit"])obj(d,k,k,b[k]||{});
+  for(const k of ["inc","sp","jars","pays"])arr(d.money,k,"money."+k,[]);
+  if(d.money.r===undefined||d.money.r===null)d.money.r=clone(b.money.r);else if(!Array.isArray(d.money.r)||d.money.r.length!==3||!d.money.r.every(Number.isFinite))throw Error("неверный формат пропорций бюджета");
+  for(const k of ["learn","catB","subX"])obj(d.money,k,"money."+k,{});
+  for(const k of ["items","words","combos"])arr(d.kit,k,"kit."+k,[]);
+  for(const k of ["mats","harv"])obj(d.kit,k,"kit."+k,k==="mats"?b.kit.mats:{});
+  for(const [k,dy] of Object.entries(d.days)){if(dy===null)d.days[k]={};else if(!recoveryObject(dy))throw Error("повреждён день "+k);if(d.days[k].notes===null)d.days[k].notes=[];else if(d.days[k].notes!==undefined&&!Array.isArray(d.days[k].notes))throw Error("неверный формат записей за "+k);if(Array.isArray(d.days[k].notes)&&d.days[k].notes.some(n=>!recoveryObject(n)))throw Error("повреждённая запись дневника за "+k)}
+  for(const [k,w] of Object.entries(d.weeks)){if(w===null)d.weeks[k]={};else if(!recoveryObject(w))throw Error("повреждена неделя "+k)}
+  for(const k of ["inc","sp","jars","pays"])if(d.money[k].some(x=>!recoveryObject(x)))throw Error("повреждённая запись money."+k);
+  if(d.kit.items.some(x=>x==null)||d.kit.words.some(x=>x==null)||d.kit.combos.some(x=>x==null))throw Error("повреждённая запись комнаты");
+  return {magnitBackup:2,schema:SCHEMA,app:APP_VER,at:o.at||Date.now(),data:d,photos:o.photos||{}};
+}
 function sheetRestore(){window.__rs=null;window.__rsph=null;openSheet(`<h3>Восстановить из копии</h3><p class="sub">Выбери файл копии. Текущие данные будут заменены после подтверждения.</p>
   <input id="rsf" type="file" accept=".json,application/json,text/plain" class="field" style="padding:10px"><div id="rsres"></div>`);
   const f=$("#rsf"),out=$("#rsres");let seq=0;f.addEventListener("change",async()=>{const n=++seq;window.__rs=null;out.textContent="";const file=f.files?.[0];if(!file)return;
-    try{const o=JSON.parse(await file.text());if(n!==seq||!f.isConnected||!SH)return;restorePreview157e(o,out)}catch(e){if(n===seq&&f.isConnected){out.textContent="Файл не читается или повреждён. Данные не изменены.";window.__rs=null}}})}
+    try{let o=JSON.parse(await file.text());if(n!==seq||!f.isConnected||!SH)return;if(o?.magnitRecovery===1)o=recoverySnapshotToBackup(o);restorePreview157e(o,out)}catch(e){if(n===seq&&f.isConnected){out.textContent="Копия не подходит: "+String(e.message||"файл повреждён")+". Данные не изменены.";window.__rs=null}}})}
 
 /* настройки: копия */
 const _settings2=sheetSettings;sheetSettings=function(){_settings2();const anchor=document.querySelector('#sheet [data-a="copyall"]');if(!anchor)return;const el=document.createElement("div");
@@ -3466,6 +3534,12 @@ function migrate(o){if(!o)return o;const b=blank();for(const k in b)if(o[k]===un
   if(!o.schema||o.schema<2){o.tasks.forEach(t=>{if(t.size==null)t.size="mid"});o.schema=2}
   return o}
 migrate(D);
+if(window.__startupAutoRecovered){
+  if(!saveNow()){
+    window.__startupRecovery={raw:window.__startupOriginalRaw,reason:"repair-save-failed"};
+    window.__startupAutoRecovered=false;D=blank();
+  }
+}
 /* ошибки — в отчёт для разработчика, без личных данных */
 function logErr(msg,src){try{D.errs=(D.errs||[]).slice(-19);D.errs.push({t:new Date().toISOString().slice(0,16),m:String(msg).slice(0,160),s:String(src||"").slice(-60),v:APP_VER});save()}catch(e){}}
 addEventListener("error",e=>logErr(e.message,(e.filename||"")+":"+(e.lineno||"")));addEventListener("unhandledrejection",e=>logErr(e.reason&&e.reason.message||e.reason,"promise"));
@@ -3474,11 +3548,12 @@ addEventListener("error",e=>logErr(e.message,(e.filename||"")+":"+(e.lineno||"")
 function storageOk(){try{localStorage.setItem("magnit-probe","1");localStorage.removeItem("magnit-probe");return true}catch(e){return false}}
 /* подсказка о сохранности, если открыто как файл */
 const _render7=render;render=function(){_render7();if(!D.started||UI.tab!=="today"||offDay())return;let msg="";
-  if(!storageOk())msg="Этот браузер не даёт сохранять данные — после закрытия всё пропадёт. Открой приложение в Chrome или Safari.";
+  if(window.__startupStorageUnavailable)msg="Не удалось прочитать сохранённые данные. Мы не будем их перезаписывать — проверь доступ к хранилищу и перезапусти приложение.";
+  else if(!storageOk())msg="Этот браузер не даёт сохранять данные — после закрытия всё пропадёт. Открой приложение в Chrome или Safari.";
   else if(/^(file|content):/.test(location.protocol)&&!D.hint.origin)msg="Приложение открыто как файл. Данные хранятся в этом браузере: открывай файл всегда одним способом — лучше сохрани его в «Загрузки» и открывай оттуда в Chrome или Safari. И раз в неделю сохраняй копию в настройках.";
   if(!msg)return;const box=document.createElement("div");box.innerHTML=`<div class="mhint" style="margin-top:12px"><div class="grow"><p>${msg}</p>${storageOk()?`<div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="backup">Сохранить копию</button><button type="button" class="btn ghost sm" data-a="origx">Понятно</button></div>`:""}</div></div>`;const hd=document.querySelector("#app .hd");if(hd)hd.after(box.firstElementChild)};
 /* восстановление и импорт проходят через миграции */
-const _rsgo=A.rsgo;A.rsgo=e=>{if(window.__rs)migrate(window.__rs);_rsgo(e);migrate(D);saveNow()};
+/* H1.59m wraps the final async restore handler after its definition. */
 /* настройки: версия, перенос, отчёт */
 const _set5=sheetSettings;sheetSettings=function(){_set5();const el=document.createElement("div");const cp=window.Capacitor,isApp=!!(cp&&cp.isNativePlatform&&cp.isNativePlatform());
   el.innerHTML=`<label class="lb">${isApp?"Резервная копия":"Перенос в приложение"}</label><div class="card"><p class="small" style="margin:0;line-height:1.45">${isApp?"Сохрани копию данных файлом, прежде чем менять или удалять приложение. Для восстановления используй пункт «Восстановить из копии» в настройках. Проверь, что вместе с записями сохранились фото и аудио.":"Перед переходом в Android-приложение сохрани копию файлом, затем восстанови её в приложении через настройки. Копия включает цели, дела, привычки, дневник, деньги и другие данные. Проверь сохранность фотографий и аудио."}</p></div>
@@ -3727,13 +3802,13 @@ async function magnitLnChannel(P){
   magnitLnChannelReady=true;
   return true;
 }
-function lnPlan(){const R=D.set.rem||{},k=TODAY(),now=Date.now(),L=[];const at=(d,hm)=>{const [h,m]=hm.split(":").map(Number);const x=fromIso(d);x.setHours(h,m||0,0,0);return x};
-  const add=(when,title,body)=>{if(when.getTime()>now+30e3)L.push({when,title,body})};
+function lnPlan(){const R=D.set.rem||{},k=TODAY(),now=Date.now(),L=[];const at=(d,hm)=>{if(!localTimeExists(d,hm))return null;const [h,m]=hm.split(":").map(Number);const x=fromIso(d);x.setHours(h,m||0,0,0);return x};
+  const add=(when,title,body)=>{if(when&&when.getTime()>now+30e3)L.push({when,title,body})};
   for(let i=0;i<3;i++){const d=addDays(k,i),dy=D.days[d]||{};
     if(R.mOn!==false&&!dy.morning&&!dy.closed)add(at(d,R.morning||"08:30"),"Утро · планы","Минута: выбери главное на день");
     if(R.eOn!==false&&!dy.closed)add(at(d,R.evening||"21:30"),"Закроем день?","Минута: каким был день и три хороших момента");
     if(R.hOn!==false&&D.habits.some(h=>sched(h,d)&&!hm(h,d)))add(at(d,R.habits||"20:00"),"Привычки","Отметь, что получилось сегодня — хватит и минимума");
-    if(R.tOn!==false)D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time)return;const w=at(d,t.time);if(!t.magRemind)w.setMinutes(w.getMinutes()-(R.lead||10));add(w,t.magRemind?"Напоминание: "+t.t:"Скоро: "+t.t,"В "+t.time)});
+    if(R.tOn!==false)D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time)return;const w=at(d,t.time);if(!w)return;if(!t.magRemind)w.setMinutes(w.getMinutes()-(R.lead||10));add(w,t.magRemind?"Напоминание: "+t.t:"Скоро: "+t.t,"В "+t.time)});
     D.habits.forEach(h=>{if(!h.time||!sched(h,d)||hm(h,d))return;add(at(d,h.time),h.name,h.min?"Хотя бы "+h.min.replace(/^хотя бы\s*/i,""):"Время для привычки")})}
   /* Явные напоминания планируем и дальше трёхдневного окна,
      а не полагаемся на повторное открытие приложения. */
@@ -3815,7 +3890,7 @@ const _vToday14c=vToday;vToday=function(){return _vToday14c().replace("<b>Важ
 /* ---------- пример живёт отдельно от настоящих данных ---------- */
 const DEMOKEY="magnit2-demo";
 (()=>{let mode=null;try{mode=localStorage.getItem("magnit2-mode")}catch(e){}if(mode==="demo"){try{const s=localStorage.getItem(DEMOKEY);if(s){const o=JSON.parse(s);D=Object.assign(blank(),o);D.demo=true}}catch(e){}}})();
-function exitDemo(){try{localStorage.setItem("magnit2-mode","real");localStorage.removeItem(DEMOKEY)}catch(e){}D=load();if(D.demo){D=blank()}render();applyLook&&applyLook()}
+function exitDemo(){try{localStorage.setItem("magnit2-mode","real");localStorage.removeItem(DEMOKEY)}catch(e){}D=load();if(D.demo){D=blank()}if(window.__startupRecovery){render();applyLook&&applyLook();showStartupRecovery();return}migrate(D);if(window.__startupAutoRecovered&&!saveNow()){window.__startupRecovery={raw:window.__startupOriginalRaw,reason:"repair-save-failed"};window.__startupAutoRecovered=false;D=blank();render();applyLook&&applyLook();showStartupRecovery();return}render();applyLook&&applyLook();notifyStartupRecovery()}
 const _set14=sheetSettings;sheetSettings=function(){_set14();if(!D.demo)return;const el=document.createElement("div");el.innerHTML=`<div class="mhint" style="margin:12px 0"><div class="grow"><p>Сейчас открыт пример. Твои настоящие данные не тронуты и ждут отдельно.</p><button type="button" class="btn sm" data-a="exitdemo" style="margin-top:8px">Выйти из примера</button></div></div>`;const h=$("#sheet h3");if(h)h.after(el.firstElementChild)};
 Object.assign(A,{exitdemo:()=>{closeSheet();exitDemo();toast("Вернулись к твоим данным")}});
 /* в примере — заметная плашка с выходом на «Сегодня» */
@@ -4119,7 +4194,7 @@ Object.assign(A,{hdrw:e=>{const k=e.dataset.d;UI.habOpen=UI.habOpen===k?null:k;s
 
 /* --- уведомления: точное время, если за 10 минут уже поздно; проверка точных будильников Android --- */
 const _lnPlan18=lnPlan;lnPlan=function(){const L=_lnPlan18(),R=D.set.rem||{},now=Date.now();if(R.tOn===false)return L;
-  for(let i=0;i<2;i++){const d=addDays(TODAY(),i);D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time)return;const[h,m]=t.time.split(":").map(Number);const w=fromIso(d);w.setHours(h,m||0,0,0);const lead=new Date(w.getTime()-(R.lead||10)*60e3);
+  for(let i=0;i<2;i++){const d=addDays(TODAY(),i);D.tasks.forEach(t=>{if(t.done||t.d!==d||!t.time||!localTimeExists(d,t.time))return;const[h,m]=t.time.split(":").map(Number);const w=fromIso(d);w.setHours(h,m||0,0,0);const lead=new Date(w.getTime()-(R.lead||10)*60e3);
     if(lead.getTime()<=now+30e3&&w.getTime()>now+30e3)L.push({when:w,title:"Пора: "+t.t,body:"Сейчас, "+t.time})})}
   return L.sort((a,b)=>a.when-b.when)};
 async function lnExactCheck(){const P=LN();if(!P||typeof P.checkExactNotificationSetting!=="function")return null;try{const r=await P.checkExactNotificationSetting();const v=r&&(r.exact_alarm||r.exactAlarm);D.lnExact=v||null;return v}catch(e){return null}}
@@ -4267,7 +4342,7 @@ Object.assign(A,{
  evopen:e=>{snd("tick");sheetEvent(e.dataset.id)},
  evic:e=>{const x=evs().find(y=>y.id===UI.evId);if(!x)return;x.ic=e.dataset.v;document.querySelectorAll("#sheet .evic").forEach(b=>b.classList.toggle("on",b===e))},
  evy:e=>{const x=evs().find(y=>y.id===UI.evId);if(!x)return;x.y=x.y?0:1;e.classList.toggle("on",!!x.y)},
- evsave:()=>{const x=evs().find(y=>y.id===UI.evId);if(!x)return;const t=$("#evt").value.trim(),d=$("#evd").value,tm=$("#evtm").value;if(t)x.t=t;if(/^\d{4}-\d\d-\d\d$/.test(d))x.d=d;x.time=tm||"";save();closeSheet();render();toast("Событие сохранено");if(typeof lnSync==="function")lnSync()},
+ evsave:()=>{const x=evs().find(y=>y.id===UI.evId);if(!x)return;const t=$("#evt").value.trim(),d=$("#evd").value,tm=$("#evtm").value,effectiveDate=/^\d{4}-\d\d-\d\d$/.test(d)?d:x.d;if(tm&&!localTimeExists(effectiveDate,tm)){toast("В этот день такого времени нет из-за перевода часов. Выбери другое.");return}if(t)x.t=t;if(/^\d{4}-\d\d-\d\d$/.test(d))x.d=d;x.time=tm||"";save();closeSheet();render();toast("Событие сохранено");if(typeof lnSync==="function")lnSync()},
  evdel:()=>{D.events=evs().filter(y=>y.id!==UI.evId);save();closeSheet();render();toast("Событие удалено");if(typeof lnSync==="function")lnSync()},
 });
 
@@ -4295,16 +4370,33 @@ const _render22b=render;render=function(){_render22b();const app=$("#app");if(!a
   const{d,L}=upcNext();if(!d){row.remove();return}
   row.innerHTML=`${IC("cal",18,"color:var(--vio)")}<span class="grow">Запланировано ${d===addDays(TODAY(),1)?"на завтра":"на "+dshort(d)} · ${L.length}<span class="small mut" style="display:block;font-weight:500">${esc(L.slice(0,3).map(t=>t.t).join(", "))}${L.length>3?"…":""}</span></span><span class="mut">›</span>`};
 
-/* ---------- уведомления: сводка дня (события + привычки без времени) и события со временем ---------- */
-const _lnPlan22=lnPlan;lnPlan=function(){const L=_lnPlan22(),R=D.set.rem||{},now=Date.now();
-  const at=(d,hm)=>{const[h,m]=hm.split(":").map(Number);const x=fromIso(d);x.setHours(h,m||0,0,0);return x};
-  for(let i=0;i<3;i++){const d=addDays(TODAY(),i),E=plEv(d);
+/* ---------- уведомления: сводка дня, события со временем и дальние даты ---------- */
+const _lnPlan22=lnPlan;lnPlan=function(){const L=_lnPlan22(),R=D.set.rem||{},now=Date.now(),today=TODAY();
+  const at=(d,hm)=>{const[h,m]=hm.split(":").map(Number),x=fromIso(d);x.setHours(h,m||0,0,0);return x.getHours()===h&&x.getMinutes()===(m||0)?x:null};
+  const q1=R.quietFrom||"22:30",q2=R.quietTo||"07:30",hhmm=x=>pad(x.getHours())+":"+pad(x.getMinutes());
+  const quiet=x=>{const h=hhmm(x);return q1>q2?(h>=q1||h<q2):(h>=q1&&h<q2)};
+  const addTimed=(d,e)=>{const w=at(d,e.time);if(!w)return;const leadAt=new Date(w.getTime()-((R.lead||10)*60e3));
+    const fallback=leadAt.getTime()<=now+30e3||(quiet(leadAt)&&!quiet(w)),when=fallback?w:leadAt;
+    if(when.getTime()>now+30e3)L.push({when,title:fallback?"Пора: "+e.t:e.t,body:fallback?"Сейчас, "+e.time:"В "+e.time})};
+  for(let i=0;i<3;i++){const d=addDays(today,i),E=plEv(d);
     if(R.dOn!==false){const H=D.habits.filter(h=>!h.time&&!(h.start&&d<h.start)&&sched(h,d)&&!hm(h,d)),EA=E.filter(e=>!e.time);
-      if(EA.length||H.length){const w=at(d,R.digest||"09:00");if(w.getTime()>now+30e3){
+      if(EA.length||H.length){const w=at(d,R.digest||"09:00");if(w&&w.getTime()>now+30e3){
         const title=EA.length?(EA.length===1?EA[0].t:"Сегодня: "+EA.map(e=>e.t).join(", ")):"Привычки на сегодня";
         const body=[EA.length&&H.length?"Привычки: "+H.map(h=>h.name).join(", "):"",!EA.length?H.map(h=>h.name).join(", "):"",EA.length&&!H.length?(EA[0].y?"Не забудь поздравить":"Сегодня"):""].filter(Boolean).join(" · ");
         L.push({when:w,title,body})}}}
-    E.filter(e=>e.time).forEach(e=>{const w=at(d,e.time);w.setMinutes(w.getMinutes()-((D.set.rem||{}).lead||10));if(w.getTime()>now+30e3)L.push({when:w,title:e.t,body:"В "+e.time})})}
+    E.filter(e=>e.time).forEach(e=>addTimed(d,e))}
+  /* События дальше трёх дней планируем заранее: приложение может долго не открываться. */
+  const futureStart=addDays(today,3),futureEnd=addDays(today,366),futureByDay=new Map(),baseYear=Number(today.slice(0,4));
+  evs().forEach(e=>{
+    if(!e||!/^\d{4}-\d\d-\d\d$/.test(e.d||"")||iso(fromIso(e.d))!==e.d)return;
+    const dates=[];
+    if(e.y){const first=Math.max(Number(e.d.slice(0,4)),Number(futureStart.slice(0,4)));for(let y=first;y<=baseYear+3;y++){const d=String(y)+e.d.slice(4);if(d>=futureStart&&d<=futureEnd&&iso(fromIso(d))===d)dates.push(d)}}
+    else if(e.d>=futureStart)dates.push(e.d);
+    dates.forEach(d=>{if(e.time)addTimed(d,e);else if(R.dOn!==false){const a=futureByDay.get(d)||[];a.push(e);futureByDay.set(d,a)}})
+  });
+  if(R.dOn!==false)for(const [d,EA] of futureByDay){const w=at(d,R.digest||"09:00");if(!w||w.getTime()<=now+30e3)continue;
+    const title=EA.length===1?EA[0].t:"Сегодня: "+EA.map(e=>e.t).join(", ");
+    const body=EA.length===1&&EA[0].y?"Не забудь поздравить":"Сегодня";L.push({when:w,title,body})}
   return L.sort((a,b)=>a.when-b.when).slice(0,60)};
 
 /* ---------- настройки: сводка дня и шрифт ---------- */
@@ -5000,7 +5092,7 @@ if(NATIVE()){
 }
 /* если запись пришла через «Поделиться» (второе окно приложения) — подхватить свежие данные */
 saveNow=(function(prev){return function(){try{if(D)D._sv=Date.now()}catch(x){}return prev()}})(saveNow);
-function reloadIfChanged(){try{if(!D||D.demo||SH)return;const s=localStorage.getItem(KEY);if(!s)return;const o=JSON.parse(s);if((o._sv||0)>(D._sv||0)){D=load();applyLook();render()}}catch(x){}}
+function reloadIfChanged(){try{if(!D||D.demo||SH||window.__startupRecovery)return;const s=localStorage.getItem(KEY);if(!s)return;const o=JSON.parse(s);if((o._sv||0)>(D._sv||0)){D=load();if(window.__startupRecovery){applyLook();render();showStartupRecovery();return}migrate(D);if(window.__startupAutoRecovered&&!saveNow()){window.__startupRecovery={raw:window.__startupOriginalRaw,reason:"repair-save-failed"};window.__startupAutoRecovered=false;D=blank();applyLook();render();showStartupRecovery();return}applyLook();render();notifyStartupRecovery()}}catch(x){}}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)reloadIfChanged()});
 
 /* ---------- «Поделиться → Магнит»: текст или фото из другого приложения сразу в запись ---------- */
@@ -5029,8 +5121,31 @@ render=(function(prev){return function(){prev();if(!NATIVE()||UI.tab!=="today"||
     ref.insertAdjacentHTML("beforebegin",`<div class="mhint" id="lnoff" style="margin-top:12px"><div class="grow"><p>Уведомления приложения выключены — напоминания не придут.</p><div class="row" style="gap:8px;margin-top:10px"><button type="button" class="btn sm" data-a="phnot">Включить</button><button type="button" class="lnk" data-a="lnoffx">Не сейчас</button></div></div></div>`)}).catch(()=>{})}})(render);
 A.lnoffx=()=>{D.hint.lnOff=TODAY();save();const b=$("#lnoff");if(b)b.remove()};
 
+/* H1.59m: безопасный запуск при повреждённой структуре magnit2. */
+function showStartupRecovery(){
+  if(!window.__startupRecovery||document.querySelector("#startup-recovery"))return;
+  const state=window.__startupRecovery,canExport=typeof state.raw==="string";
+  const root=document.createElement("div");root.id="startup-recovery";root.className="startup-recovery";root.setAttribute("role","alertdialog");root.setAttribute("aria-modal","true");root.setAttribute("aria-labelledby","startup-recovery-title");
+  root.innerHTML=`<div class="startup-recovery-card"><h2 id="startup-recovery-title">Не удалось загрузить данные</h2><p>Твои данные не изменены. Попробуй восстановить их из резервной копии.</p><button type="button" class="btn w" data-recovery="restore">Восстановить</button><button type="button" class="lnk w" data-recovery="export" ${canExport?"":"disabled"}>Сохранить копию данных</button></div>`;
+  root.addEventListener("click",e=>{const b=e.target.closest("[data-recovery]");if(!b||b.disabled)return;if(b.dataset.recovery==="restore"){sheetRestore();return}if(b.dataset.recovery==="export")saveStartupRecoveryCopy()});
+  document.body.append(root);root.querySelector('[data-recovery="restore"]')?.focus();
+}
+function notifyStartupRecovery(){if(!window.__startupAutoRecovered)return;window.__startupAutoRecovered=false;try{toast("Данные восстановлены. Исходная копия сохранена.")}catch(e){}}
+async function saveStartupRecoveryCopy(){
+  const state=window.__startupRecovery;if(!state||typeof state.raw!=="string"){toast("Не удалось прочитать исходные данные");return false}
+  const raw=state.raw,photos={};
+  try{const ids=new Set(await PH.keys());try{const parsed=JSON.parse(raw);backupAttachmentIds0915(parsed).forEach(id=>ids.add(id))}catch(e){}for(const id of ids){try{const value=await PH.get(id);if(typeof value==="string"&&value.startsWith("data:"))photos[id]=value}catch(e){}}}catch(e){}
+  const payload=JSON.stringify({magnitRecovery:1,app:APP_VER,at:Date.now(),reason:state.reason,raw,photos});
+  const filename=`magnit-recovery-${iso(new Date())}.json`,CP=window.Capacitor,P=CP&&CP.Plugins||{};
+  if(CP&&CP.isNativePlatform&&CP.isNativePlatform()&&P.Filesystem){
+    try{const file=await P.Filesystem.writeFile({path:filename,data:payload,directory:"CACHE",encoding:"utf8"});if(P.Share){await P.Share.share({title:"Копия данных",text:"Исходная копия данных приложения",files:[file.uri],dialogTitle:"Сохранить копию"});toast("Копия подготовлена");return true}toast("Копия сохранена в памяти приложения");return true}catch(e){toast("Не удалось подготовить копию. Исходные данные не изменены.");return false}
+  }
+  try{const url=URL.createObjectURL(new Blob([payload],{type:"application/json"})),a=document.createElement("a");a.href=url;a.download=filename;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1200);toast("Копия данных подготовлена");return true}catch(e){toast("Не удалось подготовить копию");return false}
+}
+(function addStartupRecoveryStyles(){const st=document.createElement("style");st.id="startup-recovery-styles";st.textContent=`.startup-recovery{position:fixed;inset:0;z-index:39;display:grid;place-items:center;padding:20px;background:var(--scrim,rgba(25,30,35,.42));}.startup-recovery-card{width:min(100%,420px);padding:24px 20px 18px;border-radius:24px;background:var(--sheet,#fff);color:var(--fg,#20242c);box-shadow:0 16px 44px rgba(0,0,0,.2)}.startup-recovery-card h2{font-size:24px;line-height:1.15;margin:0 0 10px}.startup-recovery-card p{color:var(--mut,#68717d);font-size:15px;line-height:1.4;margin:0 0 18px}.startup-recovery-card .btn{margin:0 0 6px}.startup-recovery-card .lnk{display:block;margin:8px auto 0;min-height:42px}.startup-recovery-card button:disabled{opacity:.45}`;document.head.append(st)})();
 /* перерисовать с новыми слоями */
 applyLook();render();
+if(window.__startupRecovery)showStartupRecovery();else notifyStartupRecovery();
 
 /* ===== 0.9.14b: маркер прямо по тексту записи ===== */
 let INK=null;
@@ -5277,7 +5392,14 @@ lnPlan=(function(prev){return function(){const list=prev(),names=D.set.rem?.name
     if(n.title==="Закроем день?")return {...n,body:(d===TODAY()?progress:plan)+" Подведём итоги?"};
     if(n.title==="Привычки"||n.title==="Привычки на сегодня")return {...n,body:(d===TODAY()?`Привычки: ${hd} из ${hs.length}.`:`По плану: ${hs.length} ${plural(hs.length,"привычка","привычки","привычек")}.`)+" Можно начать с минимума."+(names&&n.title==="Привычки на сегодня"&&n.body?" "+n.body:"")};
     if(names)return n;
-    return {...n,title:"Напоминание",body:/^В \d|^Сейчас, \d/.test(n.body||"")?n.body:"Открой приложение, чтобы посмотреть подробности"};
+    const rawTitle=String(n.title||""),rawBody=String(n.body||"");
+    const taskReminder=/^(?:Скоро|Пора|Напоминание):/i.test(rawTitle);
+    const time=(rawBody.match(/(?:^|,\s*|^)\s*(?:В\s+|Сейчас,\s*)(\d{1,2}:\d{2})/i)||rawTitle.match(/\b(\d{1,2}:\d{2})\b/))?.[1];
+    if(taskReminder)return {...n,title:"Пора к делу",body:time?`Запланировано дело на ${time}. Открой «Сегодня», чтобы отметить выполнение или перенести.`:"Есть запланированное дело. Открой «Сегодня», чтобы отметить его или перенести."};
+    if(/^(?:сегодня|не забудь поздравить|событие)/i.test(rawBody)||/юбилей|годовщ|день рождения/i.test(rawTitle))return {...n,title:"Событие сегодня",body:"В календаре есть событие. Открой его, чтобы посмотреть детали."};
+    if(/время для привычки|хотя бы/i.test(rawBody))return {...n,title:"Время для привычки",body:"В трекере есть запланированная привычка. Можно начать с минимума или отметить выполнение."};
+    if(time)return {...n,title:"Событие по времени",body:`Запланировано событие на ${time}. Открой календарь, чтобы посмотреть детали.`};
+    return {...n,title:"Пора заглянуть в план",body:"Есть запланированное действие. Открой «Сегодня», чтобы посмотреть детали."};
   })}})(lnPlan);
 sheetSettings=(function(prev){return function(){prev();const sh=$("#sheet");if(!sh||sh.querySelector("#notifnames"))return;
   const R=D.set.rem||{},row=`<div class="op"><span class="grow">Показывать названия в уведомлениях<span class="small mut" style="display:block">Выключено по умолчанию — на экране блокировки личные записи скрыты</span></span><button type="button" id="notifnames" class="tog${R.names===true?" on":""}" data-a="notifnames" aria-label="Показывать названия в уведомлениях" aria-pressed="${R.names===true}"></button></div>`;
@@ -5630,7 +5752,7 @@ A.rsgo=async function(){const preview=window.__rs;if(!preview||restoreBusy157e||
   }catch(e){if(!committed){for(const id of staged)await PH.del(id);toast("Не удалось восстановить копию. Текущие данные не заменены.")}else{toast("Копия сохранена, но экран не обновился. Перезапусти приложение.")} }
   finally{restoreBusy157e=false;if(b.isConnected)b.disabled=false}
 };
-
+const _startupRestore157m=A.rsgo;A.rsgo=async e=>{const before=D;await _startupRestore157m(e);if(D!==before){if(window.__startupRecovery){window.__startupRecovery=null;document.querySelector("#startup-recovery")?.remove();}migrate(D);saveNow()}};
 
 /* ===== 0.9.15 этап 08, №22: полезные команды центрального магнита =====
    Ничего не сохраняем на этапе разбора: пользователь видит карточку и
@@ -6016,7 +6138,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
   sheetOps=function(){const [from,to]=bounds();const lo=from<=to?from:to,hi=from<=to?to:from;
     const items=allOperations().filter(x=>x.d&&x.d>=lo&&x.d<=hi&&(filter.kind==='all'||(filter.kind==='inc'?x.in:!x.in)));
     const inc=sumAmount(items.filter(x=>x.in)),sp=sumAmount(items.filter(x=>!x.in));
-    openSheet(`<h3>Операции</h3><p class="sub">Выбери, что и за какой период посмотреть.</p>
+    openSheet(`<h3>Операции</h3>
       <div class="dm-filters" aria-label="Вид операций">${[['all','Все'],['inc','Доходы'],['sp','Траты']].map(([v,t])=>`<button type="button" class="chip${filter.kind===v?' on':''}" data-a="dmopfilter" data-v="${v}" aria-pressed="${filter.kind===v}">${t}</button>`).join('')}</div>
       <label class="lb" style="margin-top:4px">Период</label><div class="dm-filters" aria-label="Период операций">${[['7','7 дней'],['30','30 дней'],['month','Месяц'],['all','Всё время'],['custom','Свои даты']].map(([v,t])=>`<button type="button" class="chip${filter.range===v?' on':''}" data-a="dmoprange" data-v="${v}" aria-pressed="${filter.range===v}">${t}</button>`).join('')}</div>
       ${filter.range==='custom'?`<div class="dm-custom"><label>С даты<input type="date" class="field" id="dmfrom" value="${lo}"></label><label>По дату<input type="date" class="field" id="dmto" value="${hi}"></label></div>`:''}
@@ -6145,16 +6267,16 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  const dateRe=/(?:послезавтра|завтра|сегодня|вчера|(?:в|во)\s+(?:понедельник|вторник|среду|четверг|пятницу|субботу|воскресенье)|\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)(?:\s+\d{4})?)/i;
  const month=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
  const weekday=['воскресенье','понедельник','вторник','среду','четверг','пятницу','субботу'];
- const timeRe=/(?:в\s+половине\s+(?:первого|второго|третьего|четвертого|пятого|шестого|седьмого|восьмого|девятого|десятого|одиннадцатого|двенадцатого)(?:\s+(?:утра|вечера|дня))?|(?:в|к)\s+\d{1,2}(?::\d{2})?(?!\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря))(?:\s+(?:утра|вечера|дня))?)(?![\dа-яё])/i;
+ const timeRe=/(?:(?:в|к)\s+половине\s+(?:первого|второго|третьего|четвертого|пятого|шестого|седьмого|восьмого|девятого|десятого|одиннадцатого|двенадцатого)(?:\s+(?:утра|вечера|дня|ночи))?|(?:в|к)\s+\d{1,2}(?::\d{2})?(?!\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря))(?:\s+(?:утра|вечера|дня|ночи))?)(?![\dа-яё])/i;
  const ord=['первого','второго','третьего','четвертого','пятого','шестого','седьмого','восьмого','девятого','десятого','одиннадцатого','двенадцатого'];
  const relRe=/через\s+(?:(\d+)\s*(минут[уы]?|мин\.?|час(?:а|ов)?|дн(?:я|ей)|день)|полчаса|час|неделю)/i;
  function temporal(s,ctx){let d=ctx.date,time=null,bad=false;const t=norm(s),m=t.match(dateRe),r=t.match(relRe),tm=t.match(timeRe);if(m){const a=m[0];if(a==='завтра')d=addDays(d,1);else if(a==='послезавтра')d=addDays(d,2);else if(a==='вчера')d=addDays(d,-1);else if(a!=='сегодня'){const n=a.match(/^(\d+)\s+(\S+)(?:\s+(\d{4}))?$/);if(n){const y=+(n[3]||d.slice(0,4)),mo=month.indexOf(n[2]),x=new Date(y,mo,+n[1]);if(x.getMonth()!==mo||x.getDate()!==+n[1])bad=true;else {d=iso(x);if(!n[3]&&d<ctx.date){const next=new Date(y+1,mo,+n[1]);if(next.getMonth()!==mo)bad=true;else d=iso(next)}}}else{const w=weekday.indexOf(a.replace(/^во?\s+/,''));if(w>=0)d=addDays(d,(w-fromIso(d).getDay()+7)%7||7)}}}
- if(tm){const v=tm[0];let h,mi=0;const half=ord.findIndex(x=>v.includes(x));if(half>=0){h=half;mi=30;if(h===0)h=12}else{const n=v.match(/(\d{1,2})(?::(\d{2}))?/);h=+n[1];mi=+(n[2]||0)}if(/вечера|дня/.test(v)&&h<12)h+=12;if(h>23||mi>59)bad=true;else time=pad(h)+':'+pad(mi)}
+ if(tm){const v=tm[0];let h,mi=0;const half=ord.findIndex(x=>v.includes(x));if(half>=0){h=half;mi=30;if(h===0)h=12}else{const n=v.match(/(\d{1,2})(?::(\d{2}))?/);h=+n[1];mi=+(n[2]||0)}if(/вечера|дня/.test(v)&&h<12)h+=12;if(/ночи/.test(v)&&h===12)h=0;if(!/(?:утра|вечера|дня|ночи)/.test(v)&&h>=1&&h<=7)bad=true;if(h>23||mi>59)bad=true;else time=pad(h)+':'+pad(mi)}
  if(r){let n=+(r[1]||1),unit=r[2]||r[0];if(/дн|день|недел/.test(unit))d=addDays(ctx.date,/недел/.test(unit)?7:n);else{if(ctx.date!==TODAY()&&!ctx.clock)bad=true;let x=ctx.clock?new Date(ctx.clock):new Date();x=new Date(+x+(/полчаса/.test(unit)?30:/час/.test(unit)?n*60:n)*60000);d=iso(x);time=pad(x.getHours())+':'+pad(x.getMinutes())}}return {d,time,bad,explicit:!!(m||r||tm)} }
  const moneyRe=/(\d+(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d{1,2})?)\s*(тысяч[аи]?|тыс\.?)?\s*(?:₽|руб(?:лей|ля|ль)?\.?|р\.)(?![а-яё])/gi;
  function amount(s){if(/(?:^|\s)[-−]\s*\d|(?:^|\s)минус\s+\d/i.test(s))return null;const a=[...s.matchAll(moneyRe)];if(a.length===1){const m=a[0],n=Number(m[1].replace(/\s/g,'').replace(',','.'))*(m[2]?1000:1);return n>0&&Number.isFinite(n)?{n,raw:m[0]}:null}if(a.length)return null;if(/(?:^|\s)\d+\s*(?:час(?:а|ов)?|минут[уы]?|дн(?:я|ей)|литр|килограмм|кг|письм|сообщен)/i.test(s))return null;const m=s.match(/(?:на|за|потратил[аи]?|получил[аи]?|заработал[аи]?)\s+(\d+(?:[ \u00a0]\d{3})*(?:[.,]\d{1,2})?)(?![\d\s]*\s*(?:штук|кг|яблок|литр))/i);if(!m){const thousands=[...s.matchAll(/(\d+(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d{1,2})?)\s*(?:тысяч[аи]?|тыс\.?)(?![а-яё])/gi)];if(thousands.length===1&&/(?:^|\s)(?:получил[аи]?|заработал[аи]?|потратил[аи]?|оплатил[аи]?|заплатил[аи]?)(?![а-яё])/i.test(s)&&[...s.matchAll(/\d+(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d+)?/g)].length===1){const n=Number(thousands[0][1].replace(/\s/g,'').replace(',','.'))*1000;return n>0&&Number.isFinite(n)?{n,raw:thousands[0][0]}:null}return null}const suffix=s.slice(m.index+m[0].length).match(/^\s*(?:тысяч[аи]?|тыс\.?)(?![а-яё])/i);const n=Number(m[1].replace(/\s/g,'').replace(',','.'))*(suffix?1000:1);return n>0&&Number.isFinite(n)?{n,raw:m[1]+(suffix?suffix[0]:'')}:null}
- function split(s){if(/^\s*(?:список|чеклист|(?:создай|составь)\s+(?:список|чеклист)|дневник\s*:|заметка\s*:)/i.test(s))return [s.trim()];return s.split(/\n+|;\s*|[!?]+\s*|(?<!\d)\.\s+|(?<=\d)\.\s+(?=[А-ЯЁ])|,\s*(?=(?:а\s+)?(?:завтра|сегодня|вчера|в\s+пятницу|потратил|получил|напомни|хочу|нужно|помочь|помоги|записаться|забрать|проверить|подготовить|отнести|позвонить|съездить|поехать|посмотреть))|\s+и\s+(?=(?:так\s+не\s+забыть\s+про\s+событие|не\s+забыть\s+))|\s+(?:а|и)\s+ещ[её]\s+(?=\S)/i).map(trim).filter(Boolean)}
- const taskVerb=/(?:позвонить|купить|зайти|сходить|съездить|поехать|посмотреть|записаться|забрать|отправить|сделать|проверить|взять|выключить|включить|оплатить|подготовить|поздравить|встретиться|прочитать|читать|выпить|пить|помыть|убрать|постирать|разобрать|поговорить|помочь|помоги|помогать|найти|посетить|выспаться|написать|сдать|закончить|начать|наладить|заниматься|выполнить|заполнить|отвезти|заказать|выучить|выгулять|открыть|закрыть|уйти|уехать|выйти|прийти|приехать|вернуться|встать|лечь|забронировать|договориться|перезвонить|поменять|забрать|отнести|принести|дойти|успеть)(?![а-яё])/i;
+ function split(s){if(/^\s*(?:список|чеклист|(?:создай|составь)\s+(?:список|чеклист)|дневник\s*:|заметка\s*:)/i.test(s))return [s.trim()];const safe=s.replace(/(^|[^а-яё])(руб|тыс|млн|млрд|др|т\.д|т\.п)\.(?=\s)/gi,'$1$2\uE000');return safe.split(/\n+|;\s*|[!?]+\s*|(?<!\d)\.\s+|(?<=\d)\.\s+(?=[А-ЯЁ])|,\s*(?=(?:а\s+)?(?:завтра|сегодня|вчера|в\s+пятницу|потратил|получил|напомни|хочу|нужно|помочь|помоги|записаться|забрать|проверить|подготовить|отнести|позвонить|съездить|поехать|посмотреть))|\s+но\s+(?=(?:завтра|сегодня|послезавтра|вчера|нужно|надо|необходимо|напомни|планирую|хочу))|\s+и\s+(?=(?:так\s+не\s+забыть\s+про\s+событие|не\s+забыть\s+))|\s+(?:а|и)\s+ещ[её]\s+(?=\S)/i).map(x=>trim(x.replace(/\uE000/g,'.'))).filter(Boolean)}
+ const taskVerb=/(?:позвонить|позвоню|позвоним|купить|куплю|купим|зайти|сходить|схожу|съездить|съезжу|поехать|поеду|поедем|посмотреть|записаться|запишусь|забрать|заберу|заберем|заберём|отправить|отправлю|отправим|сделать|сделаю|сделаем|проверить|проверю|взять|возьму|выключить|выключу|включить|включу|оплатить|оплачу|оплатим|подготовить|подготовлю|поздравить|встретиться|прочитать|прочитаю|читать|выпить|выпью|пить|помыть|помою|убрать|уберу|постирать|постираю|разобрать|разберу|поговорить|поговорю|помочь|помоги|помогать|помогу|найти|найду|посетить|выспаться|написать|напишу|сдать|сдам|закончить|закончу|начать|начну|наладить|заниматься|занимаюсь|займусь|выполнить|заполнить|отвезти|заказать|выучить|выгулять|открыть|закрыть|уйти|уехать|выйти|прийти|приехать|вернуться|встать|лечь|забронировать|забронирую|договориться|договорюсь|перезвонить|перезвоню|поменять|поменяю|отнести|отнесу|принести|принесу|дойти|дойду|успеть|успею|иду|идем|идём|пойду|пойдем|пойдём|еду|едем|звоним)(?![а-яё])/i;
  const navTargets={дневник:'diary',цели:'goals',дела:'today',сегодня:'today',привычки:'tracker',трекер:'tracker',финансы:'money',деньги:'money',настройки:'settings',комнату:'room',календарь:'calendar',статистику:'rhythm',целям:'goals',делам:'today',привычкам:'tracker',настройкам:'settings',дневнику:'diary',календарю:'calendar',финансам:'money',деньгам:'money',вечер:'evening'};
  const labels={goalstate:'Изменить состояние цели',goalplan:'Добавить шаг в план цели',eventmove:'Перенести событие',habmark:'Отметить привычку',theme:'Оформление',event:'Событие',task:'Дело',habit:'Привычка',wish:'Желание',spend:'Расход',inc:'Доход',note:'Дневник',nav:'Открыть раздел',done:'Отметить выполненным',move:'Перенести дело',jar:'В копилку',list:'Список',listmark:'Отметить покупки'};
  /* H1.57c: local read-only answers from current app data, no mutation. */
@@ -6168,7 +6290,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
   m=t.match(/^(?:покажи (?:мои )?(планы|дела|события)|какие (?:у меня )?(планы|дела|события)|что у меня запланировано)\s+(?:на\s+)?(сегодня|завтра|послезавтра)$/);
   if(m){const d=addDays(k,{сегодня:0,завтра:1,послезавтра:2}[m[3]]),scope=m[1]||m[2]||'планы',tasks=D.tasks.filter(x=>x.d===d&&!x.done),events=(D.events||[]).filter(e=>e.d===d||(e.y&&e.d.slice(5)===d.slice(5)&&d>=e.d.slice(0,4)+'-01-01')),hab=D.habits.filter(h=>(!h.start||d>=h.start)&&sched(h,d)&&!hm(h,d)),rows=[...(scope!=='события'?tasks.map(x=>'Дело: '+(x.time?x.time+' · ':'')+x.t):[]),...(scope!=='дела'?events.map(x=>'Событие: '+(x.time?x.time+' · ':'')+x.t):[]),...(scope==='планы'?hab.map(h=>'Привычка: '+h.name):[])];return answer((scope==='события'?'События':scope==='дела'?'Дела':'Планы')+' · '+d,rows.length?[...rows.slice(0,20),...(rows.length>20?['Ещё: '+(rows.length-20)+'. Полный список в календаре и разделе «Сегодня».']:[])]:[scope==='события'?'Нет событий.':scope==='дела'?'Нет незавершённых дел.':'Нет незавершённых дел, событий и привычек по расписанию.']);}
   if(/^(?:покажи (?:мой )?прогресс по целям|покажи (?:мои )?активные цели|какие (?:у меня )?цели)$/.test(t)){const goals=D.goals.filter(g=>g.st==='work');return answer('Активные цели',goals.length?goals.map(g=>g.t+' · записано шагов: '+(g.steps||[]).length+(g.next?' · следующий: '+g.next:'')):['Нет активных целей.']);}
-  if(/^(?:покажи (?:мои )?(?:сегодняшние привычки|привычки на сегодня)|какие (?:у меня )?привычки сегодня|что осталось из привычек сегодня)$/.test(t)){const h=D.habits.filter(x=>(!x.start||x.start<=k)&&sched(x,k));return answer('Привычки · '+k,h.length?h.map(x=>x.name+' · '+({0:'не отмечено',1:'сделано',2:'минимум'}[hm(x,k)]||'не отмечено')):['Нет привычек по расписанию.']);}
+  if(/^(?:покажи (?:мои )?(?:сегодняшние привычки|привычки на сегодня|привычки сегодня)|какие (?:у меня )?привычки сегодня|что осталось из привычек сегодня)$/.test(t)){const h=D.habits.filter(x=>(!x.start||x.start<=k)&&sched(x,k));return answer('Привычки · '+k,h.length?h.map(x=>x.name+' · '+({0:'не отмечено',1:'сделано',2:'минимум'}[hm(x,k)]||'не отмечено')):['Нет привычек по расписанию.']);}
   if(/^(?:покажи (?:мои )?копилки|сколько (?:я )?отложил[аи]?|сколько в копилках)$/.test(t)){return answer('Копилки',D.money.jars.length?D.money.jars.map(j=>j.name+' · '+fmt(jarSum(j))+(j.target?' из '+fmt(j.target):'')):['Нет копилок.']);}
   return null;
  }
@@ -6198,7 +6320,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  function listMarkKey59(s){return key(lex59.get(norm(trim(s)))||s)}
  function markTargets59(r){const lists=listCandidates59(r.d,r.text);if(lists.length!==1||!Number.isFinite(r.listTs)||lists[0].ts!==r.listTs)return null;const out=[];for(const line of r.lines||[]){const matches=lists[0].list.filter(x=>listMarkKey59(x.t)===listMarkKey59(line));if(matches.length!==1||matches[0].done||out.includes(matches[0]))return null;out.push(matches[0])}return out.length?out:null}
  function listMark59(src,when){if(when.time||relRe.test(src)||/(?:₽|руб|(?:^|\s)за\s+\d|(?:^|\s)не(?:\s|$))/i.test(src))return null;const s=trim(src.replace(dateRe,''));let m=s.match(/^(?:отметь|отметить)\s+(.+?)\s+(?:в покупках|в списке покупок)\s*(?:как купленн\S*)?$/i)||s.match(/^(.+?)\s+уже\s+купил[аи]?$/i)||s.match(/^(?:я\s+)?уже\s+купил[аи]?\s+(.+)$/i);if(!m)return null;const lines=listLines59(m[1],true),lists=listCandidates59(when.d,'Покупки');if(!lines||lists.length!==1||!Number.isFinite(lists[0].ts))return {bad:true};const r={kind:'listmark',text:'Покупки',d:when.d,lines,listTs:lists[0].ts};const targets=markTargets59(r);return targets?{...r,lines:targets.map(x=>x.t)}:{bad:true}}
- function split59(s){const base=split(s),out=[];let carryDate=null;for(let part of base){part=part.replace(/^так\s+(?=не\s+забыть\s+про\s+событие)/i,'');part=part.replace(/^\s*(?:проверка|тест)\s+(?=(?:сегодня|завтра|послезавтра)\s+(?:(?:у\s+[^,.;!?]+\s+)?(?:день\s+рождения|годовщина|юбилей|свадьба|именины|праздник)))/i,'');const ownDate=part.match(dateRe);if(ownDate)carryDate=ownDate[0];else if(carryDate&&/^(?:(?:мне|нам)\s+)?(?:нужно|надо|необходимо)\s+(?:понять|узнать|разобраться|купить|заказать|приобрести|найти|забронировать|записаться|оформить|подать|получить|взять|сделать|отправить|подумать|проверить|подготовить|поздравить)(?![а-яё])|^(?:помочь|помоги|помогать|позвонить|забрать|оплатить|сходить|съездить|поехать|посмотреть|отправить|записаться|проверить|подготовить|отнести|не\s+забыть(?:\s+про\s+событие)?)(?![а-яё])/i.test(part))part=carryDate+' '+part;if(!/^(?:список|чеклист|дневник\s*:|заметка\s*:)/i.test(part)&&/(?:^|\s)(?:купить|куплю|купи|закупить|нужны)(?:\s|$)/i.test(part)){const m=part.match(/^(.*?)(?:,\s*(?:а\s+)?|\s+и\s+)(?=(?:позвонить|забрать|оплатить|сходить|отправить|напомни|потратил[аи]?|получил[аи]?|записаться|проверить|подготовить|отнести)\s)(.+)$/i);if(m&&listIntent59(m[1],{time:null})){const dt=m[1].match(dateRe);out.push(trim(m[1]));const tail=m[2].split(/(?:,\s*|\s+и\s+)(?=(?:позвонить|забрать|оплатить|сходить|отправить|записаться|проверить|подготовить|отнести)\s)/i);if(tail.every(x=>/^(?:позвонить|забрать|оплатить|сходить|отправить|напомни|потратил[аи]?|получил[аи]?|записаться|проверить|подготовить|отнести)\s/i.test(x)))out.push(...tail.map(x=>dt&&!dateRe.test(x)?dt[0]+' '+x:x));else out.push(dt&&!dateRe.test(m[2])?dt[0]+' '+m[2]:m[2]);continue}}out.push(part)}return out;}
+ function split59(s){const base=split(s),out=[];let carryDate=null;for(let part of base){part=part.replace(/^так\s+(?=не\s+забыть\s+про\s+событие)/i,'');part=part.replace(/^\s*(?:проверка|тест)\s+(?=(?:сегодня|завтра|послезавтра)\s+(?:(?:у\s+[^,.;!?]+\s+)?(?:день\s+рождения|годовщина|юбилей|свадьба|именины|праздник)))/i,'');const ownDate=part.match(dateRe);if(ownDate)carryDate=ownDate[0];else if(carryDate&&/^(?:(?:мне|нам)\s+)?(?:нужно|надо|необходимо)\s+(?:понять|узнать|разобраться|купить|заказать|приобрести|найти|забронировать|записаться|оформить|подать|получить|взять|сделать|отправить|подумать|проверить|подготовить|поздравить)(?![а-яё])|^(?:помочь|помоги|помогать|позвонить|позвоню|позвоним|забрать|заберу|заберем|заберём|оплатить|оплачу|оплатим|сходить|схожу|съездить|съезжу|поехать|поеду|поедем|посмотреть|отправить|отправлю|отправим|записаться|запишусь|проверить|проверю|подготовить|подготовлю|отнести|отнесу|не\s+забыть|не\s+забудь)(?![а-яё])/i.test(part))part=carryDate+' '+part;if(!/^(?:список|чеклист|дневник\s*:|заметка\s*:)/i.test(part)&&/(?:^|\s)(?:купить|куплю|купим|купи|закупить|нужны)(?:\s|$)/i.test(part)){const m=part.match(/^(.*?)(?:,\s*(?:а\s+)?|\s+и\s+)(?=(?:позвонить|позвоню|позвоним|забрать|заберу|заберем|заберём|оплатить|оплачу|оплатим|сходить|схожу|съездить|съезжу|отправить|отправлю|отправим|напомни|потратил[аи]?|получил[аи]?|записаться|запишусь|проверить|проверю|подготовить|подготовлю|отнести|отнесу)\s)(.+)$/i);if(m&&(listIntent59(m[1],{time:null})||/^(?:(?:сегодня|завтра|послезавтра)\s+)?(?:я\s+)?куплю\s+.+$/i.test(m[1]))){const dt=m[1].match(dateRe);out.push(trim(m[1]));const tail=m[2].split(/(?:,\s*|\s+и\s+)(?=(?:позвонить|позвоню|позвоним|забрать|заберу|заберем|заберём|оплатить|оплачу|оплатим|сходить|схожу|съездить|съезжу|отправить|отправлю|отправим|записаться|запишусь|проверить|проверю|подготовить|подготовлю|отнести|отнесу)\s)/i);if(tail.every(x=>/^(?:позвонить|позвоню|позвоним|забрать|заберу|заберем|заберём|оплатить|оплачу|оплатим|сходить|схожу|съездить|съезжу|отправить|отправлю|отправим|напомни|потратил[аи]?|получил[аи]?|записаться|запишусь|проверить|проверю|подготовить|подготовлю|отнести|отнесу)\s/i.test(x)))out.push(...tail.map(x=>dt&&!dateRe.test(x)?dt[0]+' '+x:x));else out.push(dt&&!dateRe.test(m[2])?dt[0]+' '+m[2]:m[2]);continue}}out.push(part)}return out;}
  function analyze(text,context={}){const ctx={date:TODAY(),...context},items=[],unknown=[],answers=[];const push=(kind,text,extra={})=>{if(trim(text))items.push({kind,text:cap(trim(text)),...extra})};const raw=String(text||'');if(!/^\s*(?:дневник|заметка|мысль)\s*:/i.test(raw)&&/(?:[,;.!?]\s*|\s)(?:ой\s+нет|нет\s*,?\s*лучше|точнее|вернее|я передумал[аи]?|отмена)(?![а-яё])/i.test(raw))return {items:[],unknown:['Уточни окончательный вариант фразы.'],answers:[]};const parts=split59(raw);if(parts.length>40)return {items:[],unknown:['Слишком много действий. Раздели текст на части.']};for(const part of parts){const src=part.replace(/^(?:привет|здравствуй(?:те)?)[,\s]+(?=распознай|найди действия)/i,'').replace(/^(?:распознай(?:\s+мне)?|найди действия(?:\s+в тексте)?)\s*[:,]?\s+(?=\S)/i,'').replace(/^(?:а|и)\s+(?=завтра|послезавтра|сегодня|вчера|в\s+|нужно|хочу|напомни)/i,'');const t=norm(src),when=temporal(src,ctx),a=amount(src);let m;if(/(?:купить|куплю|купи)\s+(?:один|одна|одно|два|две|три|четыре|пять|шесть|семь|восемь|девять|десять|одиннадцать|двенадцать|двадцать)\s+рубл(?:ей|я|ь)(?![а-яё])/i.test(src)){unknown.push('Уточни, что именно нужно купить: '+src);continue}
  if(m=src.match(/^(главное|важно|мелочь|потом)\s*:\s*(.+)$/i)){const sub=analyze(m[2],ctx);if(sub.items.length===1&&sub.items[0].kind==='task'){const r=sub.items[0];r.size=({главное:'big',важно:'mid',мелочь:'small',потом:'small'})[norm(m[1])];if(norm(m[1])==='потом'){r.later=true;r.d=null}items.push(r)}else unknown.push(src);continue}
  if(/(?:^|\s)(?:надо|нужно|решил|решила)\s+не\s+(?!забыть)/.test(t))continue;
@@ -6247,13 +6369,13 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  const plan=trim(src.replace(dateRe,'').replace(relRe,'').replace(timeRe,'')).replace(/^(?:значит|итак|тогда)[,\s]+/i,'').replace(/^(?:мы|я)\s+/i,'');
  const colloquial=plan.match(/^(занимаемся|займ[её]мся|займусь|занимаюсь|делаем|сделаем|сделаю|иду|ид[её]м|пойду|пойд[её]м|еду|едем|поеду|поедем|звоним|позвоню|позвоним|заберу|забер[её]м|отправлю|отправим)\s+(.+)$/i);
  if(when.explicit&&when.d>ctx.date&&colloquial&&!raw.slice(raw.indexOf(part)+part.length).trimStart().startsWith('?')&&!/[?]/.test(src)&&!/(?:^|[\s,])(?:не|если|или|может|наверное|возможно|вряд|сомневаюсь)(?=[\s,]|$)/i.test(src)){const v=norm(colloquial[1]);const verb=/^(?:занима|займ)/.test(v)?'Заниматься':/^(?:дела|сдела)/.test(v)?'Сделать':/^(?:иду|идем|пойд)/.test(v)?'Пойти':/^(?:ед|поед)/.test(v)?'Поехать':/^(?:звони|позвон)/.test(v)?'Позвонить':/^забер/.test(v)?'Забрать':'Отправить';push('task',verb+' '+trim(colloquial[2]),{d:when.d,time:when.time});continue}
- const base=trim(t.replace(dateRe,'').replace(relRe,'').replace(timeRe,'')).replace(/^бы\s+/i,'');const start=base.replace(/^(?:я\s+)?(?:мне\s+)?(?:ещ[её]\s+)?(?:нужно|надо|необходимо|хочу|планирую|напомни(?:\s+мне)?|не забыть|добавь(?:\s+дело)?|запиши(?:\s+дело)?)\s+/i,'').replace(/^не забыть\s+/i,'');const first=start.split(/\s/)[0];const explicitNeed=/^(?:я\s+)?(?:мне\s+)?(?:ещ[её]\s+)?(?:нужно|надо|необходимо|напомни(?:\s+мне)?|не забыть|добавь(?:\s+дело)?|запиши(?:\s+дело)?)\s+/i.test(base);const discovery=base.match(/^(?:(?:мне|нам)\s+)?(?:нужно|надо|необходимо|хочу|планирую)\s+(?:понять|узнать|разобраться)\s*,?\s*(где|как)\s+(.+)$/i);if(discovery&&/^(?:купить|заказать|приобрести|найти|забронировать|записаться|оформить|подать|получить|взять|сделать|отправить)(?![а-яё])/i.test(norm(discovery[2]))){push('task',(norm(discovery[1])==='где'?'Узнать, где ':'Узнать, как ')+trim(discovery[2]),{d:when.d,time:when.time});continue}const intent=taskVerb.test(first)||(explicitNeed&&INF.test(first)&&!/^(?:быть|казаться|хотеть|мочь|чувствовать|знать|понимать|думать|верить|любить)$/.test(first))||/^(?:после работы|после завтрака)\s+(?:хочу|надо|нужно)\s/.test(base);
+ const base=trim(t.replace(dateRe,'').replace(relRe,'').replace(timeRe,'')).replace(/^бы\s+/i,'');const start=base.replace(/^(?:я\s+)?(?:мне\s+)?(?:ещ[её]\s+)?(?:нужно|надо|необходимо|хочу|планирую|напомни(?:\s+мне)?|не забыть|не забудь|добавь(?:\s+дело)?|запиши(?:\s+дело)?)\s+/i,'').replace(/^не забыть\s+/i,'').replace(/^не забудь\s+/i,'');const first=start.split(/\s/)[0];const explicitNeed=/^(?:я\s+)?(?:мне\s+)?(?:ещ[её]\s+)?(?:нужно|надо|необходимо|напомни(?:\s+мне)?|не забыть|не забудь|добавь(?:\s+дело)?|запиши(?:\s+дело)?)\s+/i.test(base);const discovery=base.match(/^(?:(?:мне|нам)\s+)?(?:нужно|надо|необходимо|хочу|планирую)\s+(?:понять|узнать|разобраться)\s*,?\s*(где|как)\s+(.+)$/i);if(discovery&&/^(?:купить|заказать|приобрести|найти|забронировать|записаться|оформить|подать|получить|взять|сделать|отправить)(?![а-яё])/i.test(norm(discovery[2]))){push('task',(norm(discovery[1])==='где'?'Узнать, где ':'Узнать, как ')+trim(discovery[2]),{d:when.d,time:when.time});continue}const intent=taskVerb.test(first)||(explicitNeed&&INF.test(first)&&!/^(?:быть|казаться|хотеть|мочь|чувствовать|знать|понимать|думать|верить|любить)$/.test(first))||/^(?:после работы|после завтрака)\s+(?:хочу|надо|нужно)\s/.test(base);
  if(m=src.match(/^(?:завтра\s+)?куплю\s+(.+)$/i)){push('task','Купить '+trim(m[1].replace(dateRe,'')),{d:when.d,time:when.time});continue}
- if(intent){const reminder=/^напомни(?:\s|$)/.test(base);if(reminder&&(/(?:^|\s)в\s+[1-7](?=\s|$)(?!\s*(?:утра|вечера|дня))/.test(t)||!when.time||new Date(when.d+'T'+when.time).getTime()<=Date.now())){unknown.push(src);continue}let title=trim(src.replace(dateRe,'').replace(relRe,'').replace(timeRe,'').replace(/^\s*бы\s+/i,'').replace(/^\s*(?:мне\s+)?(?:нужно|надо|необходимо|хочу|планирую|напомни(?:\s+мне)?|добавь(?:\s+дело)?|запиши(?:\s+дело)?)\s+/i,'').replace(/^\s*(?:ещ[её]\s+)?(?:нужно\s+)?не забыть\s+/i,''));if(title){const pair=title.match(/^(.+?)\s+и\s+(.+)$/i);const safePair=pair&&!reminder&&!when.time&&!relRe.test(src)&&!dateRe.test(pair[2])&&!dateRe.test(src.split(/\s+и\s+/i).slice(1).join(' и '))&&[...src.matchAll(new RegExp(dateRe.source,'gi'))].length<=1&&!a&&/^(?:[а-яё]+)\s+\S/i.test(pair[1])&&/^(?:[а-яё]+)\s+\S/i.test(pair[2])&&taskVerb.test(norm(pair[1]).split(/\s/)[0])&&taskVerb.test(norm(pair[2]).split(/\s/)[0])&&!/\sи\s/i.test(pair[2])&&!/(?:^|\s)(?:если|или)(?:\s|$)/i.test(title);if(safePair){push('task',pair[1],{d:when.d,time:null});push('task',pair[2],{d:when.d,time:null})}else push('task',title,{d:when.d,time:when.time,reminder})}continue}
+ if(intent){const reminder=/^напомни(?:\s|$)/.test(base)||(/^не забудь(?:\s|$)/.test(base)&&!!when.time);if(reminder&&(/(?:^|\s)в\s+[1-7](?=\s|$)(?!\s*(?:утра|вечера|дня))/.test(t)||!when.time||new Date(when.d+'T'+when.time).getTime()<=Date.now())){unknown.push(src);continue}let title=trim(src.replace(dateRe,'').replace(relRe,'').replace(timeRe,'').replace(/^\s*бы\s+/i,'').replace(/^\s*(?:я\s+)?(?:мне\s+)?(?:нужно|надо|необходимо|хочу|планирую|напомни(?:\s+мне)?|добавь(?:\s+дело)?|запиши(?:\s+дело)?)\s+/i,'').replace(/^\s*(?:ещ[её]\s+)?(?:нужно\s+)?(?:не забыть|не забудь)\s+/i,''));if(title){const pair=title.match(/^(.+?)\s+и\s+(.+)$/i);const safePair=pair&&!reminder&&!when.time&&!relRe.test(src)&&!dateRe.test(pair[2])&&!dateRe.test(src.split(/\s+и\s+/i).slice(1).join(' и '))&&[...src.matchAll(new RegExp(dateRe.source,'gi'))].length<=1&&!a&&/^(?:[а-яё]+)\s+\S/i.test(pair[1])&&/^(?:[а-яё]+)\s+\S/i.test(pair[2])&&taskVerb.test(norm(pair[1]).split(/\s/)[0])&&taskVerb.test(norm(pair[2]).split(/\s/)[0])&&!/\sи\s/i.test(pair[2])&&!/(?:^|\s)(?:если|или)(?:\s|$)/i.test(title);if(safePair){push('task',pair[1],{d:when.d,time:null});push('task',pair[2],{d:when.d,time:null})}else push('task',title,{d:when.d,time:when.time,reminder})}continue}
  if(/^(?:напомни|добавь|создай|запиши)\s/.test(t))unknown.push(src);
  }return {items,unknown,answers};}
  const fingerprint=r=>JSON.stringify([r.kind,key(r.text),r.d||'',r.time||'',r.amt||0,r.id||'',r.target||'',r.cue||'',r.days||null,!!r.reminder,r.goal||'',r.lines||null,r.size||'',!!r.later,...(r.kind==='event'?[!!r.y]:[]),...(['goalstate','eventmove','goalplan'].includes(r.kind)?[r.from||'',r.oldTime||'',r.goalName||'']:[])]);
- function valid(r){if(r.kind==='listmark'&&(!Array.isArray(r.lines)||r.lines.length>30||!r.d||!markTargets59(r)))return false;if(!labels[r.kind]||!r.text?.trim()||r.text.length>1000)return false;if(r.kind==='list'&&(!Array.isArray(r.lines)||!r.lines.length||r.lines.length>30||r.lines.some(x=>typeof x!=='string'||!x.trim()||x.length>180)))return false;if(r.kind==='nav'&&!Object.values(navTargets).includes(r.target))return false;if(r.kind==='habmark'&&(!['0','1','2'].includes(r.target)||!r.d||r.d>TODAY()||!D.habits.some(h=>h.id===r.id&&(!h.start||h.start<=r.d)&&(r.target==='0'||sched(h,r.d))&&hm(h,r.d)!==Number(r.target))))return false;if(r.kind==='goalstate'&&!D.goals.some(g=>g.id===r.id&&key(g.t)===key(r.text)&&g.st===r.from&&((r.from==='work'&&r.target==='pause')||(r.from==='pause'&&r.target==='work'&&work().length<3))))return false;if(r.kind==='goalplan'&&!D.goals.some(g=>g.id===r.id&&g.st==='work'&&key(g.t)===key(r.goalName)&&![g.next||'',...(g.plan||[]).map(p=>p.t)].some(t=>key(t)===key(r.text))))return false;if(r.kind==='eventmove'&&(!r.d||r.d<TODAY()||iso(fromIso(r.d))!==r.d||!D.events.some(e=>e.id===r.id&&!e.y&&key(e.t)===key(r.text)&&e.d===r.from&&(e.time||'')===r.oldTime&&(e.d!==r.d||(e.time||'')!==(r.time||'')))))return false;if(r.kind==='theme'&&!['dark','light','system'].includes(r.target))return false;if(['event','task','spend','inc','jar','move','list'].includes(r.kind)&&!r.later&&(!r.d||!/^\d{4}-\d{2}-\d{2}$/.test(r.d)||iso(fromIso(r.d))!==r.d))return false;if(r.goal&&!D.goals.some(g=>g.id===r.goal&&g.st==='work'))return false;if(r.kind==='jar'&&!D.money.jars.some(j=>j.id===r.id))return false;if(['inc','spend','jar'].includes(r.kind)&&(!Number.isFinite(r.amt)||r.amt<=0))return false;if(['done','move'].includes(r.kind)&&!D.tasks.some(x=>x.id===r.id&&!x.done))return false;if(r.time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time))return false;if(r.reminder&&(!r.time||new Date(r.d+'T'+r.time).getTime()<=Date.now()))return false;return true}
+ function valid(r){if(r.kind==='listmark'&&(!Array.isArray(r.lines)||r.lines.length>30||!r.d||!markTargets59(r)))return false;if(!labels[r.kind]||!r.text?.trim()||r.text.length>1000)return false;if(r.kind==='list'&&(!Array.isArray(r.lines)||!r.lines.length||r.lines.length>30||r.lines.some(x=>typeof x!=='string'||!x.trim()||x.length>180)))return false;if(r.kind==='nav'&&!Object.values(navTargets).includes(r.target))return false;if(r.kind==='habmark'&&(!['0','1','2'].includes(r.target)||!r.d||r.d>TODAY()||!D.habits.some(h=>h.id===r.id&&(!h.start||h.start<=r.d)&&(r.target==='0'||sched(h,r.d))&&hm(h,r.d)!==Number(r.target))))return false;if(r.kind==='goalstate'&&!D.goals.some(g=>g.id===r.id&&key(g.t)===key(r.text)&&g.st===r.from&&((r.from==='work'&&r.target==='pause')||(r.from==='pause'&&r.target==='work'&&work().length<3))))return false;if(r.kind==='goalplan'&&!D.goals.some(g=>g.id===r.id&&g.st==='work'&&key(g.t)===key(r.goalName)&&![g.next||'',...(g.plan||[]).map(p=>p.t)].some(t=>key(t)===key(r.text))))return false;if(r.kind==='eventmove'&&(!r.d||r.d<TODAY()||iso(fromIso(r.d))!==r.d||!D.events.some(e=>e.id===r.id&&!e.y&&key(e.t)===key(r.text)&&e.d===r.from&&(e.time||'')===r.oldTime&&(e.d!==r.d||(e.time||'')!==(r.time||'')))))return false;if(r.kind==='theme'&&!['dark','light','system'].includes(r.target))return false;if(['event','task','spend','inc','jar','move','list'].includes(r.kind)&&!r.later&&(!r.d||!/^\d{4}-\d{2}-\d{2}$/.test(r.d)||iso(fromIso(r.d))!==r.d))return false;if(r.goal&&!D.goals.some(g=>g.id===r.goal&&g.st==='work'))return false;if(r.kind==='jar'&&!D.money.jars.some(j=>j.id===r.id))return false;if(['inc','spend','jar'].includes(r.kind)&&(!Number.isFinite(r.amt)||r.amt<=0))return false;if(['done','move'].includes(r.kind)&&!D.tasks.some(x=>x.id===r.id&&!x.done))return false;if(r.time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time))return false;if(r.time&&r.d&&!localTimeExists(r.d,r.time))return false;if(r.reminder&&(!r.time||new Date(r.d+'T'+r.time).getTime()<=Date.now()))return false;return true}
  function execute(r){if(!valid(r))return false;const d=r.d||TODAY();if(r.kind==='listmark'){const items=markTargets59(r);if(!items)return false;items.forEach(x=>x.done=true);return true}if(r.kind==='event'){applyItem({kind:'event',text:r.text,d,time:r.time||'',ic:evIc(r.text),y:r.y?1:0});if(typeof lnSync==='function')lnSync();return true}if(r.kind==='task'){const x=addTask(r.text,{d:r.later?null:d,size:r.size||'small',goal:r.goal||null});if(r.time)x.time=r.time;if(r.reminder)x.magRemind=true;return true}if(r.kind==='wish'){applyItem({kind:'wish',text:r.text});return true}if(r.kind==='habit'){if(D.habits.some(h=>key(h.name)===key(r.text)))return false;const h={id:'h'+uid(),name:r.text,ico:guessHab(r.text),cue:r.cue||'',min:'',goal:null,m:{},start:TODAY(),days:r.days||null,color:freeColor()};if(r.time)h.time=r.time;D.habits.push(h);return true}if(r.kind==='spend'){const cat=catOf(r.text,r.amt);D.money.sp.push({id:'s'+uid(),d,amt:r.amt,t:r.text,b:basketOf(cat),cat,ts:Date.now()});return true}if(r.kind==='inc'){D.money.inc.push({id:'i'+uid(),d,amt:r.amt,t:r.text,ts:Date.now()});return true}if(r.kind==='goalstate'){const g=goal(r.id);g.st=r.target;return true}if(r.kind==='goalplan'){const g=goal(r.id);planSync(g);g.plan=g.plan||[];g.plan.push({id:uid(),t:r.text});planSync(g);return true}if(r.kind==='eventmove'){const e=D.events.find(x=>x.id===r.id);e.d=d;e.time=r.time||'';return true}if(r.kind==='habmark'){markHabit(r.id,r.d,Number(r.target));return true}if(r.kind==='done'){toggleTask(r.id);return true}if(r.kind==='move'){const x=D.tasks.find(t=>t.id===r.id);if(x.d!==r.from||x.d===d)return false;if(x.magRemind&&x.time&&new Date(d+'T'+x.time).getTime()<=Date.now())return false;const others=D.tasks.filter(t=>t.id!==x.id&&t.d===d&&!t.done);if((x.size==='big'&&others.some(t=>t.size==='big'))||(x.size==='mid'&&others.filter(t=>t.size==='mid').length>=5))return false;x.d=d;x.moves=(x.moves||0)+1;return true}if(r.kind==='note'){applyItem({kind:'note',src:'Дневник: '+r.text,text:r.text});return true}if(r.kind==='jar'){const j=D.money.jars.find(j=>j.id===r.id);j.dep=j.dep||[];j.dep.push({d,amt:r.amt,t:'пополнение'});const g=j.goal&&goal(j.goal);if(g){g.steps=g.steps||[];g.steps.push({t:'Отложил '+rub(r.amt),d});g.last=d}return true}if(r.kind==='theme'){D.set.theme=r.target;applyLook();return true}if(r.kind==='nav'){return false}if(r.kind==='list'){const matches=listCandidates59(d,r.text);if(matches.length>1)return false;const existing=matches[0];if(r.listExisting&&(!existing||(existing.ts??null)!==r.listTs))return false;const have=new Set((existing?.list||[]).map(x=>key(x.t))),lines=r.lines.filter(t=>!have.has(key(t))).map(t=>({t,done:false}));if(!lines.length)return false;if(existing){if(existing.list.length+lines.length>100)return false;existing.list.push(...lines)}else{const dy=day(d);dy.notes=dy.notes||[];dy.notes.push({t:r.text,list:lines,ts:Date.now(),tm:pad(new Date().getHours())+':'+pad(new Date().getMinutes())})}return true}return false}
  function compactActionCards(host){if(!host)return;host.querySelectorAll('.qcard').forEach(card=>{if(card.dataset.nactCompact==='1')return;const actionRow=[...card.children].find(x=>x.classList?.contains('row'));if(!actionRow)return;card.dataset.nactCompact='1';const rest=[...card.childNodes].filter(x=>x!==actionRow);const head=document.createElement('div');head.className='nact-head';const toggle=document.createElement('button');toggle.type='button';toggle.className='nact-toggle';toggle.title='Подробнее';toggle.setAttribute('aria-label','Изменить действие');toggle.setAttribute('aria-expanded','false');toggle.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';head.append(actionRow,toggle);const detail=document.createElement('div');detail.className='nact-detail';detail.hidden=true;rest.forEach(node=>detail.append(node));card.replaceChildren(head,detail);toggle.addEventListener('click',()=>{const open=detail.hidden;detail.hidden=!open;card.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));toggle.title=open?'Свернуть':'Подробнее'})})}
  function mount(input,host,ctx={}){if(!input||!host)return;const seen=ctx.seen||new Set();if(!ctx.diary&&!ctx.clock)ctx.clock=Date.now();let items=[];let unknown=[],answers=[];const draw=()=>{host.replaceChildren();host.hidden=!items.length&&!unknown.length&&!answers.length;if(host.hidden)return;for(const a of answers){const box=document.createElement('div');box.className='qcard';box.style.margin='6px 0';const h=document.createElement('b');h.textContent=a.title;box.append(h);for(const line of a.lines){const p=document.createElement('p');p.className='small';p.style.cssText='margin:5px 0;overflow-wrap:anywhere';p.textContent=line;box.append(p)}host.append(box)}if(!items.length&&!unknown.length)return;const title=document.createElement('p');title.className='lb';title.textContent='Выбери нужные действия';host.append(title);items.forEach((r,i)=>{const done=(seen.has(fingerprint(r))||seen.has(r.original));const card=document.createElement('div');card.className='qcard';card.style.margin='6px 0';const row=document.createElement('label');row.className='row';const check=document.createElement('input');check.type='checkbox';check.checked=!done&&!(r.kind==='nav'&&input.id==='ai05-transcript');check.disabled=done;check.dataset.c56=String(i);const text=document.createElement('span');text.className='grow';text.textContent=(r.reminder?'Напоминание':r.goal?'Шаг к цели':labels[r.kind])+(r.later?' · без даты':'')+(r.amt?' · '+rub(r.amt):'')+(r.d?' · '+r.d:'')+(r.time?' · '+r.time:'')+(r.text?' · '+r.text:'')+(done?' · уже добавлено':'')+(r.kind==='list'&&r.listExisting?' · дополнить существующий':'')+(r.kind==='inc'?' · без распределения':'')+(r.kind==='habmark'?(r.target==='0'?' · снять отметку':r.target==='2'?' · минимум':' · сделано'):'')+(r.kind==='goalstate'?(r.target==='pause'?' · на паузу':' · в работу'):'')+(r.kind==='goalplan'?' · '+r.goalName:'')+(r.kind==='eventmove'?' · с '+r.from:'');row.append(check,text);if(r.lines){const p=document.createElement('p');p.className='small mut';p.textContent=r.lines.join(' · ');card.append(p)}const edit=document.createElement('input');edit.className='field';edit.value=r.text;edit.disabled=done||['done','move','nav','jar','theme','habmark','goalstate','eventmove','listmark'].includes(r.kind);edit.setAttribute('aria-label','Название действия');edit.addEventListener('input',()=>{r.text=edit.value});card.append(row,edit);if(r.kind==='nav'&&input.id==='ai05-transcript'){const warning=document.createElement('p');warning.className='small mut';warning.textContent='Переход закроет запись без сохранения аудио и текста. Выбери его, только если запись не нужна.';card.append(warning)}if(['event','task','spend','inc','jar','move','eventmove'].includes(r.kind)&&r.d){const date=document.createElement('input');date.type='date';date.className='field';date.value=r.d;date.disabled=done;date.setAttribute('aria-label','Дата действия');date.onchange=()=>{r.d=date.value};card.append(date)}if(r.amt){const amt=document.createElement('input');amt.type='number';amt.min='0.01';amt.step='0.01';amt.value=r.amt;amt.className='field';amt.disabled=done;amt.setAttribute('aria-label','Сумма в рублях');amt.oninput=()=>{r.amt=Number(amt.value)};card.append(amt)}if(['task','event','eventmove'].includes(r.kind)){const time=document.createElement('input');time.type='time';time.className='field';time.value=r.time||'';time.disabled=done;time.setAttribute('aria-label',['event','eventmove'].includes(r.kind)?'Время события':'Время дела');time.onchange=()=>{r.time=time.value||null};card.append(time)}if(r.kind==='event'){const repeat=document.createElement('label');repeat.className='row';const c=document.createElement('input');c.type='checkbox';c.checked=!!r.y;c.disabled=done;c.onchange=()=>{r.y=c.checked};c.setAttribute('aria-label','Повторять каждый год');repeat.append(c,document.createTextNode('Повторять каждый год'));card.append(repeat)}host.append(card)});if(unknown.length){const p=document.createElement('p');p.className='small mut';p.textContent='Нужно уточнить: '+unknown.join('; ');host.append(p)}if(items.some(r=>!(seen.has(fingerprint(r))||seen.has(r.original)))){const b=document.createElement('button');b.type='button';b.className='btn sm nact-add';b.textContent=items.some(r=>['nav','theme','done','move','habmark','goalstate','goalplan','eventmove','listmark'].includes(r.kind))?'Выполнить выбранное':'Добавить';b.onclick=()=>{let n=0,failed=0;const checked=[...host.querySelectorAll('input[data-c56]:checked')],navs=checked.map(c=>items[+c.dataset.c56]).filter(r=>r.kind==='nav'&&valid(r)&&!seen.has(fingerprint(r))&&!seen.has(r.original));if(navs.length>1){toast('Выбери один раздел для перехода');return}for(const c of checked){const r=items[+c.dataset.c56],f=fingerprint(r);if(r.kind==='nav'||seen.has(f)||seen.has(r.original))continue;if(!execute(r)){failed++;continue}seen.add(f);if(r.original)seen.add(r.original);n++}if(n){ctx.onApplied?.(seen);saveNow();render();if(typeof lnSync==='function')lnSync();toast('Выполнено: '+n+(failed?' · не выполнено: '+failed+'. Проверь даты, приоритеты и совпадения.':''))}if(navs.length){const r=navs[0];closeSheet();const target=r.target;if(target==='diary'){go('today');document.querySelector('.notes')?.scrollIntoView({block:'start'})}else if(target==='settings')sheetSettings();else if(target==='room')sheetKitchen();else if(target==='calendar')sheetCal();else if(target==='rhythm')sheetRhythm();else if(target==='evening')sheetEvening();else go(target);return}if(!n)toast(failed?'Не выполнено: '+failed+'. Проверь даты, приоритеты и совпадения.':'Нет подходящих действий. Проверь выбор.');if(host.isConnected){answers=analyze(input.value,ctx).answers||[];draw()}};host.append(b)}if(ctx.compact)compactActionCards(host)};
@@ -6372,6 +6494,124 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  `;
  const st=document.createElement('style');st.id='h159f-diary-tracker';st.textContent=css;document.body.append(st);
 })();
+
+/* H1.59q — согласованный пакет исправлений интерфейса по приёмке владельца.
+   Без изменения схемы данных, логики целей/финансов и утверждённой сцены AI-05. */
+(function(){
+ const css=document.createElement('style');css.id='h159q-ui-regression-fixes';css.textContent=`
+ /* Date and day-status stay on one compact row; arrows retain a 44px hit area. */
+ .hd .k{display:flex;align-items:center;flex-wrap:nowrap;gap:6px;min-width:0;white-space:nowrap}
+ .hd .k .dnav{display:inline-flex;align-items:center;gap:8px;flex:0 1 auto;min-width:0;margin-left:-6px}
+ .hd .k .dnav .dar{position:relative;width:36px;height:36px;flex:none}
+ .hd .k .dnav .dar::before{content:"";position:absolute;inset:-4px}
+ .hd .k .dnav .dlab{min-width:0;padding:4px 0;font-size:12px;letter-spacing:-.02em;white-space:nowrap}
+ .hd .k .epill{flex:none;height:28px;min-height:28px;padding:0 8px 0 7px;font-size:12px;white-space:nowrap;line-height:1}
+ .hd .k .demo{display:none}
+ @media(max-width:360px){
+   .hd .k{gap:4px}
+   .hd .k .dnav{gap:6px}
+   .hd .k .dnav .dar{width:34px;height:34px}
+   .hd .k .dnav .dar::before{inset:-5px}
+   .hd .k .dnav .dlab{font-size:11.5px}
+   .hd .k .epill{font-size:11.5px;padding:0 7px;height:27px;min-height:27px}
+ }
+ /* Same compact metadata language in all pinned section headers. */
+ .hd .tools{align-items:center;gap:7px;min-width:0}
+ :root[data-skin="diary"] .hd h1::before{content:attr(data-h159q-label)}
+ .hd .tools .hmeta{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 10px;border:1px solid var(--edge);border-radius:999px;background:var(--glass);color:var(--mut);font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+ @media(max-width:380px){.hd .tools .hmeta{min-height:28px;padding:0 8px;font-size:11.5px}}
+ .pinhd{top:env(safe-area-inset-top,0px)}
+ /* Keep task names on word boundaries; small words must not become isolated lines. */
+ .task .tt,.main .ttl,.hero .ht,.goal .gt,.wtx,.gfront .gname,.gfront .gnext .grow,.wallet .band b,.op2 .ot b{
+   overflow-wrap:break-word;word-break:normal;text-wrap:pretty
+ }
+ /* Small day tasks use compact natural-width chips and wrap as a group. */
+ .pills{gap:6px}
+ .pills .tpill{flex:0 1 auto;width:max-content;max-width:100%;min-width:0;height:auto;min-height:40px;padding:8px 12px;line-height:1.2;white-space:normal;overflow-wrap:break-word;word-break:normal;text-align:left;text-wrap:pretty}
+ .pills .tpill.add{flex:0 0 40px;width:40px;min-width:40px;height:40px;min-height:40px;padding:0;align-items:center;justify-content:center;text-align:center}
+ @media(max-width:380px){
+   .task{display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-areas:"check title" "check meta";column-gap:8px;row-gap:4px;align-items:start}
+   .task>.ck{grid-area:check;margin-top:2px}
+   .task>.tt{grid-area:title;width:100%;min-width:0}
+   .task>.meta{grid-area:meta;justify-self:end;max-width:100%}
+   .task .meta .pen{width:28px;height:28px;margin-left:0}
+ }
+ /* Diary: text placeholder opens a new entry; the lower-right plus remains the shortcut. */
+ .notes .note-compose{display:flex;align-items:center;width:100%;min-height:48px;padding:10px 0;border:0;background:transparent;color:var(--mut);font:inherit;font-size:13px;line-height:1.4;text-align:left;cursor:pointer}
+ .notes .note-compose:active{color:var(--acc)}
+ .notes .naddrow{align-items:center;min-height:46px}
+ .notes .naddrow .nadd-icon{display:grid;place-items:center;width:40px;height:40px;min-width:40px;padding:0;border:0;border-radius:50%;background:var(--accsoft);color:var(--acc);font-size:22px;line-height:1}
+ .notes .naddrow .nadd-icon:active{transform:scale(.96)}
+ /* Soften the dark diary palette without reducing text contrast or changing light theme. */
+ :root[data-skin="diary"][data-theme="dark"]{
+   --bg1:#28222E;--bg2:#28222E;--bg3:#2C2532;
+   --blobA:rgba(126,98,184,.20);--blobB:rgba(192,87,122,.14);--blobC:rgba(240,200,110,.10);
+   --fg:#F5EFF7;--fg2:#E8DFEC;--mut:#C0B5C8;--mut2:#A394AD;
+   --glass:#332C3C;--glass2:#3A3243;--edge:#4B4055;--hair:#453B4D;--chipbg:#3B3345;--sheet:#302A38;
+   --shadow:0 4px 14px rgba(0,0,0,.16)
+ }
+ @media(prefers-color-scheme:dark){:root[data-skin="diary"]:not([data-theme="light"]){
+   --bg1:#28222E;--bg2:#28222E;--bg3:#2C2532;
+   --blobA:rgba(126,98,184,.20);--blobB:rgba(192,87,122,.14);--blobC:rgba(240,200,110,.10);
+   --fg:#F5EFF7;--fg2:#E8DFEC;--mut:#C0B5C8;--mut2:#A394AD;
+   --glass:#332C3C;--glass2:#3A3243;--edge:#4B4055;--hair:#453B4D;--chipbg:#3B3345;--sheet:#302A38;
+   --shadow:0 4px 14px rgba(0,0,0,.16)
+ }}
+ /* Goal cover remains legible, but the photo is no longer buried under a near-black overlay. */
+ .gfront .gshade{background:linear-gradient(180deg,transparent 42%,rgba(20,16,40,.34))}
+ .gfront .gday,.gfront .gwk{background:rgba(0,0,0,.40)}
+ .gfront .gbot::before{background:linear-gradient(180deg,transparent,rgba(0,0,0,.40) 24px,rgba(0,0,0,.40))}
+ .gfront .gnext{background:rgba(0,0,0,.14)}
+ `;document.body.append(css);
+})();
+
+/* Compact section metadata is rendered from existing local app state, never guessed. */
+const _renderH159q=render;
+render=function(){
+ _renderH159q();
+ if(typeof D==='undefined'||!D.started)return;
+ const app=$('#app'),hd=app&&(app.querySelector('.pinhd .hd')||app.querySelector('.hd'));
+ if(!hd)return;
+ const title=hd.querySelector('h1');if(title)title.dataset.h159qLabel=({today:'мой день',tracker:'мой ритм',goals:'мои цели',money:'мои деньги'})[UI.tab]||'';
+ let tools=hd.querySelector('.tools');
+ if(!tools){tools=document.createElement('div');tools.className='tools';hd.appendChild(tools)}
+ let meta=tools.querySelector('[data-h159q-meta]');
+ const ensureMeta=()=>{
+   if(!meta){meta=document.createElement('span');meta.className='hmeta';meta.dataset.h159qMeta='1';tools.insertBefore(meta,tools.firstChild)}
+   return meta;
+ };
+ if(UI.tab==='today'){
+   hd.querySelector('.k .epill')?.classList.add('hmeta');
+ }else if(UI.tab==='goals'){
+   const existing=tools.querySelector('.k');
+   if(existing){existing.classList.remove('k');existing.classList.add('hmeta');existing.dataset.h159qMeta='1';meta=existing}
+   const active=work().length,wishes=D.goals.filter(g=>g.st==='wish'||g.st==='pause').length;
+   ensureMeta().textContent=active?`${active} в работе${wishes?` · ${wishes} ${plural(wishes,'желание','желания','желаний')}`:''}`:wishes?`${wishes} ${plural(wishes,'желание','желания','желаний')}`:'Добавь первое желание';
+ }else if(UI.tab==='tracker'){
+   const k=TODAY(),H=D.habits.filter(h=>!(h.start&&k<h.start)&&sched(h,k)),done=H.filter(h=>hm(h,k)>0).length;
+   const m=ensureMeta();m.textContent=H.length?`${done}/${H.length} сегодня`:'Начни с привычки';
+   const help=tools.querySelector('[data-a="hhelp"]');if(help&&m.nextSibling!==help)tools.insertBefore(m,help);
+ }else if(UI.tab==='money'){
+   const existing=tools.querySelector('.k');
+   if(existing){existing.classList.remove('k');existing.classList.add('hmeta');existing.dataset.h159qMeta='1';meta=existing}
+   const dp=daysToPay(),ms=monthStats(TODAY());
+   ensureMeta().textContent=dp!=null?`До зарплаты ${dp} ${plural(dp,'день','дня','дней')}`:ms.inc?`Можно сегодня ${rub(ms.today)}`:'Баланс и бюджет месяца';
+ }
+ if(typeof stkTick==='function')requestAnimationFrame(stkTick);
+};
+
+/* Diary composer: the placeholder area and the bottom-right plus open the same editor. */
+const _dayNotesH159q=dayNotes;
+dayNotes=function(k){
+ let html=_dayNotesH159q(k);
+ const empty='<p class="small mut" style="margin:10px 0 4px;line-height:1.4">Мысли, фото, рисунки — сюда.</p>';
+ if(html.includes(empty))html=html.replace(empty,`<button type="button" class="note-compose" data-a="nadd" data-d="${k}">Мысли, фото, рисунки — сюда.</button>`);
+ const oldRow=`<div class="naddrow"><button type="button" class="nadd" data-a="nlistnew" data-d="${k}">☑ Список</button><button type="button" class="nadd" data-a="nadd" data-d="${k}">${IC("plus",16)} Запись</button></div>`;
+ const newRow=`<div class="naddrow"><button type="button" class="nadd" data-a="nlistnew" data-d="${k}">☑ Список</button><button type="button" class="nadd nadd-icon" data-a="nadd" data-d="${k}" aria-label="Новая запись" title="Новая запись">+</button></div>`;
+ if(html.includes(oldRow))html=html.replace(oldRow,newRow);
+ return html;
+};
+
 </script>
 <script src="ai05-integration.js"></script>
 </body></html>
