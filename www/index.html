@@ -54,7 +54,12 @@
 :root[data-theme="dark"] #sheet #etail .nchip:not(.on),:root[data-theme="dark"] #sheet #etaild .nchip:not(.on){background:#262233;color:#EDE7F2;border-color:#76627A}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #sheet #etail .nchip:not(.on),:root:not([data-theme="light"]) #sheet #etaild .nchip:not(.on){background:#262233;color:#EDE7F2;border-color:#76627A}}
 
-</style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Магнит"><meta name="apple-mobile-web-app-status-bar-style" content="default"></head><body><title>Магнит</title>
+</style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Магнит"><meta name="apple-mobile-web-app-status-bar-style" content="default"><style id="h163-hints">
+#qq::placeholder{font-size:14px;font-weight:400;line-height:1.4}
+.field::placeholder,.nf::placeholder{font-size:clamp(14px,1em,16px);font-weight:400;opacity:1}
+#qq::placeholder{font-size:14px}
+input[inputmode="decimal"]::placeholder,input[type="number"]::placeholder{font-size:inherit}
+</style></head><body><title>Магнит</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#F3E6EC">
 <style>/* Layout: one phone column (max 480px), glass cards over a warm dawn gradient, sticky glass tab bar at the bottom */
@@ -2194,8 +2199,8 @@ function toggleTask(id){const t=D.tasks.find(x=>x.id===id);if(!t)return;t.done=!
 function sheetMorning(){const k=TODAY(),dy=day(k),big=D.tasks.find(t=>t.d===k&&t.size==="big");const st={goal:big?big.goal:null};
   const nexts=work().filter(g=>g.next);
   openSheet(`<div class="row">${BADGE("sun","warm")}<div><h3>Утро</h3><p class="sub" style="margin:0">Минута, чтобы день начался с главного</p></div></div>
-  <label class="lb" for="m1">За что благодарю сегодня?</label><input id="m1" class="field" value="${esc(dy.thanks||"")}" placeholder="Например: тёплый кофе и тихое утро">
-  <label class="lb" for="m2">Главное сегодня</label><div class="row"><input id="m2" class="field" value="${big?esc(big.t):""}" placeholder="Одно дело, после которого день удался">${micBtn("m2")}</div>
+  <label class="lb" for="m1">За что благодарю сегодня?</label><input id="m1" class="field" value="${esc(dy.thanks||"")}" placeholder="Например: тихое утро">
+  <label class="lb" for="m2">Главное сегодня</label><div class="row"><input id="m2" class="field" value="${big?esc(big.t):""}" placeholder="Главное дело дня">${micBtn("m2")}</div>
   ${nexts.length?`<div class="chips" style="margin-top:8px">${nexts.map(g=>`<button type="button" class="chip sug" data-a="mnext" data-g="${g.id}">${esc(g.next)}</button>`).join("")}</div>`:""}
   ${work().length?`<label class="lb">Это шаг к цели?</label><div id="gc">${goalChips(st.goal,"pickg")}</div>`:""}
   <div class="stack"><button type="button" class="btn w" data-a="msave">Начать день</button></div>`,
@@ -2208,7 +2213,7 @@ function sheetEvening(){const k=TODAY(),dy=day(k),tm=addDays(k,1);const st={mood
   <div class="moods" style="margin-top:12px" role="radiogroup" aria-label="Настроение дня">${MOODS.map(m=>`<button type="button" role="radio" aria-checked="${st.mood===m[0]}" class="${st.mood===m[0]?"on":""}" data-a="mood" data-v="${m[0]}">${S(m[0],56)}${m[1]}</button>`).join("")}</div>
   <label class="lb" for="e1">Одна строка · по желанию</label><input id="e1" class="field" value="${esc(dy.line||"")}" placeholder="Что запомнилось">
   <label class="lb" for="e2">Хороший момент дня</label><input id="e2" class="field" value="${esc(dy.good||"")}" placeholder="Даже маленький">
-  <label class="lb" for="e3">Главное на завтра</label><div class="row"><input id="e3" class="field" placeholder="Выбери с вечера — утром не придётся решать">${micBtn("e3")}</div>
+  <label class="lb" for="e3">Главное на завтра</label><div class="row"><input id="e3" class="field" placeholder="Одно дело на завтра">${micBtn("e3")}</div>
   ${nexts.length?`<div class="chips" style="margin-top:8px">${nexts.map(g=>`<button type="button" class="chip sug" data-a="enext" data-g="${g.id}">${esc(g.next)}</button>`).join("")}</div>`:""}
   <div class="stack"><button type="button" class="btn w" data-a="esave">Закрыть день</button></div>`,
   {st,onSave(){if(!st.mood){toast("Выбери стикер дня");return}
@@ -2224,14 +2229,36 @@ function sheetClosed(){const k=TODAY(),dy=day(k),E=earnedToday(),sum=E.reduce((a
   <div class="stack">${dy.word?"":wordInvite()}<button type="button" class="btn ghost w" data-a="close">Спокойной ночи</button></div>`)}
 
 /* ---------- word of the day ---------- */
-function wordTheme(){const g=work();if(!g.length)return{th:"life",g:null};const x=g[hash(TODAY())%g.length];return{th:themeOf(x.cover),g:x}}
-function wordInvite(){const{g}=wordTheme();return`<div class="card" style="background:linear-gradient(150deg,var(--glass2),var(--viosoft))"><div class="row" style="align-items:flex-start"><div class="grow"><div class="k12" style="color:var(--vio)">Есть минутка?</div><div class="t21" style="margin:2px 0 4px">Слово дня</div><div class="small mut" style="line-height:1.35">Загадано слово из мира ${g?`твоей цели <b style="color:var(--fg)">«${esc(g.t)}»</b>`:"обычной жизни"}. Угадай по ассоциациям · 1–2 минуты</div></div></div>
+// H1.63: only explicit semantic evidence; an illustration is not a topic.
+THEMES.language={covers:[],words:[THEMES.study.words[0],
+ {w:"диалог",ico:"chat",a:{разговор:92,реплика:90,собеседник:88,общение:86,фраза:84,вопрос:80,ответ:78,произношение:75,язык:70,слушать:65,встреча:55},s:{фраза:"Произнести пять фраз на изучаемом языке",произношение:"Потренировать произношение пять минут"}},
+ {w:"перевод",ico:"book",a:{язык:92,текст:89,словарь:86,смысл:82,фраза:80,предложение:78,слово:75,значение:72,чтение:65,книга:58,письмо:50},s:{фраза:"Перевести одну фразу",чтение:"Прочитать короткий текст на изучаемом языке"}}]};
+function wordTextTheme(g){const t=norm(g?.t), tokens=t.match(/[а-яa-z]+/g)||[];const rules={
+ language:/^(английск|немецк|французск|испанск|итальянск|китайск|японск|корейск|иностранн|лексик|грамматик|english|deutsch|язык)/,
+ travel:/^(путешеств|поездк|отпуск|байкал|мальдив|кемпинг|поход|туризм|море|горы)/,
+ home:/^(ремонт|квартир|новосель|переезд|обустро|мебел)/,
+ money:/^(накоп|сбереж|копил|ипотек|бюджет|зарплат|финанс|долг|кредит)/,
+ sport:/^(бег|пробеж|пробег|марафон|забег|трениров|спорт|фитнес|велосипед|кроссов)/,
+ study:/^(экзамен|зачет|учеб|учебн|диплом|курс|университет|обучен|урок)/,
+ creative:/^(гитар|рисова|рисун|живопис|музык|акварел|картин|пианино)/,
+ life:/^(прогул|отдых|высып|сон|спать)/};
+ const hits=Object.entries(rules).filter(([k,re])=>tokens.some(v=>re.test(v))).map(([k])=>k);
+ if(hits.includes('language')){const i=hits.indexOf('study');if(i>=0)hits.splice(i,1)}
+ return hits.length===1?hits[0]:null;
+}
+function wordTheme(){const goals=work().map(g=>({g,th:wordTextTheme(g),source:'goal'})).filter(x=>x.th), wishes=D.goals.filter(g=>g.st==='wish').map(g=>({g,th:wordTextTheme(g),source:'wish'})).filter(x=>x.th);
+ const ordinal=Math.floor(Date.parse(TODAY()+'T00:00:00Z')/86400000), kinds=[goals,wishes,[]].filter((x,i)=>x.length||i===2), slot=((ordinal%kinds.length)+kinds.length)%kinds.length, pool=kinds[slot];
+ return pool.length?pool[hash(TODAY()+'source')%pool.length]:{th:'life',g:null,source:'general'};
+}
+function wordSource(w){const g=goal(w.sourceId||w.gid);if(!g||wordTextTheme(g)!==w.th)return null;return {g,source:w.source==='wish'||g.st==='wish'?'wish':'goal'}}
+function wordSourceLabel(w){const x=wordSource(w);return x?`${x.source==='wish'?'желание':'цель'} «${esc(x.g.t)}»`:'обычная жизнь'}
+function wordInvite(){const{g,source}=wordTheme();return`<div class="card" style="background:linear-gradient(150deg,var(--glass2),var(--viosoft))"><div class="row" style="align-items:flex-start"><div class="grow"><div class="k12" style="color:var(--vio)">Есть минутка?</div><div class="t21" style="margin:2px 0 4px">Слово дня</div><div class="small mut" style="line-height:1.35">Загадано слово из мира ${g?`${source==='wish'?'твоего желания':'твоей цели'} <b style="color:var(--fg)">«${esc(g.t)}»</b>`:"обычной жизни"}. Угадай по ассоциациям · 1–2 минуты</div></div></div>
   <div class="row" style="margin-top:12px"><button type="button" class="btn vio sm grow" data-a="word">Сыграть</button><button type="button" class="btn ghost sm" data-a="wordskip">Не сегодня</button></div><div class="small mut" style="margin-top:8px">Угадаешь — получишь искры для роста предметов в комнате. Пропустить можно, серий тут нет.</div></div>`}
 function wordCard(){const dy=day(TODAY());if(!dy.word)return wordInvite();const w=dy.word;
   if(w.skip)return"";
   if(w.won||w.gave)return`<button type="button" class="card row tap" data-a="word" style="text-align:left"><div class="grow"><div class="small mut">Слово дня</div><div class="t17">${esc(w.t)} ${w.won?"✓":"· в следующий раз"}</div></div></button>`;
   return`<button type="button" class="card row tap" data-a="word" style="text-align:left">${BADGE("map","vio")}<div class="grow"><div class="small mut">Слово дня · ${w.g.length} ${plural(w.g.length,"попытка","попытки","попыток")}</div><div class="t17">Продолжить</div></div></button>`}
-function pickWord(){const{th,g}=wordTheme();const T=THEMES[th]||THEMES.life;
+function pickWord(){const{th,g,source}=wordTheme();const T=THEMES[th]||THEMES.life;
   // 0.9.15 #16: учитывать ВСЕ когда-либо загаданные слова, а не только победы.
   // Старые данные совместимы: история берётся из D.days, без изменения формата сохранений.
   const lastSeen=new Map();
@@ -2242,7 +2269,7 @@ function pickWord(){const{th,g}=wordTheme();const T=THEMES[th]||THEMES.life;
   const oldest=Math.min(...T.words.map(w=>lastSeen.has(w.w)?Number(lastSeen.get(w.w).replace(/-/g,"")):0));
   const pool=unseen.length?unseen:T.words.filter(w=>Number(lastSeen.get(w.w).replace(/-/g,""))===oldest);
   const W=pool[hash(TODAY()+"w"+th)%pool.length];
-  return{t:W.w,ico:W.ico,th,gid:g?g.id:null,g:[],hints:0}}
+  return{t:W.w,ico:W.ico,th,gid:source==='goal'?g.id:null,source,sourceId:g?g.id:null,g:[],hints:0}}
 function findW(w){const T=THEMES[w.th]||THEMES.life;return T.words.find(x=>x.w===w.t)||T.words[0]}
 function score(w,guess){const W=findW(w),q=norm(guess).replace(/[^а-яa-z-]/g,"");if(!q)return null;if(q===norm(W.w))return 100;
   if(W.a[q]!=null)return W.a[q];
@@ -2251,13 +2278,13 @@ function score(w,guess){const W=findW(w),q=norm(guess).replace(/[^а-яa-z-]/g,"
   const tw=norm(W.w);let p=0;while(p<tw.length&&p<q.length&&tw[p]===q[p])p++;if(p>=4)return 97;
   return 6+hash(q+W.w)%28}
 const heat=s=>s>=100?["угадал","var(--acc)","spark"]:s>=85?["горячо","var(--hot)","fire"]:s>=65?["тепло","var(--warm)",null]:s>=40?["прохладно","var(--cool)",null]:["холодно","var(--cold)","ice"];
-function sheetWord(){const dy=day(TODAY());if(!dy.word||dy.word.skip){dy.word=pickWord();save()}const w=dy.word,g=w.gid&&goal(w.gid);
+function sheetWord(){const dy=day(TODAY());if(!dy.word||dy.word.skip){dy.word=pickWord();save()}const w=dy.word,g=wordSource(w)?.g;
   if(w.won||w.gave)return sheetWordDone();
   const G=[...w.g].sort((a,b)=>b.s-a.s),last=w.g[w.g.length-1];
-  openSheet(`<div class="row" style="align-items:flex-end"><div class="grow"><div class="small mut">Слово дня · ${g?"мир «"+esc(g.t)+"»":"обычная жизнь"}</div><h3>Что загадано?</h3></div><span class="pill">${SP(18)}${D.sparks}</span></div>
-  <form class="qadd" data-f="wguess" style="margin-top:12px"><label for="wg" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Твоя догадка</label><input id="wg" class="field" placeholder="Твоя догадка…" autocomplete="off" autocapitalize="off" enterkeyhint="go" style="border:2px solid var(--vio)"><button type="submit" class="btn vio sm">Ввести</button></form>
+  openSheet(`<div class="row" style="align-items:flex-end"><div class="grow"><div class="small mut">Слово дня · ${wordSourceLabel(w)}</div><h3>Что загадано?</h3></div><span class="pill">${SP(18)}${D.sparks}</span></div>
+  <form class="qadd" data-f="wguess" style="margin-top:12px"><label for="wg" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Твоя догадка</label><input id="wg" class="field" placeholder="Введи слово" autocomplete="off" autocapitalize="off" enterkeyhint="go" style="border:2px solid var(--vio)"><button type="submit" class="btn vio sm">Ввести</button></form>
   <div class="row small mut" style="justify-content:space-between;margin:8px 4px"><span>Попыток: ${w.g.length}${last?` · последняя — «${esc(last.w)}»`:""}</span><span>ближе → выше</span></div>
-  <div class="stack" style="margin-top:0;gap:6px">${G.length?G.map(x=>{const h=heat(x.s);return`<div class="guess${x===last?" last":""}"><div class="bar" style="width:${Math.max(6,x.s)}%;background:linear-gradient(90deg,transparent,${h[1]});opacity:.32"></div><div class="in"><span class="w">${esc(x.w)}${x.hint?' <span class="small mut">· подсказка</span>':""}</span><span class="lb" style="color:${h[1]}">${h[0]}</span></div></div>`}).join(""):`<div class="empty">Пиши любое слово, которое приходит в голову про ${g?"«"+esc(g.t)+"»":"обычный день"}. Я покажу, тепло или холодно.</div>`}</div>
+  <div class="stack" style="margin-top:0;gap:6px">${G.length?G.map(x=>{const h=heat(x.s);return`<div class="guess${x===last?" last":""}"><div class="bar" style="width:${Math.max(6,x.s)}%;background:linear-gradient(90deg,transparent,${h[1]});opacity:.32"></div><div class="in"><span class="w">${esc(x.w)}${x.hint?' <span class="small mut">· подсказка</span>':""}</span><span class="lb" style="color:${h[1]}">${h[0]}</span></div></div>`}).join(""):`<div class="empty">Введи слово, которое приходит в голову ${g?"по этой теме":""}. Чем теплее, тем ближе к ответу.</div>`}</div>
   <div class="card row" style="margin-top:12px;padding:12px 14px">${IC("bulb",22,"color:var(--spark)")}<span class="grow small" style="line-height:1.3">Застрял? Покажу слово потеплее</span><button type="button" class="btn ghost sm" data-a="whint" ${D.sparks<1?"disabled":""} style="color:var(--spark)">−1 ${SP(15)}</button></div>
   <div style="text-align:center;margin-top:6px"><button type="button" class="lnk" data-a="wgive">Сдаться и посмотреть слово</button></div>`);
   setTimeout(()=>{const i=$("#wg");if(i)i.focus()},300)}
@@ -2269,10 +2296,9 @@ function wordGuess(v){const w=day(TODAY()).word;if(!w||w.won||w.gave)return;cons
   snd("tick");save();sheetWord()}
 function wordHint(){const w=day(TODAY()).word,W=findW(w);if(D.sparks<1)return;const have=w.g.map(x=>norm(x.w));
   const c=Object.entries(W.a).filter(([a])=>!have.includes(a)).sort((a,b)=>b[1]-a[1])[0];if(!c)return;spend(1,"подсказка");w.hints++;w.g.push({w:c[0],s:c[1],hint:1});save();sheetWord()}
-function sheetWordDone(fresh){const w=day(TODAY()).word,W=findW(w),g=w.gid&&goal(w.gid);
+function sheetWordDone(fresh){const w=day(TODAY()).word,W=findW(w),src=wordSource(w),g=src?.source==='goal'&&src.g.st==='work'?src.g:null;
   const chain=[...w.g].filter(x=>x.s<100).sort((a,b)=>b.s-a.s).slice(0,6);
-  let step=null;for(const x of w.g){const s=W.s&&W.s[norm(x.w)];if(s){step={w:x.w,t:s};break}}
-  if(!step&&W.s){const k=Object.keys(W.s)[0];step={w:k,t:W.s[k],ours:1}}
+  let step=null;for(const x of w.g){const key=norm(x.w),s=W.s&&W.s[key];if(g&&!x.hint&&s&&norm(g.t).split(/[^а-яa-z]+/).some(t=>t.length>=4&&key.startsWith(t.slice(0,Math.min(5,t.length))))){step={w:x.w,t:s};break}}
   openSheet(`<div class="win"><div class="small mut" style="margin-top:6px">${w.won?`Угадал за ${w.g.length} ${plural(w.g.length,"попытку","попытки","попыток")}`:"Загадано было"}</div><h3 style="font-size:34px">${esc(w.t[0].toUpperCase()+w.t.slice(1))}${w.won?"!":""}</h3>${w.won&&w.loot?lootHtml(w.loot):""}</div>
   ${chain.length?`<div class="card" style="margin-top:12px"><div class="small mut" style="font-weight:600;margin-bottom:8px">Твоя цепочка ассоциаций</div><div class="chips">${chain.map(x=>`<span class="chip">${esc(x.w)}</span>`).join("")}</div></div>`:""}
   ${g&&step?`<div class="card row" style="margin-top:12px;background:linear-gradient(150deg,var(--glass2),var(--accsoft))">${BADGE("bulb","vio")}<div class="grow"><div class="small" style="line-height:1.3">${step.ours?"А вот мысль":`Ты вспомнил <b>«${esc(step.w)}»</b>`}. Может, это шаг к «${esc(g.t)}»?</div><button type="button" class="chip sug" style="margin-top:6px" data-a="wstep" data-g="${g.id}" data-t="${esc(step.t)}">→ ${esc(step.t)}</button></div></div>`:""}
@@ -2368,15 +2394,15 @@ function sheetHabit(id){const h=D.habits.find(x=>x.id===id);if(!h)return;const k
   openSheet(`<div class="row"><div class="grow"><h3>${esc(h.name)}</h3><div class="small mut">с ${dshort(s.start)}</div></div></div>
   <div class="row" style="gap:8px;margin-top:12px">${[[s.days,"день из ~66"],[s.streak,"подряд"],[s.twice,"повторных пропусков"]].map(x=>`<div class="card grow" style="padding:12px;text-align:center"><div class="t21">${x[0]}</div><div class="small mut">${x[1]}</div></div>`).join("")}</div>
   <div class="card" style="margin-top:12px" id="hcalbox">${cal(0)}</div>
-  <label class="lb" for="hc">Сигнал · после чего</label><input id="hc" class="field" value="${esc(h.cue||"")}" placeholder="После того как налил кофе">
+  <label class="lb" for="hc">Сигнал · после чего</label><input id="hc" class="field" value="${esc(h.cue||"")}" placeholder="Например: после кофе">
   <label class="lb" for="hmn">Минимум · хотя бы</label><input id="hmn" class="field" value="${esc(h.min||"")}" placeholder="Хотя бы 5 карточек">
   ${work().length?`<label class="lb">Тянет к цели</label><div id="gc">${goalChips(h.goal,"pickg")}</div>`:""}
   <div class="stack"><button type="button" class="btn w" data-a="hsave" data-id="${h.id}">Сохранить</button><button type="button" class="lnk" data-a="hdel" data-id="${h.id}" style="color:var(--hot)">Удалить привычку</button></div>`,{st:{goal:h.goal||null}})}
 const HABICO=["muscle","run","drop","sleep","abc","book","yoga","walk","salad","coffee","pill","sprout","pig","music","paint","broom"];
 function sheetHabAdd(){const st={ico:"sprout",goal:null,auto:true};
   openSheet(`<h3>Новая привычка</h3><p class="sub">Сигнал → действие → минимум. Минимум спасает в плохие дни</p>
-  <label class="lb" for="ha">Что делаешь</label><input id="ha" class="field" placeholder="10 минут английского">
-  <label class="lb" for="hc">После чего · сигнал</label><input id="hc" class="field" placeholder="После того как налил кофе">
+  <label class="lb" for="ha">Что делаешь</label><input id="ha" class="field" placeholder="Например: читать 10 минут">
+  <label class="lb" for="hc">После чего · сигнал</label><input id="hc" class="field" placeholder="Например: после кофе">
   <label class="lb" for="hmn">Минимум · хотя бы</label><input id="hmn" class="field" placeholder="Хотя бы 5 карточек">
   ${work().length?`<label class="lb">Тянет к цели?</label><div id="gc">${goalChips(null,"pickg")}</div>`:""}
   <div class="stack"><button type="button" class="btn w" data-a="hcreate">Добавить</button></div>`,{st});
@@ -2757,7 +2783,7 @@ function sheetEvening(){const k=TODAY(),dy=day(k),d=new Date(),T=D.tasks.filter(
   <div class="tiles3"><div class="tile"><b>${T.filter(t=>t.done).length}/${T.length}</b><span>дел</span></div><div class="tile"><b>${big&&big.done?"✓":"—"}</b><span>главное</span></div><div class="tile"><b>${hd}/${due.length}</b><span>привычек</span></div></div>
   <div class="ncard"><div class="nt">Каким был день?</div><div class="moodrow" role="radiogroup" aria-label="Настроение дня">${MOODS.map(m=>`<button type="button" role="radio" aria-checked="${st.mood===m[0]}" class="${st.mood===m[0]?"on":""}" data-a="mood" data-v="${m[0]}" aria-label="${m[1]}">${S(m[0],34)}<span>${m[1]}</span></button>`).join("")}</div></div>
   <div class="ncard"><div class="nt">Три хороших момента</div>${[0,1,2].map(i=>`<div class="gm"><span class="gn${G[i]?" on":""}">${i+1}</span><input id="g${i}" class="nf" value="${esc(G[i]||"")}" placeholder="${i===0?"Что порадовало сегодня":i===1?"Ещё один":"ещё один…"}"></div>`).join("")}</div>
-  <div class="ncard"><div class="nt">Что сделаю лучше завтра?</div><input id="eb" class="nf line" value="${esc(dy.better||"")}" placeholder="Например: начну с тренировки, а не с почты">
+  <div class="ncard"><div class="nt">Что сделаю лучше завтра?</div><input id="eb" class="nf line" value="${esc(dy.better||"")}" placeholder="Например: начну с тренировки">
    <div class="small" style="opacity:.7;margin:14px 0 8px">Главное на завтра</div><div class="chips" id="tmc">${nexts.map((n,i)=>`<button type="button" class="nchip" data-a="tpick" data-i="${i}">${esc(n.lab)}</button>`).join("")}<button type="button" class="nchip" data-a="town">+ своё</button></div><input id="e3" class="nf line" placeholder="Своё главное на завтра" hidden></div>
   <div class="stack"><button type="button" class="btn w white" data-a="esave">Закрыть день</button></div>`,
   {st,nexts,cls:"night",onSave(){if(typeof eveTail==="function")eveTail(k);
@@ -3704,7 +3730,7 @@ function readWhen(h){const on=[...document.querySelectorAll("#hwd button.on")].m
   const tmode=$("#hwm .on")&&$("#hwm .on").dataset.v==="time";if(tmode){h.time=($("#htm").value||"").trim()||null;h.cue=""}else{h.time=null;h.cue=($("#hc").value||"").trim()}}
 sheetHabAdd=function(){const st={ico:"sprout",goal:null,auto:true};
   openSheet(`<h3>Новая привычка</h3><p class="sub">Что делаешь, когда и какой минимум — он спасает в плохие дни</p>
-  <label class="lb" for="ha">Что делаешь</label><input id="ha" class="field" placeholder="10 минут английского">
+  <label class="lb" for="ha">Что делаешь</label><input id="ha" class="field" placeholder="Например: читать 10 минут">
   ${whenBlock(null)}
   <label class="lb" for="hmn">Минимум · хотя бы</label><input id="hmn" class="field" placeholder="хотя бы 5 карточек">
   ${work().length?`<label class="lb">Тянет к цели?</label><div id="gc">${goalChips(null,"pickg")}</div>`:""}
@@ -4109,7 +4135,7 @@ const TAL=(k,s)=>{const c=TALC[k]||"#8a7f9e",im=TALI[k];if(!document.getElementB
 <circle cx="24" cy="24" r="18.9" fill="none" stroke="#3b2a16" stroke-opacity=".25" stroke-width=".5"/>
 <circle cx="24" cy="24" r="17.6" fill="none" stroke="${c}" stroke-opacity=".55" stroke-width=".55" stroke-dasharray="1.1 .9"/>
 ${im?`<image href="${im}" x="9.6" y="9.6" width="28.8" height="28.8" filter="url(#talEm)"/>`:""}</svg></span>`};
-function addTalisman(w){if(!w||!w.won||!w.gid)return null;const g=goal(w.gid);if(!g)return null;g.tal=g.tal||[];if(!g.tal.some(x=>x.w===w.t)){g.tal.push({w:w.t,ico:w.ico,d:TODAY()});save()}return g}
+function addTalisman(w){if(!w||!w.won||!w.gid)return null;const g=goal(w.gid);if(!g||!wordSource(w)||wordSource(w).source!=='goal')return null;g.tal=g.tal||[];if(!g.tal.some(x=>x.w===w.t)){g.tal.push({w:w.t,ico:w.ico,d:TODAY()});save()}return g}
 const talChip=x=>`<button type="button" class="tal" data-a="talw" data-w="${esc(x.w)}" data-d="${x.d}" aria-label="${esc(x.w)}">${TAL(x.ico,30)}</button>`;
 const _swd16=sheetWordDone;sheetWordDone=function(fresh){const w=day(TODAY()).word;const g=addTalisman(w);_swd16(fresh);if(!g)return;
   const win=document.querySelector("#sheet .win");if(!win)return;const el=document.createElement("div");
@@ -6445,7 +6471,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
 /* H1.57: first scoped UX cleanup; preserve data and accepted AI-05. */
 (()=>{
  const todayPrev=vToday;vToday=function(){let h=todayPrev();if(h.includes('class="gpill kpill epill" data-a="evening"'))h=h.replace(/<button type="button" class="grow-row[^"]*" data-a="evening">[\s\S]*?<\/button>/,'');return h.replace(/ <button type="button" class="qhelp" data-a="why" data-v="mid"[^>]*>\?<\/button>/,'')};
- const quick=sheetQuick;sheetQuick=function(listen,force){quick(listen,force);if(!force){const q=$('#qq');if(q)q.placeholder='Запиши мысль, дело или команду'}};
+ const quick=sheetQuick;sheetQuick=function(listen,force){quick(listen,force);if(!force){const q=$('#qq');if(q)q.placeholder='Запиши мысль или планы'}};
  // Preserve the original illustrations for goals, day and evening; replace overlapping voice slides.
  const oldIntro=INTRO.slice(), goalsIntro=oldIntro.find(x=>x.h==='Цели — магниты'),dayIntro=oldIntro.find(x=>x.h==='День 1-3-5'),eveningIntro=oldIntro.find(x=>x.h==='Минута утром, минута вечером');
  if(goalsIntro&&dayIntro&&eveningIntro){INTRO.splice(0,INTRO.length,

@@ -96,7 +96,7 @@ function moved(e){const g=gesture;if(!g||g.id!==e.pointerId)return;const {dx,dy}
  if(run.finishing)return;writeFlow(dx,dy);const next=classify(g,dx,dy);if(next!==visualState)putVisual(next)
 }
 window.addEventListener('pointerdown',e=>{
- if(!e.isPrimary||gesture||run||!e.target.closest?.('#hub'))return;if($('#sheet')?.classList.contains('open'))return;syncGeometry();if(!geometry)return;
+ if(!e.isPrimary||gesture||run||!e.target.closest?.('#hub'))return;if($('#sheet')?.classList.contains('open'))return;if(!geometry||geometryPending)syncGeometry();if(!geometry)return;
  gesture={id:e.pointerId,x:e.clientX,y:e.clientY,scale:geometry.scale,used:false,lock:false,cancel:false,dx:0,dy:0};clearHold();
  try{e.target.closest('#hub').setPointerCapture(e.pointerId)}catch(_){}
  holdTimeout=setTimeout(()=>{const g=gesture;if(!g||run)return;g.used=true;begin();writeFlow(g.dx,g.dy);const next=classify(g,g.dx,g.dy);if(next!==visualState)putVisual(next)},HOLD_MS);
@@ -150,7 +150,7 @@ window.__AI05_H153={get geometry(){return geometry?{...geometry}:null},get state
    const desiredTempo=desired ? .26+.22*motion : .16;
    flowTempo+=(desiredTempo-flowTempo)*(1-Math.exp(-dt/1150));
    phase+=dt*flowTempo;
-   if(!engaged&&life<.008){stream.style.opacity='0';sceneFrame(render);return}const c=center(),vb=`0 0 ${c.width} ${c.height}`;if(stream.getAttribute('viewBox')!==vb)stream.setAttribute('viewBox',vb);
+   if(desired===0&&life<.008){if(stream.style.opacity!=='0')stream.style.opacity='0';sceneFrame(render);return}const c=center(),vb=`0 0 ${c.width} ${c.height}`;if(stream.getAttribute('viewBox')!==vb)stream.setAttribute('viewBox',vb);
    // Flow begins directly at the ring and curls toward the touch direction.
    const cx=c.x,cy=c.y-4;
    const len=Math.hypot(x,y);
@@ -189,6 +189,7 @@ window.__AI05_H153={get geometry(){return geometry?{...geometry}:null},get state
  const stage=root.getElementById('stage'),ring=root.getElementById('ring'),app=root.getElementById('app'),
    svg=root.getElementById('waveForms'),paths=['waveOne','waveTwo','waveThree'].map(id=>root.getElementById(id)),
    choices=[...root.querySelectorAll('[data-wave]')],label=root.getElementById('waveDescription');
+ const waveAngles=Array.from({length:80},(_,i)=>{const a=i/80*Math.PI*2;return [a,Math.cos(a),Math.sin(a)]});
  let mode='trail',smoothAudio=0,followX=0,followY=0,last=performance.now(),visibility=0,lastPaint=0;
  const descriptions={ripple:'Два-три мягких контура расходятся от кольца, как спокойное дыхание.',
  petal:'Мягкие округлые лепестки пульсируют от громкости, без острых выступов.',
@@ -233,13 +234,13 @@ window.__AI05_H153={get geometry(){return geometry?{...geometry}:null},get state
    const pts=[];
    const breathe=Math.sin(now*.0017+k*1.4),offset=k*11+8;
    for(let i=0;i<80;i++){
-    const a=i/80*Math.PI*2,forward=Math.max(0,Math.cos(a-theta));
+    const [a,ca,sa]=waveAngles[i],forward=Math.max(0,Math.cos(a-theta));
     let r=base+offset+2.7*breathe+smoothAudio*(7+k*1.3);
     if(mode==='petal')r+=((3.5+smoothAudio*10)*Math.sin(a*9+now*.0019+k*.8))*.58;
     if(mode==='ripple')r+=(4+k*1.3)*Math.sin(now*.0026-k*1.6);
     if(mode==='trail'){const envelope=forward*forward*(.88+.12*Math.cos(2*(a-theta)));r+=envelope*move*(12+k*4+smoothAudio*24)+(1.5+smoothAudio*4.5)*Math.sin(a*3+now*.0015+k*.75)+(1+smoothAudio*2.2)*Math.sin(a*5-now*.0011+k*.8);}
     const pull=mode==='trail'?move*forward*forward*(8+k*4):0;
-    pts.push([cx+(r+pull)*Math.cos(a),cy+(r+pull)*Math.sin(a)]);
+    pts.push([cx+(r+pull)*ca,cy+(r+pull)*sa]);
    }
    paths[k].setAttribute('d',roundedCurve(pts));
    paths[k].setAttribute('opacity',String((k===0?.51:k===1?.36:.26)*(0.67+smoothAudio*.6)*(locked?.68:1)*visibility));
@@ -275,9 +276,9 @@ function haptic(owner){const H=window.Capacitor?.Plugins?.Haptics;
 }
 function clearHold(){clearTimeout(holdTimeout);holdTimeout=0}
 function stopTracks(){if(stream){stream.getTracks().forEach(t=>safe(()=>t.stop()));stream=null}}
-function stopVolume(){stage.style.setProperty('--voice-level','0');sceneApp.classList.remove('voice-live');if(raf)cancelAnimationFrame(raf);raf=0;safe(()=>audioSource?.disconnect());audioSource=null;analyser=null;const c=audioContext;audioContext=null;if(c)Promise.resolve(c.close()).catch(()=>{})}
+function stopVolume(){stage.style.setProperty('--voice-level','0');sceneApp.classList.remove('voice-live');if(raf)sceneCallbacks.delete(raf);raf=0;safe(()=>audioSource?.disconnect());audioSource=null;analyser=null;const c=audioContext;audioContext=null;if(c)Promise.resolve(c.close()).catch(()=>{})}
 function volume(sourceStream){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;audioContext=new C();Promise.resolve(audioContext.resume?.()).catch(()=>{});audioSource=audioContext.createMediaStreamSource(sourceStream);analyser=audioContext.createAnalyser();analyser.fftSize=512;audioSource.connect(analyser);
- const values=new Uint8Array(512);let filtered=0;const frame=()=>{if(!analyser||!run||run.done)return;analyser.getByteTimeDomainData(values);let energy=0;for(const x of values){const a=(x-128)/128;energy+=a*a}const v=Math.min(1,Math.sqrt(energy/512)*6);filtered=filtered*.8+v*.2;stage.style.setProperty('--voice-level',filtered.toFixed(3));sceneApp.classList.add('voice-live');raf=requestAnimationFrame(frame)};raf=requestAnimationFrame(frame)
+ const values=new Uint8Array(512);let filtered=0,lastSample=0;const frame=(now)=>{if(raf!==frame||!analyser||!run||run.done)return;if(now-lastSample<30){sceneFrame(frame);return}lastSample=now;analyser.getByteTimeDomainData(values);let energy=0;for(const x of values){const a=(x-128)/128;energy+=a*a}const v=Math.min(1,Math.sqrt(energy/512)*6);filtered=filtered*.8+v*.2;stage.style.setProperty('--voice-level',filtered.toFixed(3));sceneApp.classList.add('voice-live');sceneFrame(frame)};raf=frame;sceneFrame(frame)
  }catch(_){stopVolume()}}
 /* This speech session never replaces VOX methods. Other app microphone fields keep their own engine. */
 function gigaPlugin(){return window.Capacitor?.Plugins?.GigaSpeech||null}
