@@ -205,9 +205,7 @@ async function finishNote(owner){
  const blob=recordChunks.length?new Blob(recordChunks,{type:rec?.mimeType||'audio/webm'}):null,ms=recordStarted?Date.now()-recordStarted:0;recorder=null;stopTracks();stopVolume();
  if(!blob){naudStatus(owner.captureError?'Не удалось включить микрофон':'Запись не получилась');return}
  const id=phNew();await PH.put(id,await dataUrl(blob));if(run!==owner||owner.done||SH?.nst!==st){await PH.del(id);return;}
- setNoteAudios(st,[...noteAudios(st),{id,mime:blob.type,ms}]);refreshNoteAudio(st);NOTE_AUDIO_SAVING=false;owner.audioReady=true;naudStatus('Аудио готово · распознаём текст…');
- let result;try{result=await transcribeLocal(blob,owner)}catch(e){result={issue:String(e?.message||e)}}if(run!==owner||owner.done||SH?.nst!==st)return;
- const input=$('#ntx');if(result.text&&input){input.value+=(input.value.trim()?'\n':'')+result.text;input.dispatchEvent(new Event('input',{bubbles:true}));naudStatus('Аудио и текст добавлены · сохрани запись')}else naudStatus('Аудио добавлено · текст можно распознать отдельно');
+ setNoteAudios(st,[...noteAudios(st),{id,mime:blob.type,ms}]);refreshNoteAudio(st);NOTE_AUDIO_SAVING=false;owner.audioReady=true;naudStatus('Аудио добавлено · сохрани запись');
  }catch(e){if(SH?.nst===st)naudStatus('Не удалось сохранить аудио. Попробуй ещё раз.')}finally{if(run===owner){NOTE_AUDIO_SAVING=false;owner.done=true;run=null;gesture=null;stopTracks();stopVolume();recorder=null;recordChunks=[];resetNoteAnchor()}}
 }
 async function finish(){const owner=run;if(!owner||owner.done||owner.finishing)return;owner.finishing=true;clearHold();hide();if(owner.note){stopVolume();return finishNote(owner)}
