@@ -6983,6 +6983,22 @@ const style=document.createElement('style');style.id='h159y-ui';style.textConten
  .h165-entry:last-child{border-bottom:0}
  .h165-entry .small{margin-top:4px;line-height:1.45}
  `;document.head.append(style)})();
+/* H1.66: keyboard accessibility of photo and drawing overlays; no visual changes. */
+(()=>{
+ const sheet=$('#sheet'), app=$('#app'), tabs=$('#tabs');
+ const stack=[];
+ const top=()=>stack[stack.length-1];
+ const controls=el=>[...el.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]')].filter(e=>e.tabIndex>=0&&e.getClientRects().length&&!e.closest('[hidden],[inert]'));
+ const focus=e=>{if(e?.isConnected&&!e.closest('[inert],[hidden]'))e.focus({preventScroll:true})};
+ function enter(el,origin){if(!el)return;const under=[app,tabs,sheet,...stack.map(x=>x.el)].filter(e=>e&&e!==el);const prior=under.map(e=>[e,e.inert]);stack.push({el,origin,prior});under.forEach(e=>e.inert=true);el.inert=false;el.tabIndex=-1;focus(el)}
+ function leave(el){const x=top();if(!x||x.el!==el)return;stack.pop();el.inert=true;x.prior.forEach(([e,was])=>{if(e.isConnected)e.inert=was});const next=top()?.el;focus(x.origin);if(next&&!next.contains(document.activeElement))focus(next);else if(!next&&SH&&!sheet.contains(document.activeElement))focus(sheet);else if(!next&&!SH&&document.activeElement===document.body)focus(tabs.querySelector('button.on'))}
+ const pv=phView;phView=function(...args){const origin=document.activeElement,old=$('#phv');if(old&&top()?.el===old)leave(old);const result=pv.apply(this,args);if(PV)enter($('#phv'),origin);return result};
+ const pc=phvClose;phvClose=function(...args){const el=$('#phv'),result=pc.apply(this,args);leave(el);return result};
+ const dw=drawOpen;drawOpen=function(...args){const origin=document.activeElement,old=$('#drw');if(old&&top()?.el===old)leave(old);const result=dw.apply(this,args);if(DR)enter(DR.el,origin);return result};
+ const dc=drClose;drClose=function(...args){const el=DR?.el,result=dc.apply(this,args);leave(el);return result};
+ window.addEventListener('keydown',e=>{const x=top();if(!x)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();if(x.el.id==='drw')A.drwx();else phvClose();return}if(e.key!=='Tab')return;e.preventDefault();e.stopImmediatePropagation();const all=controls(x.el),i=all.indexOf(document.activeElement);if(!all.length){focus(x.el);return}focus(all[i<0?(e.shiftKey?all.length-1:0):(i+(e.shiftKey?-1:1)+all.length)%all.length])},true);
+ document.addEventListener('focusin',e=>{const x=top();if(x&&!x.el.contains(e.target))focus(x.el)},true);
+})();
 if(D.started)render();
 </script>
 <script src="ai05-integration.js"></script>
