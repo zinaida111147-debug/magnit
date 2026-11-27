@@ -2738,7 +2738,11 @@ function render(){const app=$("#app");
   if(!D.started){app.innerHTML=welcome();$("#tabs").hidden=true;return}
   $("#tabs").hidden=false;const tb=t=>`<button type="button" class="${UI.tab===t[0]?"on":""}" data-a="tab" data-t="${t[0]}" aria-label="${t[1]}">${IC(t[2],22)}<span>${t[1]}</span></button>`;
   {const nav=$("#tabs nav"),markup=tb(TABS2[0])+tb(TABS2[1])+`<button type="button" class="hub drugoy-hub-preview" id="hub" data-a="quick" aria-label="Записать. Удерживай, чтобы надиктовать"><img class="drugoy-ring" src="brand/12a1-ring-foreground.png" alt="" aria-hidden="true"></button>`+tb(TABS2[2])+tb(TABS2[3]);const hub=nav.querySelector('#hub');if(!hub)nav.innerHTML=markup;else{const fresh=document.createElement('template');fresh.innerHTML=markup;const items=[...fresh.content.children],before=items.slice(0,2),after=items.slice(3);const old=[...nav.children].filter(b=>b!==hub);if(old.length!==4||old.some((b,i)=>b.outerHTML!==[...before,...after][i].outerHTML)){old.forEach(b=>b.remove());before.forEach(b=>nav.insertBefore(b,hub));after.forEach(b=>nav.append(b))}}}
-  app.innerHTML=(({today:vToday,goals:vGoals,tracker:vTracker,money:vMoney})[UI.tab]||vToday)()}
+  const markup=(({today:vToday,goals:vGoals,tracker:vTracker,money:vMoney})[UI.tab]||vToday)();
+  // H1.70: retain the sticky compositing layer on same-tab updates; content is rebuilt below it.
+  const pin=app.querySelector(':scope > .pinhd');
+  if(pin&&pin.dataset.tab===UI.tab){const next=document.createElement('template');next.innerHTML=markup;pin.replaceChildren();for(const child of [...app.childNodes])if(child!==pin)child.remove();app.append(next.content)}else app.innerHTML=markup;
+}
 function welcome(){return`<div class="welcome"><h1>Твой день</h1><p>Дела, цели, привычки и мысли в одном месте.</p>
 <button type="button" class="btn w" data-a="start">Начать с чистого листа</button><button type="button" class="btn ghost w" data-a="demo">Посмотреть на примере</button><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="restore">Восстановить из копии</button></div>`}
 const H2=(k,h,right)=>`<header class="hd"><div class="grow"><div class="k">${k}</div><h1>${h}</h1></div>${right?`<div class="tools">${right}</div>`:""}</header>`;
@@ -2762,7 +2766,7 @@ function vToday(){const k=viewDay(),dy=day(k),d=fromIso(k),isT=k===TODAY();
   const mid=T.filter(t=>t.size==="mid");
   o+=`<div class="sec3"><b>Важные · до 5</b><span>${mid.filter(t=>t.done).length} из ${mid.length}</span></div><div class="card list3">${mid.length?mid.map(t=>{const g=t.goal&&goal(t.goal),sg=!t.goal&&t.sug&&goal(t.sug);return`<div class="task${t.done?" done":""}"><button type="button" class="ck${t.done?" on":""}" data-a="tdone" data-id="${t.id}" aria-label="Готово"></button><button type="button" class="tt" data-a="tedit" data-id="${t.id}">${esc(t.t)}</button><span class="meta">${sg&&sg.st==="work"?`<button type="button" class="chip sug" data-a="link" data-id="${t.id}" data-g="${sg.id}">→ ${esc(sg.t.length>10?sg.t.slice(0,9)+"…":sg.t)}?</button>`:t.time?`<span class="tm">${t.time}</span>`:`<span class="es">${g?GLY(g.cover,16):""}~${fmtMin(est(t))}</span>`}<button type="button" class="pen" data-a="tedit" data-id="${t.id}" aria-label="Изменить">${IC("pen",16)}</button></span></div>`}).join(""):GHOST_MID()}</div>`;
   const sm2=T.filter(t=>t.size==="small");
-  o+=`<div class="sec3"><b>Мелочи</b><span>нажми, чтобы отметить · удерживай для изменения</span></div><div class="pills">${sm2.map(t=>`<button type="button" class="tpill${t.done?" done":""}" data-a="tdone" data-id="${t.id}" data-hold="tedit">${esc(t.t)}</button>`).join("")}${!sm2.length?GHOST_SM():""}${1?`<button type="button" class="tpill add" data-a="caladd" data-d="${k}" aria-label="Запланировать на этот день">+</button>`:""}</div>`;
+  o+=`<div class="sec3"><b>Мелочи</b><span>нажми, чтобы отметить · удерживай для изменения</span></div><div class="pills">${sm2.map(t=>`<button type="button" class="tpill${t.done?" done":""}" data-a="tdone" data-id="${t.id}" data-hold="tedit">${esc(t.t)}</button>`).join("")}${!sm2.length?GHOST_SM():""}${1?`<button type="button" class="tpill add" data-a="addtask" data-size="small" aria-label="Добавить мелочь">+</button>`:""}</div>`;
   // 0.9.15 #20: вчерашнее намерение — на экране следующего дня, не в дневнике вчера.
   const prevDay=D.days[addDays(k,-1)];
   if(prevDay&&prevDay.better)o+=`<div class="card tomorrow-intent"><div class="small mut">Вчера ты хотел попробовать сегодня</div><div class="t17" style="margin-top:4px">${esc(prevDay.better)}</div><div class="small mut" style="margin-top:5px">Это напоминание, не обязательная задача</div></div>`;
@@ -4811,7 +4815,7 @@ A.qkind=(function(prev){return function(e){const r=SH&&SH.st&&SH.st.items[+e.dat
 const VOX={session:null,get on(){return !!this.session?.held},
   can(){return!!(PLG("SpeechRecognition")||window.SpeechRecognition||window.webkitSpeechRecognition)},
   valid(s){return this.session===s&&s.el.isConnected&&s.btn.isConnected},
-  put(s){if(!this.valid(s))return;const v=[s.base,...s.fin,s.cur].filter(Boolean).join(" ");s.el.value=v;s.el.dispatchEvent(new Event("input",{bubbles:true}))},
+  put(s){if(!this.valid(s))return;const v=[s.base,...s.fin,s.cur].filter(Boolean).join(" ");if(s.el.value===v)return;s.el.value=v;s.el.dispatchEvent(new Event("input",{bubbles:true}))},
   commit(s){if(s.cur.trim())s.fin.push(s.cur.trim());s.cur=""},
   ui(s,on){s.btn.classList.toggle("live",on);s.btn.setAttribute("aria-pressed",String(on));s.btn.setAttribute("aria-label",on?"Слушаю — отпусти, чтобы закончить":"Удерживай, чтобы надиктовать");if(!on){s.bar?.remove();return}
     const b=document.createElement("div");b.className="holdbar";b.setAttribute("role","status");b.innerHTML="<i></i><span>Слушаю — отпусти, когда закончишь</span>";s.el.parentElement.before(b);s.bar=b},
@@ -5328,7 +5332,7 @@ function stkMini(){if(UI.tab==="goals"){const W=D.goals.filter(g=>g.st==="work")
 render=(function(prev){return function(){prev();STK30=null;if(!D.started)return;const app=$("#app");if(!app)return;
   const pick={today:[".hd",".wkstrip"],tracker:[".hd",".seg"],goals:[".hd"],money:[".hd",".r-balance"]}[UI.tab];if(!pick)return;
   const els=pick.map(s=>app.querySelector(":scope > "+s)).filter(Boolean);if(!els.length)return;
-  const box=document.createElement("div");box.className="pinhd";els[0].before(box);els.forEach(e=>box.appendChild(e));
+  const existing=app.querySelector(':scope > .pinhd');const box=existing||document.createElement("div");if(!existing){box.className="pinhd";els[0].before(box)}box.dataset.tab=UI.tab;els.forEach(e=>box.appendChild(e));
   const mini=stkMini();if(mini){box.insertAdjacentHTML("beforeend",mini)}
   STK30={box,ref:UI.tab==="goals"?app.querySelector(".wallet"):UI.tab==="money"?(app.querySelector(".mtop")||app.querySelector(".mcenter")):null};
   stkTick();requestAnimationFrame(stkTick)}})(render);
@@ -6798,7 +6802,9 @@ A.vplanchoose=e=>{const k=SH?.planDate;if(!k)return;UI.tab='today';setDay(k);if(
 #app .tlist .trow .tc i.ms{box-shadow:inset 0 0 0 1.3px var(--mut2)}
 #app .tlist .tdh{justify-self:center;min-width:0;color:var(--mut);font-size:11px}
 #app .tlist .tdh b{font-size:13px}
-@media(min-width:700px){#app .tlist .trow:not(.add){grid-template-columns:minmax(0,1fr) repeat(7,44px);gap:7px}#app .tlist .trow .tnm{grid-column:auto}#app .tlist .trow .tc{height:40px}}
+@media(min-width:700px){#app .tlist .trow:not(.add){grid-template-columns:minmax(0,1fr) repeat(7,minmax(44px,clamp(44px,7vw,68px)));gap:7px}#app .tlist .trow .tnm{grid-column:auto;min-width:0;justify-content:flex-start;justify-self:stretch}#app .tlist .trow .tnm>.row{min-width:0}#app .tlist .trow .tc{height:40px;width:44px;justify-self:center}#app .tlist .trow .tdh{justify-self:center;width:44px}}
+/* H1.70: tracker date header sticks below main header, including safe-area inset. */
+.trow.thead{top:calc(var(--stkh,0px) + env(safe-area-inset-top,0px))}
 /* A single continuous neutral gradient; remove the duplicate hard bottom overlay. */
 #app .gfront .gshade{background:linear-gradient(180deg,transparent 8%,rgba(20,16,40,.04) 30%,rgba(20,16,40,.18) 52%,rgba(20,16,40,.43) 78%,rgba(20,16,40,.55) 100%)}
 #app .gfront .gbot::before{content:none}

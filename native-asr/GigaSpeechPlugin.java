@@ -1,6 +1,7 @@
 package app.magnit.planner;
 
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Base64;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.CapacitorPlugin;
@@ -21,7 +22,13 @@ public class GigaSpeechPlugin extends Plugin {
     static final String[] NAMES={"encoder.int8.onnx","decoder.onnx","joiner.onnx","tokens.txt"};
     static final String[] HASH={"aa4e9bd1d8f1b30534c0b56d743970be53fd102dba639c2b1cc06e2aa898ada0","ea08443676485385c0dd31d938233bffaed6e52d47d84844c9b568589f1c9b27","ade116563dbf66e503b0994efab6b5861412743e52bf31c39fc3fffa3783d5d1",null};
     static final long[] LIMIT={240_000_000,2_000_000,1_000_000,30_000};
-    private final ExecutorService worker=Executors.newSingleThreadExecutor();
+    private final ScheduledExecutorService worker=Executors.newSingleThreadScheduledExecutor();
+    // Only accessed by the serial worker; never release a recognizer during decode.
+    private OfflineRecognizer cachedRecognizer;
+    private ScheduledFuture<?> idleRelease;
+    private volatile boolean destroyed=false;
+    private void releaseRecognizer(){if(cachedRecognizer!=null){OfflineRecognizer r=cachedRecognizer;cachedRecognizer=null;r.release();}}
+    private synchronized void keepRecognizerBriefly(){if(idleRelease!=null)idleRelease.cancel(false);if(!destroyed&&cachedRecognizer!=null)idleRelease=worker.schedule(this::releaseRecognizer,90,TimeUnit.SECONDS);}
     private final AtomicBoolean busy=new AtomicBoolean(false);
     private volatile boolean cancelled=false;
     private volatile int progress=-1;
@@ -30,10 +37,11 @@ public class GigaSpeechPlugin extends Plugin {
     private boolean ready(){File d=model();if(!new File(d,"ready").isFile())return false;for(String name:NAMES)if(new File(d,name).length()==0)return false;return true;}
     @PluginMethod public void status(PluginCall call){JSObject out=new JSObject();out.put("supported",supported());out.put("ready",ready());out.put("busy",busy.get());out.put("progress",progress);call.resolve(out);}
     @PluginMethod public void cancel(PluginCall call){cancelled=true;call.resolve();}
-    private void submit(PluginCall call,Work work){
+    private synchronized void submit(PluginCall call,Work work){
+        if(destroyed){call.reject("Распознавание завершено");return;}
         if(!supported()){call.reject("GigaAM пока доступен на Android ARM64");return;}
         if(!busy.compareAndSet(false,true)){call.reject("Распознавание или загрузка уже выполняется");return;}
-        cancelled=false;worker.execute(()->{JSObject result=null;String error=null;try{result=work.run();}catch(Exception|LinkageError e){error=e.getMessage()==null?e.getClass().getSimpleName():e.getMessage();}catch(OutOfMemoryError e){error="Недостаточно оперативной памяти для GigaAM";}finally{busy.set(false);progress=-1;}if(error==null)call.resolve(result);else call.reject(error);});
+        cancelled=false;worker.execute(()->{JSObject result=null;String error=null;try{if(idleRelease!=null)idleRelease.cancel(false);result=work.run();}catch(Exception|LinkageError e){error=e.getMessage()==null?e.getClass().getSimpleName():e.getMessage();}catch(OutOfMemoryError e){releaseRecognizer();error="Недостаточно оперативной памяти для GigaAM";}finally{keepRecognizerBriefly();busy.set(false);progress=-1;}if(error==null)call.resolve(result);else call.reject(error);});
     }
     interface Work { JSObject run() throws Exception; }
     private void check() throws InterruptedException {if(cancelled||Thread.currentThread().isInterrupted())throw new InterruptedException("Отменено");}
@@ -44,7 +52,7 @@ public class GigaSpeechPlugin extends Plugin {
         MessageDigest md=MessageDigest.getInstance("SHA-256");try(InputStream in=new FileInputStream(file)){byte[] buf=new byte[65536];int n;while((n=in.read(buf))!=-1){check();md.update(buf,0,n);}}return HASH[i].equals(hex(md.digest()));
     }
     @PluginMethod public void prepare(PluginCall call){submit(call,()->{
-        if(ready())return new JSObject();File dir=model();if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException("Не удалось создать папку модели");
+        if(ready())return new JSObject();releaseRecognizer();File dir=model();if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException("Не удалось создать папку модели");
         if(dir.getUsableSpace()<250_000_000L)throw new IOException("Освободи не менее 250 МБ на телефоне");
         progress=0;new File(dir,"ready").delete();long total=226_500_000L,complete=0;
         for(int i=0;i<NAMES.length;i++){
@@ -59,14 +67,20 @@ public class GigaSpeechPlugin extends Plugin {
     });}
     @PluginMethod public void transcribe(PluginCall call){
         String encoded=call.getString("pcm");if(encoded==null||encoded.length()>((MAX*2L+2)/3)*4){call.reject("Слишком длинная запись");return;}
-        submit(call,()->{if(!ready())throw new IOException("Сначала скачай модель");byte[] bytes=Base64.decode(encoded,Base64.DEFAULT);if(bytes.length==0||bytes.length%2!=0||bytes.length>MAX*2)throw new IOException("Неверный формат PCM");short[] samples=new short[bytes.length/2];for(int i=0;i<samples.length;i++)samples[i]=(short)((bytes[i*2]&255)|(bytes[i*2+1]<<8));check();JSObject out=new JSObject();out.put("text",recognize(samples));return out;});
+        submit(call,()->{if(!ready())throw new IOException("Сначала скачай модель");long started=SystemClock.elapsedRealtime();byte[] bytes=Base64.decode(encoded,Base64.DEFAULT);if(bytes.length==0||bytes.length%2!=0||bytes.length>MAX*2)throw new IOException("Неверный формат PCM");short[] samples=new short[bytes.length/2];for(int i=0;i<samples.length;i++)samples[i]=(short)((bytes[i*2]&255)|(bytes[i*2+1]<<8));check();JSObject out=new JSObject();JSObject timing=new JSObject();timing.put("pcmMs",SystemClock.elapsedRealtime()-started);out.put("text",recognize(samples,timing));timing.put("totalMs",SystemClock.elapsedRealtime()-started);out.put("timing",timing);return out;});
     }
     static int boundary(short[] samples,int start){int cap=Math.min(samples.length,start+25*RATE);if(cap==samples.length)return cap;int best=cap;long energy=Long.MAX_VALUE;for(int p=start+20*RATE;p<=cap;p+=RATE/10){long e=0;for(int k=p-RATE/20;k<p+RATE/20&&k<samples.length;k++){long x=samples[k];e+=x*x;}if(e<energy){energy=e;best=p;}}return best;}
-    private String recognize(short[] samples)throws Exception{
+    private OfflineRecognizer createRecognizer(){
         File m=model();OfflineTransducerModelConfig tr=new OfflineTransducerModelConfig();tr.setEncoder(new File(m,NAMES[0]).getAbsolutePath());tr.setDecoder(new File(m,NAMES[1]).getAbsolutePath());tr.setJoiner(new File(m,NAMES[2]).getAbsolutePath());
         OfflineModelConfig mc=new OfflineModelConfig();mc.setTransducer(tr);mc.setTokens(new File(m,NAMES[3]).getAbsolutePath());mc.setModelType("nemo_transducer");mc.setProvider("cpu");mc.setNumThreads(2);
         FeatureConfig fc=new FeatureConfig();fc.setSampleRate(RATE);fc.setFeatureDim(64);OfflineRecognizerConfig cfg=new OfflineRecognizerConfig();cfg.setFeatConfig(fc);cfg.setModelConfig(mc);cfg.setDecodingMethod("greedy_search");
-        OfflineRecognizer rec=new OfflineRecognizer(null,cfg);StringBuilder result=new StringBuilder();try{for(int pos=0;pos<samples.length;){check();int end=boundary(samples,pos);float[] pcm=new float[end-pos];for(int j=0;j<pcm.length;j++)pcm[j]=samples[pos+j]/32768f;OfflineStream stream=rec.createStream();try{if(stream.getPtr()==0)throw new IOException("Не удалось создать поток GigaAM");stream.acceptWaveform(pcm,RATE);rec.decode(stream);check();String text=rec.getResult(stream).getText().trim();if(!text.isEmpty()){if(result.length()>0)result.append(' ');result.append(text);}}finally{stream.release();}pos=end;}return result.toString();}finally{rec.release();}
+        return new OfflineRecognizer(null,cfg);
     }
-    @Override protected void handleOnDestroy(){cancelled=true;worker.shutdownNow();super.handleOnDestroy();}
+    private String recognize(short[] samples,JSObject timing)throws Exception{
+        long started=SystemClock.elapsedRealtime();boolean warm=cachedRecognizer!=null;
+        if(!warm)cachedRecognizer=createRecognizer();
+        timing.put("warm",warm);timing.put("initMs",SystemClock.elapsedRealtime()-started);check();
+        OfflineRecognizer rec=cachedRecognizer;long decodeStart=SystemClock.elapsedRealtime();StringBuilder result=new StringBuilder();try{for(int pos=0;pos<samples.length;){check();int end=boundary(samples,pos);float[] pcm=new float[end-pos];for(int j=0;j<pcm.length;j++)pcm[j]=samples[pos+j]/32768f;OfflineStream stream=rec.createStream();try{if(stream.getPtr()==0)throw new IOException("Не удалось создать поток GigaAM");stream.acceptWaveform(pcm,RATE);rec.decode(stream);check();String text=rec.getResult(stream).getText().trim();if(!text.isEmpty()){if(result.length()>0)result.append(' ');result.append(text);}}finally{stream.release();}pos=end;}timing.put("decodeMs",SystemClock.elapsedRealtime()-decodeStart);return result.toString();}catch(Exception|LinkageError e){if(!(e instanceof InterruptedException))releaseRecognizer();throw e;}
+    }
+    @Override protected synchronized void handleOnDestroy(){destroyed=true;cancelled=true;worker.execute(()->{if(idleRelease!=null)idleRelease.cancel(false);releaseRecognizer();});worker.shutdown();super.handleOnDestroy();}
 }
