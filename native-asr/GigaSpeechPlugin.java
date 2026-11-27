@@ -35,7 +35,7 @@ public class GigaSpeechPlugin extends Plugin {
     private File model(){return new File(getContext().getNoBackupFilesDir(),"gigaam-v3-"+REV);}
     private boolean supported(){return Arrays.asList(Build.SUPPORTED_ABIS).contains("arm64-v8a");}
     private boolean ready(){File d=model();if(!new File(d,"ready").isFile())return false;for(String name:NAMES)if(new File(d,name).length()==0)return false;return true;}
-    @PluginMethod public void status(PluginCall call){JSObject out=new JSObject();out.put("supported",supported());out.put("ready",ready());out.put("busy",busy.get());out.put("progress",progress);call.resolve(out);}
+    @PluginMethod public void status(PluginCall call){JSObject out=new JSObject();out.put("supported",supported());out.put("ready",ready());out.put("busy",busy.get());out.put("canRemove",true);out.put("hasFiles",model().isDirectory());out.put("progress",progress);call.resolve(out);}
     @PluginMethod public void cancel(PluginCall call){cancelled=true;call.resolve();}
     private synchronized void submit(PluginCall call,Work work){
         if(destroyed){call.reject("Распознавание завершено");return;}
@@ -64,6 +64,16 @@ public class GigaSpeechPlugin extends Plugin {
             }finally{conn.disconnect();temp.delete();}
         }
         check();try(OutputStream out=new FileOutputStream(new File(dir,"ready"))){out.write(1);}progress=100;return new JSObject();
+    });}
+    /** Delete only the dedicated model directory, serialized with download/decode. */
+    static void removeModelFiles(File dir) throws IOException {
+        if(!dir.exists())return;
+        File marker=new File(dir,"ready");if(marker.exists()&&!marker.delete())throw new IOException("Не удалось отключить модель");
+        for(String name:NAMES){for(String suffix:new String[]{"", ".part"}){File f=new File(dir,name+suffix);if(f.exists()&&!f.delete())throw new IOException("Не удалось удалить файл модели");}}
+        File[] rest=dir.listFiles();if(rest==null||rest.length!=0||!dir.delete())throw new IOException("Не удалось полностью очистить папку модели");
+    }
+    @PluginMethod public void remove(PluginCall call){submit(call,()->{
+        releaseRecognizer();removeModelFiles(model());JSObject out=new JSObject();out.put("ready",ready());return out;
     });}
     @PluginMethod public void transcribe(PluginCall call){
         String encoded=call.getString("pcm");if(encoded==null||encoded.length()>((MAX*2L+2)/3)*4){call.reject("Слишком длинная запись");return;}
