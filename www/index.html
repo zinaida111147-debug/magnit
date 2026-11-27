@@ -2182,7 +2182,7 @@ function sheetTask(id,size){const t=id?D.tasks.find(x=>x.id===id):null;const st=
   openSheet(`<h3>${t?"Дело":"Новое дело"}</h3><p class="sub">${t?(t.moves?`Переносилось ${t.moves} ${plural(t.moves,"раз","раза","раз")}`:"Можно уточнить, привязать к цели или перенести"):"Одно действие, которое можно сделать за раз"}</p>
   <div class="row"><input id="tt" class="field" value="${t?esc(t.t):""}" aria-label="Что сделать?" placeholder="Что сделать?" autocomplete="off">${micBtn("tt")}</div>
   <label class="lb">Размер</label><div class="chips" id="sz">${[["big","Главное"],["mid","Важное"],["small","Мелочь"]].map(s=>`<button type="button" class="chip${st.size===s[0]?" on":""}" data-a="pick" data-k="size" data-v="${s[0]}">${s[1]}</button>`).join("")}</div>
-  <label class="lb" id="dur186-label">Сколько займёт</label>${durationMarkup186()}
+  ${durationMarkup186()}
   <label class="lb" for="ttm">Время · по желанию</label><input id="ttm" class="field" type="time" value="${t&&t.time?t.time:""}" style="max-width:160px">
   ${work().length?`<label class="lb">Шаг к цели?</label><div id="gc">${goalChips(st.goal,"pickg")}</div>`:""}
   <div class="stack"><button type="button" class="btn w" data-a="tsave">${t?"Сохранить":"Добавить"}</button>
@@ -7143,45 +7143,59 @@ A.h183dirsave=e=>{const N=e.dataset.w;if(SH?.h183Week!==N||N<monday(TODAY()))ret
 })();
 /* H1.86 — duration wheels, one explicit minute value, no persistent change until Save. */
 function taskDirty186(t){const st=SH?.st;if(SH?.taskEdit186!==t.id||!st)return false;return $("#tt")?.value.trim()!==t.t||($("#ttm")?.value||"")!==(t.time||"")||st.size!==t.size||(st.goal||null)!==(t.goal||null)||(st.est==null?null:Number(st.est))!==(t.est?Number(t.est):null)}
-function durationMarkup186(){return `<div class="dur186" role="group" aria-labelledby="dur186-label"><div class="dur186-head"><output id="dur186-summary" aria-live="polite"></output><button type="button" class="lnk dur186-auto" data-a="durauto186">Авто</button></div><div class="dur186-grid">${[['h','Часы'],['m','Минуты']].map(([k,label])=>`<div class="dur186-col"><span id="dur186-${k}-label" class="small mut">${label}</span><div class="dur186-frame"><div class="dur186-wheel" id="dur186-${k}" role="spinbutton" tabindex="0" aria-labelledby="dur186-${k}-label" aria-valuemin="0" aria-valuemax="${k==='h'?24:55}"></div><div class="dur186-focus" aria-hidden="true"></div></div></div>`).join('')}</div></div>`}
+function durationMarkup186(){return `<div class="dur186" role="group" aria-labelledby="dur186-label"><div class="dur186-head"><label class="lb" id="dur186-label">Сколько займёт</label><output id="dur186-summary"></output><button type="button" class="lnk dur186-auto" data-a="durauto186">Авто</button></div><div class="dur186-grid">${[['h','Часы'],['m','Минуты']].map(([k,label])=>`<div class="dur186-col"><span id="dur186-${k}-label" class="small mut">${label}</span><div class="dur186-frame"><div class="dur186-wheel" id="dur186-${k}" role="spinbutton" tabindex="0" aria-labelledby="dur186-${k}-label" aria-valuemin="0" aria-valuemax="${k==='h'?24:59}"></div><div class="dur186-focus" aria-hidden="true"></div></div></div>`).join('')}</div></div>`}
+/* H1.87 — continuous virtual reels. One total, no wrap to 0 at 24h. */
+function durationStep187(n,k,dir){if(n<=5&&dir<0)return n;if(k==='h'){const h=Math.max(0,Math.min(24,Math.floor(n/60)+dir));return Math.max(5,Math.min(1440,h*60+n%60))}return Math.max(5,Math.min(1440,dir>0?(Math.floor(n/5)+1)*5:(Math.ceil(n/5)-1)*5))}
+function durationTick187(){
+ if(D.set.sound){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='running'){const t=AC.currentTime,b=AC.createBuffer(1,Math.ceil(AC.sampleRate*.016),AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*.003));const src=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();src.buffer=b;f.type='bandpass';f.frequency.value=2300;f.Q.value=.8;g.gain.value=.18;src.connect(f);f.connect(g);g.connect(AC.destination);src.start(t)}}catch(e){}}
+ try{navigator.vibrate?.(5)}catch(e){}
+}
 function mountDuration186(st,t){
- const root=$('#sheet .dur186');if(!root)return;const hours=root.querySelector('#dur186-h'),minutes=root.querySelector('#dur186-m'),summary=root.querySelector('output'),auto=root.querySelector('[data-a="durauto186"]');
- let lastTick=-Infinity,active=false,H=0,M=5,legacy=0,oldMinute=null;const unit=36;
- const valsH=Array.from({length:25},(_,i)=>i);let valsM=[];
- function rows(el,values){el.replaceChildren(...values.map(v=>{const row=document.createElement('div');row.className='dur186-option';row.dataset.v=String(v);row.textContent=el===hours?String(v):String(v).padStart(2,'0');row.setAttribute('aria-hidden','true');return row}))}
- function pos(el,values,value){const idx=values.indexOf(value);if(idx<0)return;el.scrollTop=idx*unit;el.dataset.index=String(idx);el.setAttribute('aria-valuenow',String(value));el.querySelectorAll('.dur186-option').forEach((r,i)=>r.classList.toggle('selected',i===idx))}
- function estimate(){return estAdj({...t,t:$('#tt')?.value||t?.t||'',goal:st.goal,size:st.size,est:null})}
- function normalize(n){return Math.min(1440,Math.max(1,Math.round(Number(n)||5)))}
- function paint(){const m=H*60+M;summary.textContent=legacy?'Сохранено: '+fmtMin(legacy):(H?H+' ч'+(M?' '+M+' мин':''):M+' мин')+(st.est==null?' · авто':'');auto.disabled=st.est==null;minutes.setAttribute('aria-disabled',String(H===24));minutes.tabIndex=H===24?-1:0;minutes.classList.toggle('locked',H===24);hours.setAttribute('aria-valuetext',H+' ч');minutes.setAttribute('aria-valuetext',M+' мин')}
- function load(){active=false;const raw=Number(st.est??estimate());legacy=raw>1440?raw:0;const n=normalize(raw);H=Math.floor(n/60);M=n%60;oldMinute=M%5?M:null;valsM=[0,5,10,15,20,25,30,35,40,45,50,55,...(oldMinute===null?[]:[oldMinute])].sort((a,b)=>a-b);rows(hours,valsH);rows(minutes,valsM);minutes.setAttribute('aria-valuemax',String(valsM.at(-1)));pos(hours,valsH,H);pos(minutes,valsM,M);paint();active=true}
- function change(el,value,feedback=true){if(!active||!root.isConnected||SH?.st!==st)return;if(el===hours)H=value;else if(H!==24)M=value;if(H===24)M=0;else if(H===0&&M===0)M=5;legacy=0;st.est=H*60+M;pos(hours,valsH,H);pos(minutes,valsM,M);paint();if(feedback&&performance.now()-lastTick>65){lastTick=performance.now();snd('tick')}}
- // Native scrolling + CSS snapping: do not set scrollTop during ordinary motion (preserve touch inertia).
- function listen(el,values){el.addEventListener('scroll',()=>{if(!active||!root.isConnected||SH?.st!==st)return;const a=values(),idx=Math.max(0,Math.min(a.length-1,Math.round(el.scrollTop/unit)));if(String(idx)===el.dataset.index)return;el.dataset.index=String(idx);if(el===minutes&&H===24){pos(minutes,valsM,0);return}const v=a[idx];if(el===hours)H=v;else M=v;if(H===24){M=0;pos(minutes,valsM,0)}else if(H===0&&M===0){M=5;if(el===hours)pos(minutes,valsM,5);else {pos(minutes,valsM,5);}}legacy=0;st.est=H*60+M;el.setAttribute('aria-valuenow',String(el===hours?H:M));el.querySelectorAll('.dur186-option').forEach((r,i)=>r.classList.toggle('selected',i===Number(el.dataset.index)));paint();if(performance.now()-lastTick>65){lastTick=performance.now();snd('tick')}},{passive:true});el.addEventListener('click',e=>{const row=e.target.closest('.dur186-option');if(row&&!(el===minutes&&H===24))change(el,Number(row.dataset.v))});el.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(e.key)||el===minutes&&H===24)return;e.preventDefault();const a=values(),i=a.indexOf(el===hours?H:M),next=e.key==='Home'?0:e.key==='End'?a.length-1:Math.max(0,Math.min(a.length-1,i+({ArrowUp:-1,ArrowDown:1,PageUp:-5,PageDown:5}[e.key]||0)));change(el,a[next])})}
- load();listen(hours,()=>valsH);listen(minutes,()=>valsM);
- root.durRefresh=()=>{if(st.est==null)load()};root.durReset=()=>{st.est=null;load()};
- $('#tt')?.addEventListener('input',root.durRefresh); // auto estimate follows the actual title/size/goal
+ const root=$('#sheet .dur186');if(!root)return;const summary=root.querySelector('output'),auto=root.querySelector('[data-a="durauto186"]');let total=5,legacy=0,lastTick=-Infinity;const unit=24,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const wheels=['h','m'].map(k=>({k,el:root.querySelector('#dur186-'+k),offset:0,raf:0,pointer:null,rows:[]}));
+ const live=()=>root.isConnected&&SH?.st===st;
+ const value=(n,k)=>k==='h'?Math.floor(n/60):n%60;
+ function stop(w){if(w.raf)cancelAnimationFrame(w.raf);w.raf=0;w.offset=0;w.pointer=null}
+ function feedback(){const now=performance.now();if(now-lastTick>=25){lastTick=now;durationTick187()}}
+ function paint(){if(!live())return;const H=Math.floor(total/60),M=total%60;summary.textContent=legacy?'Сохранено: '+fmtMin(legacy):(H?H+' ч'+(M?' '+M+' мин':''):M+' мин')+(st.est==null?' · авто':'');auto.disabled=st.est==null;
+ for(const w of wheels){const v=value(total,w.k);w.el.setAttribute('aria-valuenow',String(v));w.el.setAttribute('aria-valuetext',v+(w.k==='h'?' ч':' мин'));for(let i=-2;i<=2;i++){let n=total;for(let j=0;j<Math.abs(i);j++)n=durationStep187(n,w.k,Math.sign(i));const row=w.rows[i+2],pos=i-w.offset,visible=i===0||n!==total&&value(n,w.k)!==v; // hide repeated endpoint, not the cyclic 55/00 seam
+ if(i!==0){let prev=total;for(let j=1;j<Math.abs(i);j++)prev=durationStep187(prev,w.k,Math.sign(i));if(n===prev)row.style.visibility='hidden';else row.style.visibility=visible?'visible':'hidden'}else row.style.visibility='visible';row.textContent=w.k==='h'?String(value(n,w.k)):String(value(n,w.k)).padStart(2,'0');row.classList.toggle('selected',i===0);row.style.transform=`translate3d(0,${Math.sin(pos*.42)*57-12}px,${(Math.cos(pos*.42)-1)*38}px) rotateX(${-pos*24}deg)`;row.style.opacity=String(Math.max(0,1-Math.abs(pos)*.38));}}
+ }
+ function set(n,sound=true){if(n===total)return false;total=n;legacy=0;st.est=n;if(sound)feedback();return true}
+ function advance(w,d){w.offset+=d;while(w.offset>=.5||w.offset<-.5){const dir=Math.sign(w.offset),n=durationStep187(total,w.k,dir);if(!set(n)){w.offset=0;paint();return false}w.offset-=dir}paint();return true}
+ function settle(w,v=0){let last=performance.now();function frame(now){if(!live()){w.raf=0;return}const dt=Math.min(40,now-last);last=now;if(Math.abs(v)>.0008&&!reduced){if(!advance(w,v*dt))v=0;v*=Math.exp(-dt/320)}else{v=0;w.offset*=Math.exp(-dt/52);paint()}if(Math.abs(v)>.0008||Math.abs(w.offset)>.012)w.raf=requestAnimationFrame(frame);else{w.raf=0;w.offset=0;paint()}}w.raf=requestAnimationFrame(frame)}
+ function prepare(w){for(const x of wheels)stop(x);paint()}
+ for(const w of wheels){for(let i=-2;i<=2;i++){const row=document.createElement('div');row.className='dur186-option';row.dataset.rel=String(i);row.setAttribute('aria-hidden','true');w.el.append(row);w.rows.push(row)}
+ w.el.addEventListener('pointerdown',e=>{if(!live()||!e.isPrimary||e.button!==0)return;prepare(w);if(D.set.sound){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()?.catch(()=>{})}catch(e){}}w.pointer={id:e.pointerId,y:e.clientY,start:e.clientY,time:performance.now(),v:0,moved:false,rel:Number(e.target.closest('.dur186-option')?.dataset.rel||0)};w.el.setPointerCapture(e.pointerId);e.preventDefault()});
+ w.el.addEventListener('pointermove',e=>{const p=w.pointer;if(!p||p.id!==e.pointerId||!live())return;const now=performance.now(),d=(p.y-e.clientY)/unit,dt=Math.max(8,now-p.time);if(Math.abs(e.clientY-p.start)>4)p.moved=true;if(p.moved){p.v=.35*p.v+.65*d/dt;advance(w,d)}p.y=e.clientY;p.time=now;e.preventDefault()});
+ function release(e,cancel=false){const p=w.pointer;if(!p||p.id!==e.pointerId)return;w.pointer=null;if(!live())return;if(!cancel&&!p.moved){for(let j=0;j<Math.abs(p.rel);j++)set(durationStep187(total,w.k,Math.sign(p.rel)));paint();return}const v=cancel||performance.now()-p.time>100?0:Math.max(-.055,Math.min(.055,p.v));settle(w,v)}
+ w.el.addEventListener('pointerup',e=>release(e));w.el.addEventListener('pointercancel',e=>release(e,true));w.el.addEventListener('lostpointercapture',e=>release(e,true));
+ w.el.addEventListener('wheel',e=>{if(!live())return;e.preventDefault();prepare(w);const count=Math.max(1,Math.min(6,Math.round(Math.abs(e.deltaY)/(e.deltaMode===1?3:55))));for(let i=0;i<count;i++)set(durationStep187(total,w.k,Math.sign(e.deltaY)));paint()},{passive:false});
+ w.el.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(e.key)||!live())return;e.preventDefault();prepare(w);if(e.key==='Home'||e.key==='End'){const n=w.k==='h'?(e.key==='Home'?Math.max(5,total%60):1440):Math.max(5,Math.min(1440,Math.floor(total/60)*60+(e.key==='Home'?0:55)));set(n)}else{const dir=['ArrowUp','PageUp'].includes(e.key)?-1:1;for(let i=0;i<(e.key.startsWith('Page')?5:1);i++)set(durationStep187(total,w.k,dir))}paint()});
+ }
+ function load(){for(const w of wheels)stop(w);const raw=Number(st.est??estAdj({...t,t:$('#tt')?.value||t?.t||'',goal:st.goal,size:st.size,est:null}));legacy=raw>1440?raw:0;total=Math.max(1,Math.min(1440,Math.round(raw)||5));paint()}
+ root.durRefresh=()=>{if(st.est==null)load()};root.durReset=()=>{st.est=null;load()};$('#tt')?.addEventListener('input',root.durRefresh);load()
 }
 A.durauto186=()=>{$('#sheet .dur186')?.durReset?.()};
 {const pick=A.pick,pickg=A.pickg;A.pick=e=>{pick(e);if(e.dataset.k==='size')$('#sheet .dur186')?.durRefresh?.()};A.pickg=e=>{pickg(e);$('#sheet .dur186')?.durRefresh?.()}}
 A.h186undate=e=>{const t=D.tasks.find(x=>x.id===e.dataset.id);if(!t||!h171Active(t)||SH?.h171Move!==t.id)return;openSheet(`<h3>Отложить без даты?</h3><p class="sub">${esc(t.t)}</p><p>Дело останется в календаре без назначенного дня. Напоминание по времени приостановится.</p><div class="stack"><button type="button" class="btn w" data-a="h186undateok" data-id="${esc(t.id)}">Отложить</button><button type="button" class="btn ghost w" data-a="h171move" data-id="${esc(t.id)}">Отмена</button></div>`,{h186Undate:t.id,h186MoveOrigin:SH?.h186MoveOrigin||null})};
 A.h186undateok=e=>{const t=D.tasks.find(x=>x.id===e.dataset.id);if(!t||!h171Active(t)||SH?.h186Undate!==t.id)return;t.d=null;save();render();if(typeof lnSync==='function')lnSync();sheetCal()};
 {const css=document.createElement('style');css.id='h186-duration';css.textContent=`
-#sheet .dur186{border:1px solid var(--hair);border-radius:20px;background:var(--glass2);padding:8px 12px 10px;color:var(--fg);min-width:0}
-#sheet .dur186-head{display:flex;align-items:center;justify-content:space-between;min-height:28px;gap:8px}
+#sheet .dur186{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin-top:10px;color:var(--fg)}
+#sheet .dur186-head{display:flex;flex:1;min-width:0;flex-direction:column;align-items:flex-start;gap:3px}
+#sheet .dur186-head .lb{margin:0;font-size:14px}
 #sheet .dur186-head output{font-size:14px;font-weight:600;min-width:0;overflow-wrap:anywhere}
-#sheet .dur186-auto{padding:4px 8px;font-size:13px;min-height:28px}
+#sheet .dur186-auto{padding:3px 0;font-size:13px;min-height:26px}
 #sheet .dur186-auto:disabled{opacity:.5;pointer-events:none}
-#sheet .dur186-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:340px;margin:0 auto}
+#sheet .dur186-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:140px;max-width:48%;flex:none;border:1px solid var(--hair);border-radius:15px;background:var(--glass2);padding:5px;box-sizing:border-box}
 #sheet .dur186-col{text-align:center;min-width:0}
-#sheet .dur186-frame{position:relative;height:108px;margin-top:2px}
-#sheet .dur186-wheel{position:relative;box-sizing:border-box;z-index:1;height:108px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;touch-action:pan-y;scroll-padding:0;padding:36px 0;outline:none;user-select:none;-webkit-user-select:none}
-#sheet .dur186-wheel::-webkit-scrollbar{display:none}
-#sheet .dur186-wheel:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:12px}
-#sheet .dur186-option{height:36px;line-height:36px;min-height:36px;box-sizing:border-box;scroll-snap-align:center;color:var(--mut);font-size:17px;font-variant-numeric:tabular-nums;text-align:center;cursor:pointer;opacity:.75}
-#sheet .dur186-option.selected{font-size:23px;font-weight:650;color:var(--fg);opacity:1}
-#sheet .dur186-focus{position:absolute;z-index:0;top:36px;left:0;right:0;height:36px;border:1px solid var(--edge);background:var(--glass);border-radius:11px;pointer-events:none}
-#sheet .dur186-wheel.locked{pointer-events:none;opacity:.65;overflow-y:hidden}
-@media(prefers-reduced-motion:reduce){#sheet .dur186-wheel{scroll-behavior:auto}}
+#sheet .dur186-col>span{font-size:11px;white-space:nowrap}
+#sheet .dur186-frame{position:relative;height:72px;margin-top:1px}
+#sheet .dur186-wheel{position:relative;box-sizing:border-box;z-index:1;height:72px;overflow:hidden;touch-action:none;outline:none;user-select:none;-webkit-user-select:none;perspective:130px;mask-image:linear-gradient(transparent,black 22%,black 78%,transparent);cursor:ns-resize}
+#sheet .dur186-wheel:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:9px}
+#sheet .dur186-option{position:absolute;top:50%;left:0;right:0;height:24px;line-height:24px;box-sizing:border-box;color:var(--mut);font-size:17px;font-variant-numeric:tabular-nums;text-align:center;backface-visibility:hidden;transform-origin:center;will-change:transform}
+#sheet .dur186-option.selected{font-size:20px;font-weight:650;color:var(--fg)}
+#sheet .dur186-focus{position:absolute;z-index:0;top:24px;left:0;right:0;height:24px;border:1px solid var(--edge);background:var(--glass);border-radius:7px;pointer-events:none}
 `;document.head.append(css)}
 if(D.started)render();
 </script>
