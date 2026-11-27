@@ -64,6 +64,14 @@ input[inputmode="decimal"]::placeholder,input[type="number"]::placeholder{font-s
 html{overflow-x:hidden;scrollbar-width:none!important}
 body,body *{scrollbar-width:none!important}
 html::-webkit-scrollbar,body::-webkit-scrollbar,body *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+</style><style id="h192-sheet-corners">
+/* Explicit themed root backing and rounded compositor clipping; no white canvas at sheet corners. */
+html{background-color:var(--bg2)}
+#sheet:not(.roomsheet){--h192-radius:28px 28px 0 0;clip-path:inset(0 round var(--h192-radius));background-clip:padding-box}
+#sheet.roomsheet{clip-path:none}
+#app .drow>.wtx{flex:1 1 0;min-width:0;text-align:left}
+#app .drow>.sug{flex:none;white-space:nowrap}
+#sheet .settings-body57>.op.h192-rhythm{border:0}
 </style></head><body><title>Магнит</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#F3E6EC">
@@ -2026,8 +2034,7 @@ const earnedToday=()=>D.log.filter(x=>x.d===TODAY()&&x.n>0);
 function rollover(){/* no automatic date changes */}
 
 /* wish list name forms */
-const WISHN={"Желания":["Желания","желаний","в желания"],"Мечты":["Мечты","мечт","в мечты"],"Хочу":["Хочу","хотелок","в «Хочу»"],"Мой выбор":["Мой выбор","целей в выборе","в «Мой выбор»"]};
-const wn=i=>{const f=WISHN[D.set.wish];return f?f[i]:i===0?D.set.wish:i===1?"в «"+D.set.wish+"»":"в «"+D.set.wish+"»"};
+const wn=i=>["Желания","желаний","в желания"][i]; // H1.92: old set.wish retained only for backup compatibility.
 
 /* ---------- sound ---------- */
 let AC=null;
@@ -2363,18 +2370,18 @@ function vGoals(){const W=work(),wishes=D.goals.filter(g=>g.st==="wish"||g.st===
   let o=hd("Магниты, которые притягивают дни","Цели",`<button type="button" class="btn ghost sm" data-a="week">${IC("map",16)}Неделя</button>`);
   o+=`<div class="sec"><h2>В работе</h2><span class="c">${W.length} из 3</span></div><div class="stack" style="margin-top:6px">`;
   W.forEach(g=>{const st=(g.steps||[]).length,jar=D.money.jars.find(j=>j.goal===g.id);
-    o+=`<div class="card goal tap" data-a="goal" data-id="${g.id}"><div class="tint" style="background:${TINT[themeOf(g.cover)]}"></div><div class="row" style="align-items:flex-start"><div class="grow"><div class="num">№${g.n}</div><div class="gt">${esc(g.t)}</div><div class="small mut">${st?`${st} ${plural(st,"шаг","шага","шагов")} · последний ${ago(g.last||g.steps[st-1].d)}`:"Шагов пока нет — самое время для первого"}</div></div>${MGg(g,62,"","transform:rotate(6deg);margin:-2px -2px 0 0;flex:none")}</div>
+    o+=`<div class="card goal tap" data-a="goal" data-id="${g.id}"><div class="tint" style="background:${TINT[themeOf(g.cover)]}"></div><div class="row" style="align-items:flex-start"><div class="grow"><div class="gt">${esc(g.t)}</div><div class="small mut">${st?`${st} ${plural(st,"шаг","шага","шагов")} · последний ${ago(g.last||g.steps[st-1].d)}`:"Шагов пока нет — самое время для первого"}</div></div>${MGg(g,62,"","transform:rotate(6deg);margin:-2px -2px 0 0;flex:none")}</div>
     ${jar?`<div style="margin-top:12px"><div class="row small mut" style="justify-content:space-between;margin-bottom:4px"><span class="row" style="gap:6px">Копилка</span><span style="font-variant-numeric:tabular-nums">${rub(jarSum(jar))}${jar.target?" из "+rub(jar.target):""}</span></div>${jar.target?`<div class="prog"><i style="width:${Math.min(100,jarSum(jar)/jar.target*100)}%"></i></div>`:""}</div>`:""}
     <div class="next">${g.next?`<span class="grow small"><span class="mut">Дальше:</span> <b>${esc(g.next)}</b></span><button type="button" class="chip on" data-a="gtoday" data-id="${g.id}">на сегодня</button>`:`<span class="grow small mut">Нет следующего шага</span><span class="chip">добавить</span>`}</div></div>`});
   for(let i=W.length;i<3;i++)o+=`<div class="slot">${i===W.length?`Выбери желание и возьми его в работу`:"Свободное место"}</div>`;
   o+=`</div><div class="sec"><h2>${esc(wn(0))}</h2><span class="c">${wishes.length}</span></div><div class="card" style="padding:8px 14px;margin-top:6px">`;
   o+=`<form class="qadd" data-f="wadd" style="margin:0 0 4px"><label for="wa" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Новое желание</label><input id="wa" class="field" placeholder="Записать желание…" autocomplete="off">${micBtn("wa")}<button type="submit" class="btn sm" aria-label="Записать">+</button></form>`;
-  o+=wishes.length?wishes.map(g=>`<div class="wish"><span class="n">№${g.n}</span><button type="button" class="grow tt" data-a="goal" data-id="${g.id}" style="background:none;border:0;text-align:left;padding:0;font-size:15px;overflow-wrap:anywhere">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">В работу</button></div>`).join(""):`<div class="empty">Сюда можно складывать всё, чего хочется. Без лимита и без спешки.</div>`;
+  o+=wishes.length?wishes.map(g=>`<div class="wish"><button type="button" class="grow tt" data-a="goal" data-id="${g.id}" style="background:none;border:0;text-align:left;padding:0;font-size:15px;overflow-wrap:anywhere">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">В работу</button></div>`).join(""):`<div class="empty">Сюда можно складывать всё, чего хочется. Без лимита и без спешки.</div>`;
   o+=`</div>`;
-  if(done.length)o+=`<div class="sec"><h2>Достигнуто</h2><span class="c">${done.length}</span></div><div class="card" style="padding:6px 14px;margin-top:6px">${done.sort((a,b)=>(b.doneAt||"").localeCompare(a.doneAt||"")).map(g=>`<button type="button" class="wish" data-a="goal" data-id="${g.id}" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;font:inherit;color:inherit"><span class="n">№${g.n}</span><span class="grow" style="font-size:15px">${esc(g.t)}</span><span class="small mut" style="flex:none">${g.doneAt?dshort(g.doneAt):""}${(g.steps||[]).length?" · "+g.steps.length+" "+plural(g.steps.length,"шаг","шага","шагов"):""}</span></button>`).join("")}</div>`;
+  if(done.length)o+=`<div class="sec"><h2>Достигнуто</h2><span class="c">${done.length}</span></div><div class="card" style="padding:6px 14px;margin-top:6px">${done.sort((a,b)=>(b.doneAt||"").localeCompare(a.doneAt||"")).map(g=>`<button type="button" class="wish" data-a="goal" data-id="${g.id}" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;font:inherit;color:inherit"><span class="grow" style="font-size:15px">${esc(g.t)}</span><span class="small mut" style="flex:none">${g.doneAt?dshort(g.doneAt):""}${(g.steps||[]).length?" · "+g.steps.length+" "+plural(g.steps.length,"шаг","шага","шагов"):""}</span></button>`).join("")}</div>`;
   return o}
 function sheetGoal(id){const g=goal(id);if(!g)return;const steps=(g.steps||[]).slice().reverse();const wo=g.woop||{};
-  openSheet(`<div class="row" style="align-items:flex-start">${MGg(g,84,"","transform:rotate(-6deg)")}<div class="grow"><div class="small mut">№${g.n} · ${g.st==="work"?"в работе":g.st==="done"?"достигнута "+(g.doneAt?dshort(g.doneAt):""):g.st==="pause"?"на паузе":"в "+esc(wn(0).toLowerCase())}</div><h3>${esc(g.t)}</h3></div></div>
+  openSheet(`<div class="row" style="align-items:flex-start">${MGg(g,84,"","transform:rotate(-6deg)")}<div class="grow"><div class="small mut">${g.st==="work"?"в работе":g.st==="done"?"достигнута "+(g.doneAt?dshort(g.doneAt):""):g.st==="pause"?"на паузе":"в списке желаний"}</div><h3>${esc(g.t)}</h3></div></div>
   ${g.st!=="done"?`<label class="lb" for="gn">Следующий шаг</label><div class="row"><input id="gn" class="field" value="${esc(g.next||"")}" placeholder="Самый маленький шаг">${micBtn("gn")}<button type="button" class="btn sm" data-a="gnsave" data-id="${g.id}">ОК</button></div>`:""}
 
   <div class="sec" style="padding:0"><h2>История</h2><span class="c">${steps.length} ${plural(steps.length,"шаг","шага","шагов")}</span></div>
@@ -2514,11 +2521,9 @@ function kitchen(){const have=D.kit.items;
   return o}
 
 /* ---------- SETTINGS / IMPORT ---------- */
-function sheetSettings(){const presets=Object.keys(WISHN);
+function sheetSettings(){
   openSheet(`<h3>Настройки</h3>
-  <label class="lb">Как называть список желаний</label><div class="chips">${presets.map(p=>`<button type="button" class="chip${D.set.wish===p?" on":""}" data-a="wishname" data-v="${p}">${p}</button>`).join("")}</div>
-  <div class="row" style="margin-top:8px"><input id="wcus" class="field" placeholder="Своё название" value="${presets.includes(D.set.wish)?"":esc(D.set.wish)}"><button type="button" class="btn ghost sm" data-a="wishcustom">ОК</button></div>
-  <label class="lb">Звуки</label><div class="chips"><button type="button" class="chip${D.set.sound?" on":""}" data-a="sound" data-v="1">Тихие щелчки</button><button type="button" class="chip${!D.set.sound?" on":""}" data-a="sound" data-v="0">Без звука</button></div>
+  <label class="lb">Звук и вибрация</label><div class="op"><span class="grow">Звуки</span><button type="button" class="tog${D.set.sound?" on":""}" data-a="sound" data-v="${D.set.sound?"0":"1"}" aria-label="Звуки" aria-pressed="${!!D.set.sound}"></button></div>
   <label class="lb">Данные</label><div class="stack" style="margin-top:0"><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="copyall">Скопировать все данные</button>
   <div id="danger"><button type="button" class="btn ghost w" data-a="askdemo">Заполнить примером</button><button type="button" class="lnk" data-a="askreset" style="width:100%;color:var(--hot)">Начать заново</button></div></div>
   <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><div class="t17">Pro — позже</div><div class="small mut" style="line-height:1.4">Аналитика «как ты работаешь», деньги на автомате и программы на 30 дней. Основной круг бесплатный навсегда.</div></div></div></div>
@@ -2704,9 +2709,7 @@ const A={
  rsave:()=>{const a=[num("r0"),num("r1"),num("r2")];if(a[0]+a[1]+a[2]!==100){toast("Сумма долей — "+(a[0]+a[1]+a[2])+", а нужно 100");return}D.money.r=a;save();closeSheet();render()},
  
  buy:e=>{const x=SHOP.find(s=>s[0]===e.dataset.v);if(!x||D.sparks<x[1])return;spend(x[1],x[2]+" в комнату");D.kit.items.push(x[0]);save();snd("win");toast(x[2]+" теперь в комнате");render();sheetKitchen()},
- wishname:e=>{D.set.wish=e.dataset.v;save();render();sheetSettings()},
- wishcustom:()=>{const v=$("#wcus").value.trim();if(!v)return;D.set.wish=v.slice(0,24);save();render();sheetSettings()},
- sound:e=>{D.set.sound=e.dataset.v==="1";save();sheetSettings();if(D.set.sound)snd("click")},
+ sound:e=>{D.set.sound=e.dataset.v==="1";save();if(e.classList.contains("tog")){e.classList.toggle("on",D.set.sound);e.dataset.v=D.set.sound?"0":"1";e.setAttribute("aria-pressed",String(D.set.sound))}else sheetSettings();if(D.set.sound)snd("click")},
  copyall:e=>{const txt=JSON.stringify(D);const done=()=>{e.textContent="Скопировано ✓"};try{navigator.clipboard.writeText(txt).then(done,()=>{fallbackCopy(txt);})}catch(x){fallbackCopy(txt)}},
  askdemo:()=>{$("#danger").innerHTML=`<div class="hint"><div class="grow"><p>Пример заменит все текущие данные. Продолжить?</p><div class="acts"><button type="button" class="chip on" data-a="demo">Да, заполнить</button><button type="button" class="chip" data-a="settings">Отмена</button></div></div></div>`},
  askreset:()=>{$("#danger").innerHTML=`<div class="hint"><div class="grow"><p>Удалить все данные на этом устройстве и начать заново?</p><div class="acts"><button type="button" class="chip" data-a="reset" style="color:var(--hot)">Да, удалить</button><button type="button" class="chip" data-a="settings">Отмена</button></div></div></div>`},
@@ -2841,9 +2844,9 @@ function vGoals(){const W=work();if(UI.front&&!W.some(g=>g.id===UI.front))UI.fro
   else o+=`<div class="slot">Пока нет активных целей. Запиши желание и возьми его в работу.</div>`;
   o+=`</div>`;
   const WL=UI.allW?wishes:wishes.slice(0,6);
-  o+=`<div class="sec2"><b>${esc(wn(0))} · ${wishes.length}</b><span>можно взять в работу</span></div><div class="card" style="padding:4px 14px">`;
+  o+=`<div class="sec2"><b>${esc(wn(0))} · ${wishes.length}</b></div><div class="card" style="padding:4px 14px">`;
   o+=`<button type="button" class="drow" data-a="qwish" style="color:var(--mut)">${IC("plus",20)}<span class="grow">Записать желание</span></button>`;
-  o+=WL.map(g=>`<div class="drow"><span class="wn">№${g.n}</span>${GLY(g.cover,20)}<button type="button" class="grow wtx" data-a="goal" data-id="${g.id}">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">в работу</button></div>`).join("");
+  o+=WL.map(g=>`<div class="drow">${GLY(g.cover,20)}<button type="button" class="grow wtx" data-a="goal" data-id="${g.id}">${esc(g.t)}${g.st==="pause"?' <span class="small mut">· пауза</span>':""}</button><button type="button" class="chip sug" data-a="woop" data-id="${g.id}">в работу</button></div>`).join("");
   if(wishes.length>6)o+=`<button type="button" class="drow" data-a="allw" style="justify-content:center;color:var(--acc);font-weight:600">${UI.allW?"Свернуть":"Показать все "+wishes.length}</button>`;
   o+=`</div>`;
   if(done.length)o+=`<div class="sec2"><b>Достигнуто</b><span>${done.length}</span></div><div class="card" style="padding:4px 14px">${done.sort((a,b)=>(b.doneAt||"").localeCompare(a.doneAt||"")).map(g=>`<button type="button" class="drow" data-a="goal" data-id="${g.id}">${GLY(g.cover,20)}<span class="grow">${esc(g.t)}</span><span class="small mut">${g.doneAt?dshort(g.doneAt):""}</span></button>`).join("")}</div>`;
@@ -3039,7 +3042,7 @@ function applyLook(){const r=document.documentElement,t=D.set.theme||"system";if
   r.style.setProperty("--acc",dark?A2[6]:A2[1]);r.style.setProperty("--acc2",A2[2]);r.style.setProperty("--acc3",A2[3]);r.style.setProperty("--accl",dark?A2[2]:A2[4]);r.style.setProperty("--accll",dark?A2[3]:A2[5]);
   r.style.setProperty("--accsoft",(dark?A2[6]:A2[1])+"1F");const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=dark?"#141B22":"#EEF1EC"}
 try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyLook)}catch(e){}
-function sheetSettings(){const presets=Object.keys(WISHN),R=D.set.rem||{},th=D.set.theme||"system",ac=D.set.accent||"forest";
+function sheetSettings(){const R=D.set.rem||{},th=D.set.theme||"system",ac=D.set.accent||"forest";
   openSheet(`<h3>Настройки</h3>
   <label class="lb">Тема</label><div class="seg" style="margin-top:0">${[["system","Как в системе"],["light","Светлая"],["dark","Тёмная"]].map(x=>`<button type="button" class="${th===x[0]?"on":""}" data-a="setth" data-v="${x[0]}">${x[1]}</button>`).join("")}</div>
   <label class="lb">Палитра</label><div class="accs">${Object.entries(ACCENTS).map(([kk,v])=>`<button type="button" class="${ac===kk?"on":""}" data-a="setac" data-v="${kk}" aria-label="${v[0]}"><i style="background:linear-gradient(160deg,${v[2]},${v[3]})"></i><span>${v[0]}</span></button>`).join("")}</div>
@@ -3048,10 +3051,8 @@ function sheetSettings(){const presets=Object.keys(WISHN),R=D.set.rem||{},th=D.s
    <div class="op"><span class="grow">Вечер · закрыть день</span><input type="time" id="re" class="field" value="${R.evening||"21:30"}" style="width:110px;height:38px"><button type="button" class="tog${R.eOn!==false?" on":""}" data-a="remtog" data-k="eOn" aria-label="Вечернее напоминание"></button></div>
    <div class="op"><span class="grow">Привычки · если не отмечены</span><input type="time" id="rh" class="field" value="${R.habits||"20:00"}" style="width:110px;height:38px"><button type="button" class="tog${R.hOn!==false?" on":""}" data-a="remtog" data-k="hOn" aria-label="Напоминание о привычках"></button></div>
   </div><p class="small mut" style="margin:6px 4px 0;line-height:1.4">В браузере напоминания работают, пока приложение открыто.</p>
-  <label class="lb">Как называть список желаний</label><div class="chips">${presets.map(p=>`<button type="button" class="chip${D.set.wish===p?" on":""}" data-a="wishname" data-v="${p}">${p}</button>`).join("")}</div>
-  <div class="row" style="margin-top:8px"><input id="wcus" class="field" placeholder="Своё название" value="${presets.includes(D.set.wish)?"":esc(D.set.wish)}"><button type="button" class="btn ghost sm" data-a="wishcustom">ОК</button></div>
-  <label class="lb">Мой день</label><div class="op" style="border:0"><span class="grow">Сколько часов на дела</span><input id="cap" aria-label="Часов на дела в день" class="field" inputmode="decimal" value="${Number(((D.set.cap||480)/60).toFixed(2))}" style="width:70px;height:38px;text-align:center"><span class="mut">ч</span></div>
-  <label class="lb">Звуки</label><div class="chips"><button type="button" class="chip${D.set.sound?" on":""}" data-a="sound" data-v="1">Тихие щелчки</button><button type="button" class="chip${!D.set.sound?" on":""}" data-a="sound" data-v="0">Без звука</button></div>
+  <label class="lb">Ритм дня</label><div class="op" style="border:0"><span class="grow">Сколько часов на дела</span><input id="cap" aria-label="Часов на дела в день" class="field" inputmode="decimal" value="${Number(((D.set.cap||480)/60).toFixed(2))}" style="width:70px;height:38px;text-align:center"><span class="mut">ч</span></div>
+  <label class="lb">Звук и вибрация</label><div class="op"><span class="grow">Звуки</span><button type="button" class="tog${D.set.sound?" on":""}" data-a="sound" data-v="${D.set.sound?"0":"1"}" aria-label="Звуки" aria-pressed="${!!D.set.sound}"></button></div>
   <label class="lb">Данные</label><div class="stack" style="margin-top:0"><button type="button" class="btn ghost w" data-a="import">Перенести из старого Магнита</button><button type="button" class="btn ghost w" data-a="copyall">Скопировать все данные</button>
   <div id="danger"><button type="button" class="btn ghost w" data-a="askdemo">Заполнить примером</button><button type="button" class="lnk" data-a="askreset" style="width:100%;color:var(--hot)">Начать заново</button></div></div>
   `,{settings:true})}
@@ -3090,7 +3091,7 @@ const _vGoals=vGoals;vGoals=function(){if(D.goals.length)return _vGoals();
   <button type="button" class="gfront" data-a="qwish" style="border:0;padding:0;width:100%;text-align:left">${SCN("sea")}<div class="gshade"></div><div class="gtop"><span class="gday">ДЕНЬ 1</span>${GTAG}</div><div class="gbot"><div class="gname">Поездка к морю</div><div class="gseg">${[0,1,2,3,4,5,6].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</div><span class="gnext"><span class="grow">Дальше: посмотреть билеты</span><span>сб</span></span></div></button></div>
   <p class="small mut" style="margin:10px 6px 0;line-height:1.4">Выбирай столько целей, сколько тебе подходит.</p>
   <div class="sec2"><b>${esc(wn(0))}</b><span>без лимита</span></div><div class="card" style="padding:4px 14px"><button type="button" class="drow" data-a="qwish" style="color:var(--acc);font-weight:600">${IC("plus",20)}<span class="grow">Записать первое желание</span></button>
-  ${[["1","Выучить английский до B1","book"],["2","Пробежать 10 км","medal"],["3","Свой угол — квартира","house"]].map(x=>`<button type="button" class="drow ghost" data-a="qwish" data-t="${x[1]}"><span class="wn">№${x[0]}</span>${GLY(x[2],20)}<span class="grow">${x[1]}</span>${GTAG}</button>`).join("")}</div>`;
+  ${[["1","Выучить английский до B1","book"],["2","Пробежать 10 км","medal"],["3","Свой угол — квартира","house"]].map(x=>`<button type="button" class="drow ghost" data-a="qwish" data-t="${x[1]}">${GLY(x[2],20)}<span class="grow">${x[1]}</span>${GTAG}</button>`).join("")}</div>`;
   return o};
 
 const _vTracker=vTracker;vTracker=function(){if(D.habits.length)return _vTracker();const k=TODAY(),W=monday(k);
@@ -3516,7 +3517,7 @@ const _render6=render;render=function(){_render6();if(!D.started||UI.tab!=="toda
 /* ---------- ПОИСК через магнит ---------- */
 function searchAll(q){const Q=norm(q).split(/\s+/).filter(w=>w.length>=3).map(stem);if(!Q.length)return[];const hit=t=>{const W=words(t).map(stem);return Q.every(x=>W.some(y=>y.startsWith(x.slice(0,4))||x.startsWith(y.slice(0,4))))};const R=[];
   D.tasks.forEach(t=>{if(hit(t.t))R.push({w:t.d||"9",h:`<button type="button" class="srow" data-a="tedit" data-id="${t.id}">${t.done?"✓ ":""}${esc(t.t)}<small>${t.d?whenLab(t.d):"потом"}</small></button>`})});
-  D.goals.forEach(g=>{if(hit(g.t))R.push({w:"z",h:`<button type="button" class="srow" data-a="goal" data-id="${g.id}">${esc(g.t)}<small>${g.st==="work"?"цель в работе":g.st==="done"?"достигнута":"желание №"+g.n}</small></button>`});(g.notes||[]).forEach(n=>{if(hit(n.t))R.push({w:n.d,h:`<button type="button" class="srow" data-a="goal" data-id="${g.id}">${esc(n.t)}<small>заметка · ${esc(g.t)}</small></button>`})});(g.steps||[]).forEach(s=>{if(hit(s.t))R.push({w:s.d,h:`<button type="button" class="srow" data-a="goal" data-id="${g.id}">${esc(s.t)}<small>шаг · ${esc(g.t)} · ${dshort(s.d)}</small></button>`})})});
+  D.goals.forEach(g=>{if(hit(g.t))R.push({w:"z",h:`<button type="button" class="srow" data-a="goal" data-id="${g.id}">${esc(g.t)}<small>${g.st==="work"?"цель в работе":g.st==="done"?"достигнута":"желание"}</small></button>`});(g.notes||[]).forEach(n=>{if(hit(n.t))R.push({w:n.d,h:`<button type="button" class="srow" data-a="goal" data-id="${g.id}">${esc(n.t)}<small>заметка · ${esc(g.t)}</small></button>`})});(g.steps||[]).forEach(s=>{if(hit(s.t))R.push({w:s.d,h:`<button type="button" class="srow" data-a="goal" data-id="${g.id}">${esc(s.t)}<small>шаг · ${esc(g.t)} · ${dshort(s.d)}</small></button>`})})});
   D.habits.forEach(h=>{if(hit(h.name))R.push({w:"z",h:`<button type="button" class="srow" data-a="hab" data-id="${h.id}">${esc(h.name)}<small>привычка</small></button>`})});
   D.money.sp.forEach(x=>{if(hit(x.t))R.push({w:x.d,h:`<span class="srow">${esc(x.t)} · −${rub(x.amt)}<small>трата · ${dshort(x.d)}</small></span>`})});
   Object.keys(D.days).forEach(k=>{const dy=D.days[k];[...(dy.goods||[dy.good]),dy.thanks,dy.line].filter(Boolean).forEach(g=>{if(hit(g))R.push({w:k,h:`<button type="button" class="srow" data-a="hday" data-d="${k}">${esc(g)}<small>день · ${dshort(k)}</small></button>`})})});
@@ -6565,7 +6566,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
  const trackerPrev=vTracker;vTracker=function(){if(D.demo||D.habits.length)return trackerPrev();return H2('', 'Трекер','')+`<div class="card"><p class="small mut" style="margin:0 0 12px">Пока нет привычек.</p><button type="button" class="btn w" data-a="habadd">+ Добавить привычку</button><button type="button" class="lnk" data-a="hhelp" style="width:100%;margin-top:8px">Как это работает</button></div>`};
  const openGroups=new Set();
  const settingsPrev=sheetSettings;sheetSettings=function(){settingsPrev();const sh=$('#sheet');if(!sh||sh.querySelector('.settings-group57'))return;
-  const labels={'Тема':'Оформление','Оформление':'Оформление','Цвет':'Оформление','Напоминания':'Напоминания и телефон','Телефон':'Напоминания и телефон','Как называть список желаний':'Предпочтения','Мой день':'Предпочтения','Звуки':'Предпочтения','Данные':'Данные и резервные копии'};
+  const labels={'Тема':'Оформление','Оформление':'Оформление','Цвет':'Оформление','Напоминания':'Напоминания и телефон','Телефон':'Напоминания и телефон','Ритм дня':'Личные настройки','Звук и вибрация':'Личные настройки','Данные':'Данные и резервные копии'};
   const groups=new Map();let cur=null;
   const group=name=>{if(groups.has(name))return groups.get(name);const d=document.createElement('details');d.className='settings-group57';d.open=openGroups.has(name);const sm=document.createElement('summary');sm.textContent=name;d.append(sm);const body=document.createElement('div');body.className='settings-body57';d.append(body);d.addEventListener('toggle',()=>{if(!d.isConnected)return;if(d.open)openGroups.add(name);else openGroups.delete(name)});groups.set(name,{d,body});return groups.get(name)};
   const children=[...sh.children];for(const el of children){if(el.matches('.x,.grab,h3')||el.matches('.mhint')&&!cur)continue;
@@ -6574,7 +6575,7 @@ sheetQuick=(function(prev){return function(...args){prev(...args);const box=$("#
    if(el.querySelector('[data-a="report"]')||el.textContent.trim().startsWith('Pro'))cur=group('Дополнительно');
    if(cur)cur.body.append(el);
   }
-  for(const name of ['Оформление','Напоминания и телефон','Предпочтения','Данные и резервные копии','Помощь и статистика','Дополнительно']){const g=groups.get(name);if(g)sh.append(g.d)}
+  for(const name of ['Оформление','Напоминания и телефон','Личные настройки','Данные и резервные копии','Помощь и статистика','Дополнительно']){const g=groups.get(name);if(g)sh.append(g.d)}
  };
  const css=document.createElement('style');css.textContent=`.settings-group57{border:1px solid var(--edge);border-radius:16px;background:var(--glass);margin:8px 0;overflow:hidden}.settings-group57>summary{cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-weight:700;list-style:none}.settings-group57>summary::-webkit-details-marker{display:none}.settings-group57>summary::after{content:'›';font-size:21px;color:var(--mut)}.settings-group57[open]>summary::after{transform:rotate(90deg)}.settings-body57{padding:0 12px 12px}.settings-body57>.lb:first-child{margin-top:4px}.mhint>p{flex:1;min-width:0}`;document.head.append(css);
 })();
@@ -7164,7 +7165,7 @@ A.h183direction=e=>{const N=e.dataset.w;if(!/^\d{4}-\d\d-\d\d$/.test(N||'')||mon
 A.h183dirback=e=>{if(SH?.h183Week!==e.dataset.w)return;sheetCal()};
 A.h183dirsave=e=>{const N=e.dataset.w;if(SH?.h183Week!==N||N<monday(TODAY()))return;const v=$('#h183focus')?.value.trim().slice(0,300);if(v===undefined)return;const W=addDays(N,-7),p=D.weeks[W]?.plan;if(v||p?.direction){D.weeks[W]=D.weeks[W]||{};D.weeks[W].plan={...(p||{})};if(v)D.weeks[W].plan.direction=v;else delete D.weeks[W].plan.direction;if(!Object.keys(D.weeks[W].plan).length)delete D.weeks[W].plan;if(!Object.keys(D.weeks[W]).length)delete D.weeks[W];save();render()}sheetCal()};
 /* H1.85 — compact preference, explicit future effective date. */
-(()=>{const prev=sheetSettings;sheetSettings=function(){prev();const g=[...document.querySelectorAll('#sheet .settings-group57')].find(x=>x.querySelector('summary')?.textContent==='Предпочтения'),body=g?.querySelector('.settings-body57');if(!body||body.querySelector('#dayStart185'))return;const k=TODAY(),next=dayStartRules185().filter(r=>r.from>k).sort((a,b)=>a.from.localeCompare(b.from))[0];body.insertAdjacentHTML('beforeend',`<div class="op"><label for="dayStart185" class="grow">Начало дня</label><input type="time" class="field" id="dayStart185" value="${esc(next?.time||dayStartFor185(k))}" style="width:110px"></div><p id="dayStartInfo185" class="small mut">${next?'С '+esc(dshort(next.from))+' · '+esc(next.time):'Сейчас с '+esc(dayStartFor185(k))+'. Прошлые записи не меняются.'}</p>`)};
+(()=>{const prev=sheetSettings;sheetSettings=function(){prev();const g=[...document.querySelectorAll('#sheet .settings-group57')].find(x=>x.querySelector('summary')?.textContent==='Личные настройки'),body=g?.querySelector('.settings-body57');if(!body||body.querySelector('#dayStart185'))return;const k=TODAY(),next=dayStartRules185().filter(r=>r.from>k).sort((a,b)=>a.from.localeCompare(b.from))[0];body.insertAdjacentHTML('beforeend',`<div class="op"><label for="dayStart185" class="grow">Начало дня</label><input type="time" class="field" id="dayStart185" value="${esc(next?.time||dayStartFor185(k))}" style="width:110px"></div><p id="dayStartInfo185" class="small mut">${next?'С '+esc(dshort(next.from))+' · '+esc(next.time):'Сейчас с '+esc(dayStartFor185(k))+'. Прошлые записи не меняются.'}</p>`)};
  document.addEventListener('change',e=>{if(e.target.id!=='dayStart185'||!SH?.settings)return;if(!requestDayStart185(e.target.value)){toast('Не удалось сохранить настройку');sheetSettings();return}const k=TODAY(),next=dayStartRules185().find(r=>r.from>k);const info=$('#dayStartInfo185');if(info)info.textContent=next?'С '+dshort(next.from)+' · '+next.time:'Сейчас с '+dayStartFor185(k)+'. Прошлые записи не меняются.'});
 })();
 /* H1.86 — duration wheels, one explicit minute value, no persistent change until Save. */
@@ -7259,7 +7260,7 @@ A.h186undateok=e=>{const t=D.tasks.find(x=>x.id===e.dataset.id);if(!t||!h171Acti
  }
  function mountAll(){if(!SH)return;for(const id of Object.keys(ids)){const f=document.getElementById(id);if(f&&f.closest('#sheet'))mountField(f)}}
  // Settings are assembled by wrappers after openSheet. Mount only after their synchronous work finishes.
- const prevSettings=sheetSettings;sheetSettings=function(...args){const r=prevSettings.apply(this,args);const group=[...document.querySelectorAll('#sheet .settings-group57')].find(x=>x.querySelector('summary')?.textContent==='Предпочтения');const body=group?.querySelector('.settings-body57');if(body&&!body.querySelector('[data-a="vibration188"]')){const label=[...body.querySelectorAll('.lb')].find(x=>x.textContent==='Звуки');const row=document.createElement('div');row.className='op';row.innerHTML=`<span class="grow">Вибрация</span><button type="button" class="tog${D.set.vibration!==false?' on':''}" data-a="vibration188" aria-label="Вибрация" aria-pressed="${D.set.vibration!==false}"></button>`;if(label?.nextElementSibling)label.nextElementSibling.after(row);else body.append(row)}mountAll();return r};
+ const prevSettings=sheetSettings;sheetSettings=function(...args){const r=prevSettings.apply(this,args);const group=[...document.querySelectorAll('#sheet .settings-group57')].find(x=>x.querySelector('summary')?.textContent==='Личные настройки');const body=group?.querySelector('.settings-body57');if(body&&!body.querySelector('[data-a="vibration188"]')){const label=[...body.querySelectorAll('.lb')].find(x=>x.textContent==='Звук и вибрация');const row=document.createElement('div');row.className='op';row.innerHTML=`<span class="grow">Вибрация</span><button type="button" class="tog${D.set.vibration!==false?' on':''}" data-a="vibration188" aria-label="Вибрация" aria-pressed="${D.set.vibration!==false}"></button>`;if(label?.nextElementSibling)label.nextElementSibling.after(row);else body.append(row)}mountAll();return r};
  A.vibration188=e=>{D.set.vibration=D.set.vibration===false;save();e.classList.toggle('on',D.set.vibration);e.setAttribute('aria-pressed',String(D.set.vibration))};
  window.appVibrationEnabled188=()=>D.set.vibration!==false;
  const prevOpen=openSheet;openSheet=function(...args){finishAll();const r=prevOpen.apply(this,args);queueMicrotask(mountAll);return r};
@@ -7320,6 +7321,9 @@ window.speechDemo191=()=>`<div data-speech-demo191 style="display:grid;gap:8px">
  A.tryhub190=()=>{const ctx=SH,content=[...$('#sheet').children].filter(x=>!x.matches('.x,.grab')).map(x=>x.outerHTML).join('');const restore=()=>openSheet(content,ctx);if(typeof window.AI05Practice190==='function')window.AI05Practice190(restore,()=>{restore();A.magdemo()});else A.magdemo()};
  A.speechintro190=()=>{const b=$('#sheet [data-a="speechintro190"]'),status=$('#speechintro190-status');if(!b||!status||b.disabled)return;window.SpeechIntro190?.(b,status)};
 })();
+
+/* H1.92: a single personal-settings group; keep the existing input/reel instances. */
+(()=>{const prev=sheetSettings;sheetSettings=function(...args){const result=prev.apply(this,args);const body=[...document.querySelectorAll('#sheet .settings-group57')].find(g=>g.querySelector('summary')?.textContent==='Личные настройки')?.querySelector('.settings-body57');if(!body)return result;const cap=body.querySelector('#cap')?.closest('.op'),start=body.querySelector('#dayStart185')?.closest('.op'),info=body.querySelector('#dayStartInfo185');if(cap&&start){cap.before(start);if(info)start.after(info);cap.classList.add('h192-rhythm');start.classList.add('h192-rhythm')}return result}})();
 
 if(D.started)render();
 </script>
