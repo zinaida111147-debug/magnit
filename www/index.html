@@ -1511,6 +1511,8 @@ body.hlmode #app{padding-bottom:300px}
 .pinhd{position:sticky;top:0;z-index:15;margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:0 max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));transition:box-shadow .2s,background .2s}
 .pinhd.stuck{background:var(--bg1);-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 8px 18px -12px rgba(20,16,40,.35)}
 .pinhd .hd{transition:none}
+/* H1.69: desktop sticky background follows the content column, not mobile bleed. */
+@media(min-width:700px){#app>.pinhd{margin-inline:0;padding-inline:0}}
 .pinhd{overflow-anchor:none}
 #app:has(.pinhd){overflow-anchor:none}
 .pinhd .seg{margin-bottom:4px}
