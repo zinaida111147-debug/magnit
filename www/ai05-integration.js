@@ -129,7 +129,7 @@ window.addEventListener('pagehide',()=>{cancel();overlay(false)});document.addEv
 // Frames now counts audio envelope samples, not visual animation frames.
 window.__AI05_H153={get geometry(){return geometry?{...geometry}:null},get state(){return visualState},get frames(){return frameCount},get overlay(){return overlayWanted},get quality(){return "lightweight"},get stats(){return {speech:lastSpeechTiming}}};
 // Single fixed light impact at recording start; no repeating pulse or AI-05 settings.
-function haptic(owner){const H=window.Capacitor?.Plugins?.Haptics;
+function haptic(owner){if(window.appVibrationEnabled188?.()===false)return;const H=window.Capacitor?.Plugins?.Haptics;
  if(H?.impact){try{Promise.resolve(H.impact({style:'LIGHT'})).catch(()=>{});return}catch(_){return}}
  if(run===owner&&!owner.done)safe(()=>navigator.vibrate?.(12));
 }
